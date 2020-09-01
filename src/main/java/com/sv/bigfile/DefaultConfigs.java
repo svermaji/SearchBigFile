@@ -28,7 +28,7 @@ public class DefaultConfigs {
         }
     }
 
-    String propFileName = "./cfn.config";
+    String propFileName = "./conf.config";
     private final Properties configs = new Properties();
     private MyLogger logger;
 

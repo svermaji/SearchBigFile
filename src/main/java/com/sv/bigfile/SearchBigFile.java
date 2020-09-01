@@ -63,7 +63,7 @@ public class SearchBigFile extends AppFrame {
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
 
-        setIconImage(new ImageIcon("./search.png").getImage());
+        setIconImage(new ImageIcon("./app-icon.png").getImage());
 
         JPanel searchPanel = new JPanel();
         JPanel filePanel = new JPanel();
