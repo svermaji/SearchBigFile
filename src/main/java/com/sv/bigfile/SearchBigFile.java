@@ -4,7 +4,8 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.text.BadLocationException;
+import javax.swing.text.*;
+import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
@@ -80,7 +81,12 @@ public class SearchBigFile extends AppFrame {
         tpResults.setContentType("text/html");
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
-        kit = new HTMLEditorKit();
+        kit = new HTMLEditorKit() {
+            @Override
+            public ViewFactory getViewFactory() {
+                return new WrapColumnFactory();
+            }
+        };
         txtFilePath = new JTextField(configs.getConfig(DefaultConfigs.Config.FILEPATH));
         txtFilePath.setColumns(TXT_COLS + 10);
         jcbMatchCase = new JCheckBox("match case",
@@ -423,6 +429,47 @@ public class SearchBigFile extends AppFrame {
             }
 
             return true;
+        }
+    }
+}
+
+class WrapColumnFactory extends HTMLEditorKit.HTMLFactory {
+
+    @Override
+    public View create(Element elem) {
+        View v = super.create(elem);
+
+        if (v instanceof LabelView) {
+
+            // the javax.swing.text.html.BRView (representing <br> tag) is a LabelView but must not be handled
+            // by a WrapLabelView. As BRView is private, check the html tag from elem attribute
+            Object o = elem.getAttributes().getAttribute(StyleConstants.NameAttribute);
+            if ((o instanceof HTML.Tag) && o == HTML.Tag.BR) {
+                return v;
+            }
+
+            return new WrapLabelView(elem);
+        }
+
+        return v;
+    }
+}
+
+class WrapLabelView extends LabelView {
+
+    public WrapLabelView(Element elem) {
+        super(elem);
+    }
+
+    @Override
+    public float getMinimumSpan(int axis) {
+        switch (axis) {
+            case View.X_AXIS:
+                return 0;
+            case View.Y_AXIS:
+                return super.getMinimumSpan(axis);
+            default:
+                throw new IllegalArgumentException("Invalid axis: " + axis);
         }
     }
 }
