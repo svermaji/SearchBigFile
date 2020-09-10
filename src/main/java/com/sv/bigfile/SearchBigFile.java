@@ -75,7 +75,7 @@ public class SearchBigFile extends AppFrame {
 
         Border emptyBorder = new EmptyBorder(new Insets(5, 5, 5, 5));
 
-        final int TXT_COLS = 25;
+        final int TXT_COLS = 20;
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
@@ -88,12 +88,14 @@ public class SearchBigFile extends AppFrame {
             }
         };
         txtFilePath = new JTextField(configs.getConfig(DefaultConfigs.Config.FILEPATH));
-        txtFilePath.setColumns(TXT_COLS + 10);
+        AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
+        txtFilePath.setColumns(TXT_COLS);
         jcbMatchCase = new JCheckBox("match case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
         jcbWholeWord = new JCheckBox("whole word",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.WHOLE_WORD)));
         txtSearch = new JTextField(configs.getConfig(DefaultConfigs.Config.SEARCH));
+        AppLabel lblSearch = new AppLabel("Search", txtSearch, 'H');
         txtSearch.setColumns(TXT_COLS);
         btnSearch = new AppButton("Search", 'S');
         btnSearch.addActionListener(evt -> searchFile());
@@ -109,6 +111,7 @@ public class SearchBigFile extends AppFrame {
         btnExit = new AppExitButton();
 
         filePanel.setLayout(new FlowLayout());
+        filePanel.add(lblFilePath);
         filePanel.add(txtFilePath);
         filePanel.add(jcbMatchCase);
         filePanel.add(jcbWholeWord);
@@ -118,6 +121,7 @@ public class SearchBigFile extends AppFrame {
         filePanel.setBorder(titledFP);
 
         searchPanel.setLayout(new FlowLayout());
+        searchPanel.add(lblSearch);
         searchPanel.add(txtSearch);
         searchPanel.add(btnSearch);
         searchPanel.add(btnCancel);
