@@ -13,8 +13,10 @@ public class DefaultConfigs {
 
     private URL propUrl;
     enum Config {
+        RECENT_FILES("RecentFiles"),
         FILEPATH("FilePath"),
         SEARCH("SearchString"),
+        RECENT_SEARCHES("RecentSearches"),
         MATCH_CASE("MatchCase"),
         WHOLE_WORD("WholeWord");
 

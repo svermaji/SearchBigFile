@@ -13,7 +13,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,18 +37,20 @@ public class SearchBigFile extends AppFrame {
     private DefaultConfigs configs;
 
     private String searchStr, searchStrReplace;
+    private String recentFilesStr, recentSearchesStr;
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
     private final String HTML_LINE_END = "<br>";
 
     private JButton btnSearch, btnCancel, btnExit;
-    private JButton btnFav1, btnFav2;
     private final String TITLE = "Search File";
+    private final int RECENT_LIMIT = 20;
 
     private static long startTime = System.currentTimeMillis();
     private static Status status = Status.NOT_STARTED;
 
     private JCheckBox jcbMatchCase, jcbWholeWord;
+    private JComboBox<String> cbFiles, cbSearches;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(3);
 
     public static void main(String[] args) {
@@ -60,6 +64,8 @@ public class SearchBigFile extends AppFrame {
         logger = MyLogger.createLogger("search-big-file.log");
 
         configs = new DefaultConfigs(logger);
+        recentFilesStr = configs.getConfig(DefaultConfigs.Config.RECENT_FILES);
+        recentSearchesStr = configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES);
 
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
@@ -75,7 +81,7 @@ public class SearchBigFile extends AppFrame {
 
         Border emptyBorder = new EmptyBorder(new Insets(5, 5, 5, 5));
 
-        final int TXT_COLS = 20;
+        final int TXT_COLS = 15;
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
@@ -90,39 +96,49 @@ public class SearchBigFile extends AppFrame {
         txtFilePath = new JTextField(configs.getConfig(DefaultConfigs.Config.FILEPATH));
         AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
         txtFilePath.setColumns(TXT_COLS);
+        cbFiles = new JComboBox<>(getFiles());
+        cbFiles.setPrototypeDisplayValue("XXXXXXXX");
+        cbFiles.addActionListener(e -> txtFilePath.setText(
+                Objects.requireNonNull(cbFiles.getSelectedItem().toString())));
+        AppLabel lblRFiles = new AppLabel("Recent Files", cbFiles, 'R');
         jcbMatchCase = new JCheckBox("match case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
+        jcbMatchCase.setMnemonic('c');
         jcbWholeWord = new JCheckBox("whole word",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.WHOLE_WORD)));
+        jcbWholeWord.setMnemonic('w');
+
         txtSearch = new JTextField(configs.getConfig(DefaultConfigs.Config.SEARCH));
         AppLabel lblSearch = new AppLabel("Search", txtSearch, 'H');
-        txtSearch.setColumns(TXT_COLS);
+        txtSearch.setColumns(TXT_COLS - 5);
         btnSearch = new AppButton("Search", 'S');
         btnSearch.addActionListener(evt -> searchFile());
-        btnCancel = new AppButton("Cancel",
-                'C');
+        cbSearches = new JComboBox<>(getSearches());
+        //TODO: set unique value in drop down
+        cbSearches.setPrototypeDisplayValue("XXXXXXXX");
+        cbSearches.addActionListener(e ->
+                txtSearch.setText(Objects.requireNonNull(cbSearches.getSelectedItem().toString())));
+        AppLabel lblRSearches = new AppLabel("Recent Searches", cbSearches, 'H');
+        btnCancel = new AppButton("Cancel", 'C');
         btnCancel.addActionListener(evt -> cancelSearch());
-
-        btnFav1 = new AppButton("Fav1", 'M');
-        btnFav1.addActionListener(evt -> setFav1Path());
-        btnFav2 = new AppButton("Fav2", 'E');
-        btnFav2.addActionListener(evt -> setFav2Path());
 
         btnExit = new AppExitButton();
 
         filePanel.setLayout(new FlowLayout());
         filePanel.add(lblFilePath);
         filePanel.add(txtFilePath);
+        filePanel.add(lblRFiles);
+        filePanel.add(cbFiles);
         filePanel.add(jcbMatchCase);
         filePanel.add(jcbWholeWord);
-        filePanel.add(btnFav1);
-        filePanel.add(btnFav2);
         TitledBorder titledFP = new TitledBorder("File to search");
         filePanel.setBorder(titledFP);
 
         searchPanel.setLayout(new FlowLayout());
         searchPanel.add(lblSearch);
         searchPanel.add(txtSearch);
+        searchPanel.add(lblRSearches);
+        searchPanel.add(cbSearches);
         searchPanel.add(btnSearch);
         searchPanel.add(btnCancel);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
@@ -154,6 +170,14 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
+    private String[] getFiles() {
+        return configs.getConfig(DefaultConfigs.Config.RECENT_FILES).split(";");
+    }
+
+    private String[] getSearches() {
+        return configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES).split(";");
+    }
+
     private void cancelSearch() {
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
@@ -161,22 +185,63 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private void setFav1Path() {
-        txtFilePath.setText("c:\\sv\\fav1.log");
-    }
-
-    private void setFav2Path() {
-        txtFilePath.setText("c:\\sv\\fav2.log");
-    }
-
     private void searchFile() {
-        disableControls();
-        emptyResults();
-        status = Status.READING;
-        startTime = System.currentTimeMillis();
-        logger.log(getSearchDetails());
-        threadPool.submit(new SearchFileCallable(this));
-        threadPool.submit(new TimerCallable(this));
+        if (isValidate()) {
+            disableControls();
+            emptyResults();
+            status = Status.READING;
+            startTime = System.currentTimeMillis();
+            updateRecentSearchVals();
+            logger.log(getSearchDetails());
+            threadPool.submit(new SearchFileCallable(this));
+            threadPool.submit(new TimerCallable(this));
+        }
+    }
+
+    private boolean isValidate() {
+        updateTitle("");
+        boolean result = true;
+        if (!Utils.hasValue(txtFilePath.getText())) {
+            updateTitle("REQUIRED: file to search");
+            result = false;
+        }
+        if (result && !Utils.hasValue(txtSearch.getText())) {
+            updateTitle("REQUIRED: text to search");
+            result = false;
+        }
+        return result;
+    }
+
+    private void updateRecentSearchVals() {
+        recentFilesStr = checkItems(txtFilePath.getText() + Utils.SEMI_COLON + recentFilesStr);
+        recentSearchesStr = checkItems(txtSearch.getText() + Utils.SEMI_COLON + recentSearchesStr);
+        cbFiles.removeAllItems();
+        Arrays.stream(recentFilesStr.split(Utils.SEMI_COLON)).
+                forEach(s -> {
+                    if (Utils.hasValue(s)) {
+                        cbFiles.addItem(s);
+                    }
+                });
+        cbSearches.removeAllItems();
+        Arrays.stream(recentSearchesStr.split(Utils.SEMI_COLON)).
+                forEach(s -> {
+                    if (Utils.hasValue(s)) {
+                        cbSearches.addItem(s);
+                    }
+                });
+    }
+
+    private String checkItems(String vals) {
+        StringBuilder sb = new StringBuilder();
+        String[] arr = vals.split(Utils.SEMI_COLON);
+        int size = arr.length;
+        if (size > RECENT_LIMIT) {
+            for (int i = 0; i < RECENT_LIMIT; i++) {
+                sb.append(arr[i]).append(Utils.SEMI_COLON);
+            }
+            vals = sb.toString();
+        }
+        return vals;
     }
 
     private String getSearchDetails() {
@@ -193,8 +258,8 @@ public class SearchBigFile extends AppFrame {
         txtFilePath.setEnabled(enable);
         txtSearch.setEnabled(enable);
         btnSearch.setEnabled(enable);
-        btnFav1.setEnabled(enable);
-        btnFav2.setEnabled(enable);
+        cbFiles.setEnabled(enable);
+        cbSearches.setEnabled(enable);
         jcbMatchCase.setEnabled(enable);
         jcbWholeWord.setEnabled(enable);
     }
@@ -310,8 +375,16 @@ public class SearchBigFile extends AppFrame {
         return jcbWholeWord.isSelected() + "";
     }
 
+    public String getRecentSearches() {
+        return recentSearchesStr;
+    }
+
+    public String getRecentFiles() {
+        return recentFilesStr;
+    }
+
     public void updateTitle(String info) {
-        setTitle(Utils.hasValue(info) ? TITLE + " - " + info : TITLE);
+        setTitle(Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE);
     }
 
     static class TimerCallable implements Callable<Boolean> {

@@ -4,9 +4,9 @@ import javax.swing.*;
 
 public class AppLabel extends JLabel {
 
-    AppLabel(String text, JTextField txtField, char mnemonic) {
+    AppLabel(String text, JComponent component, char mnemonic) {
         setText(text);
-        setLabelFor(txtField);
+        setLabelFor(component);
         setDisplayedMnemonic(mnemonic);
     }
 }
