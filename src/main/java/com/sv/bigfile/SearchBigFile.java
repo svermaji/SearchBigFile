@@ -15,7 +15,6 @@ import java.io.*;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -97,9 +96,10 @@ public class SearchBigFile extends AppFrame {
         AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
         txtFilePath.setColumns(TXT_COLS);
         cbFiles = new JComboBox<>(getFiles());
-        cbFiles.setPrototypeDisplayValue("XXXXXXXX");
-        cbFiles.addActionListener(e -> txtFilePath.setText(
-                Objects.requireNonNull(cbFiles.getSelectedItem().toString())));
+        JComboToolTipRenderer cbFilesRenderer = new JComboToolTipRenderer();
+        cbFiles.setRenderer(cbFilesRenderer);
+        cbFiles.setPrototypeDisplayValue("Recent Files");
+        addCBFilesAL();
         AppLabel lblRFiles = new AppLabel("Recent Files", cbFiles, 'R');
         jcbMatchCase = new JCheckBox("match case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
@@ -114,10 +114,10 @@ public class SearchBigFile extends AppFrame {
         btnSearch = new AppButton("Search", 'S');
         btnSearch.addActionListener(evt -> searchFile());
         cbSearches = new JComboBox<>(getSearches());
-        //TODO: set unique value in drop down
-        cbSearches.setPrototypeDisplayValue("XXXXXXXX");
-        cbSearches.addActionListener(e ->
-                txtSearch.setText(Objects.requireNonNull(cbSearches.getSelectedItem().toString())));
+        JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
+        cbSearches.setRenderer(cbSearchRenderer);
+        cbSearches.setPrototypeDisplayValue("Pattern");
+        addCBSearchAL();
         AppLabel lblRSearches = new AppLabel("Recent Searches", cbSearches, 'H');
         btnCancel = new AppButton("Cancel", 'C');
         btnCancel.addActionListener(evt -> cancelSearch());
@@ -170,6 +170,22 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
+    private void removeCBSearchAL() {
+        Arrays.stream(cbSearches.getActionListeners()).forEach(a -> cbSearches.removeActionListener(a));
+    }
+
+    private void addCBSearchAL() {
+        cbSearches.addActionListener(e -> txtSearch.setText(cbSearches.getSelectedItem().toString()));
+    }
+
+    private void removeCBFilesAL() {
+        Arrays.stream(cbFiles.getActionListeners()).forEach(a -> cbFiles.removeActionListener(a));
+    }
+
+    private void addCBFilesAL() {
+        cbFiles.addActionListener(e -> txtFilePath.setText(cbFiles.getSelectedItem().toString()));
+    }
+
     private String[] getFiles() {
         return configs.getConfig(DefaultConfigs.Config.RECENT_FILES).split(";");
     }
@@ -213,8 +229,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateRecentSearchVals() {
-        recentFilesStr = checkItems(txtFilePath.getText() + Utils.SEMI_COLON + recentFilesStr);
-        recentSearchesStr = checkItems(txtSearch.getText() + Utils.SEMI_COLON + recentSearchesStr);
+        logger.log("recentFilesStr--" + recentFilesStr);
+        logger.log("recentSearchesStr--" + recentSearchesStr);
+        recentFilesStr = checkItems(txtFilePath.getText(), recentFilesStr);
+        recentSearchesStr = checkItems(txtSearch.getText(), recentSearchesStr);
+        removeCBFilesAL();
         cbFiles.removeAllItems();
         Arrays.stream(recentFilesStr.split(Utils.SEMI_COLON)).
                 forEach(s -> {
@@ -222,6 +241,9 @@ public class SearchBigFile extends AppFrame {
                         cbFiles.addItem(s);
                     }
                 });
+        addCBFilesAL();
+
+        removeCBSearchAL();
         cbSearches.removeAllItems();
         Arrays.stream(recentSearchesStr.split(Utils.SEMI_COLON)).
                 forEach(s -> {
@@ -229,19 +251,19 @@ public class SearchBigFile extends AppFrame {
                         cbSearches.addItem(s);
                     }
                 });
+        addCBSearchAL();
     }
 
-    private String checkItems(String vals) {
-        StringBuilder sb = new StringBuilder();
-        String[] arr = vals.split(Utils.SEMI_COLON);
-        int size = arr.length;
-        if (size > RECENT_LIMIT) {
-            for (int i = 0; i < RECENT_LIMIT; i++) {
-                sb.append(arr[i]).append(Utils.SEMI_COLON);
-            }
-            vals = sb.toString();
+    private String checkItems(String searchStr, String csv) {
+        if (!Utils.isInArray(csv.split(Utils.SEMI_COLON), searchStr)) {
+            csv = searchStr + Utils.SEMI_COLON + csv;
         }
-        return vals;
+
+        if (csv.split(Utils.SEMI_COLON).length >= RECENT_LIMIT) {
+            csv = csv.substring(0, csv.lastIndexOf(Utils.SEMI_COLON));
+        }
+
+        return csv;
     }
 
     private String getSearchDetails() {
@@ -550,3 +572,19 @@ class WrapLabelView extends LabelView {
         }
     }
 }
+
+class JComboToolTipRenderer extends DefaultListCellRenderer {
+
+    @Override
+    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+        // I'd extract the basic "text" representation of the value
+        // and pass that to the super call, which will apply it to the
+        // JLabel via the setText method, otherwise it will use the
+        // objects toString method to generate a representation
+        super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        setToolTipText(value.toString());
+        return this;
+    }
+
+}
+

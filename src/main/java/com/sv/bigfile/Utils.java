@@ -2,6 +2,7 @@ package com.sv.bigfile;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * Created by svg on 11-Oct-2017
@@ -34,6 +35,10 @@ public class Utils {
 
     public static Path createPath (String path) {
         return FileSystems.getDefault().getPath(path);
+    }
+
+    public static boolean isInArray (String[] arr, String val) {
+        return Arrays.stream(arr).anyMatch(a -> a.equalsIgnoreCase(val));
     }
 
     /**
