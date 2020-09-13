@@ -46,8 +46,8 @@ public class SearchBigFile extends AppFrame {
     private final String TITLE = "Search File";
     private static final int RECENT_LIMIT = 20;
     private static boolean showWarning = false;
-    private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 10;
-    private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 100;
+    private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 20;
+    private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 200;
 
     private static long startTime = System.currentTimeMillis();
     private static Status status = Status.NOT_STARTED;
@@ -72,8 +72,6 @@ public class SearchBigFile extends AppFrame {
 
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
-
-        setIconImage(new ImageIcon("./app-icon.png").getImage());
 
         JPanel searchPanel = new JPanel();
         JPanel filePanel = new JPanel();
