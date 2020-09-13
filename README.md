@@ -2,6 +2,11 @@
 Utility in Java to search big file (tested with nearly 400MB)
 
 ## Recent Changes<br>
+#### On 13-Sep-2020<br>
+* Performance and UI improvement enhanced
+* New callable to update statistics and append result
+* Warning if search runs for too long or too many search occurrences 
+
 #### On 11-Sep-2020<br>
 * Added the tooltip for combo box items
 

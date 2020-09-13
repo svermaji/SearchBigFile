@@ -15,6 +15,7 @@ import java.io.*;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +44,10 @@ public class SearchBigFile extends AppFrame {
 
     private JButton btnSearch, btnCancel, btnExit;
     private final String TITLE = "Search File";
-    private final int RECENT_LIMIT = 20;
+    private static final int RECENT_LIMIT = 20;
+    private static boolean showWarning = false;
+    private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 10;
+    private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 100;
 
     private static long startTime = System.currentTimeMillis();
     private static Status status = Status.NOT_STARTED;
@@ -325,6 +329,44 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    class SearchData extends SwingWorker<Integer, String> {
+
+        final int LINES_TO_INFORM = 500000;
+        private final SearchStats stats;
+
+        SearchData(SearchStats stats) {
+            this.stats = stats;
+        }
+
+        @Override
+        public Integer doInBackground() {
+            String line = stats.getLine();
+            long occurrences = stats.getOccurrences();
+            long lineNum = stats.getLineNum();
+            StringBuilder sb = new StringBuilder();
+
+            if ((isWholeWord() && line.matches(searchStr))
+                    || (!isMatchCase() && line.toLowerCase().contains(searchStr.toLowerCase()))
+                    || (isMatchCase() && line.contains(searchStr))
+            ) {
+                stats.setOccurrences(occurrences + 1);
+                sb.append("<b>").append(lineNum).append("  </b>").append(line).append(System.lineSeparator());
+            }
+            stats.setLineNum(lineNum + 1);
+            appendResult(sb.toString());
+
+            if (lineNum % LINES_TO_INFORM == 0) {
+                logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
+            }
+
+            if (!showWarning && stats.getOccurrences() > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
+                showWarning = true;
+            }
+
+            return 1;
+        }
+    }
+
     public void appendResultNoFormat(String data) {
         new AppendData(data).doInBackground();
     }
@@ -406,7 +448,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void updateTitle(String info) {
-        setTitle(Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE);
+        setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
 
     static class TimerCallable implements Callable<Boolean> {
@@ -422,7 +464,12 @@ public class SearchBigFile extends AppFrame {
             do {
                 // Due to multi threading, separate if is imposed
                 if (status == Status.READING) {
-                    sbf.updateTitle(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime) + " sec");
+                    long timeElapse = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
+                    String msg = timeElapse + " sec";
+                    if (showWarning || timeElapse > TIME_LIMIT_FOR_WARN_IN_SEC) {
+                        msg += sbf.getWarning();
+                    }
+                    sbf.updateTitle(msg);
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -434,7 +481,11 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    static class SearchFileCallable implements Callable<Boolean> {
+    private String getWarning() {
+        return " - Either search taking long or too many results !!  Cancel and try to narrow";
+    }
+
+    class SearchFileCallable implements Callable<Boolean> {
 
         private final SearchBigFile sbf;
 
@@ -444,8 +495,6 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int LINES_TO_FLUSH = 10000;
-            final int LINES_TO_INFORM = 500000;
             final int BUFFER_SIZE = 5 * 1024;
             String searchStr = sbf.txtSearch.getText();
 
@@ -458,66 +507,48 @@ public class SearchBigFile extends AppFrame {
 
             String path = sbf.txtFilePath.getText();
 
-            /*try (InputStream stream = new FileInputStream(path);
-                 Scanner sc = new Scanner(stream, "UTF-8")
-            ) {*/
             try (InputStream stream = new FileInputStream(path);
-                 BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
+                 Scanner sc = new Scanner(stream, "UTF-8")
             ) {
+            /*try (InputStream stream = new FileInputStream(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
+            ) {*/
                 long lineNum = 1, occurrences = 0;
-                StringBuilder sb = new StringBuilder();
+                SearchStats stats = new SearchStats(lineNum, occurrences, null);
+                SearchData searchData = new SearchData(stats);
                 sbf.setSearchStrings();
 
-                /*
-                    while (sc.hasNextLine()) {
-                        String line = sc.nextLine();
-                */
+                while (sc.hasNextLine()) {
+                    String line = sc.nextLine();
 
-                String line;
-                while ((line = br.readLine()) != null) {
+                /*String line;
+                while ((line = br.readLine()) != null) {*/
 
-                    if ((sbf.isWholeWord() && line.matches(searchStr))
-                            || (!sbf.isMatchCase() && line.toLowerCase().contains(searchStr.toLowerCase()))
-                            || (sbf.isMatchCase() && line.contains(searchStr))
-                    ) {
-                        occurrences++;
-                        sb.append("<b>").append(lineNum).append("  </b>").append(line).append(System.lineSeparator());
-                    }
-                    lineNum++;
-                    if (lineNum % LINES_TO_FLUSH == 0) {
-                        sbf.appendResult(sb.toString());
-                        sb = new StringBuilder();
-                    }
-
-                    if (lineNum % LINES_TO_INFORM == 0) {
-                        sbf.logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
-                    }
-
+                    stats.setLine(line);
+                    searchData.doInBackground();
                     if (status == Status.CANCELLED) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
                         break;
                     }
-
                 }
 
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
-                String result = String.format("Search completed. File size: %s, " +
-                                "time taken: [%sseconds], lines read: [%s], occurrences: [%s]",
+                String result = String.format("File size: %s, " +
+                                "time taken: [%s sec], lines read: [%s], occurrences: [%s]",
                         Utils.getFileSizeString(new File(path).length()),
                         seconds,
-                        lineNum,
-                        occurrences);
-                if (occurrences == 0) {
+                        stats.getLineNum(),
+                        stats.getOccurrences());
+                if (stats.getOccurrences() == 0) {
                     sbf.appendResultNoFormat("No match found. ");
-                } else {
-                    sbf.appendResult(sb.toString());
                 }
+
                 if (status == Status.CANCELLED) {
-                    sbf.updateTitle("Search cancelled -- " + result);
+                    sbf.updateTitle("Search cancelled - " + result);
                 } else {
                     sbf.appendResultNoFormat("---------------------Search complete----------------------------" + System.lineSeparator());
                     sbf.logger.log(result);
-                    sbf.updateTitle(result);
+                    sbf.updateTitle("Search complete - " + result);
                 }
                 status = Status.DONE;
             } catch (IOException e) {
