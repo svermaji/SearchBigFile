@@ -105,7 +105,7 @@ public class SearchBigFile extends AppFrame {
         AppLabel lblRFiles = new AppLabel("Recent Files", cbFiles, 'R');
         jcbMatchCase = new JCheckBox("match case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
-        jcbMatchCase.setMnemonic('c');
+        jcbMatchCase.setMnemonic('m');
         jcbWholeWord = new JCheckBox("whole word",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.WHOLE_WORD)));
         jcbWholeWord.setMnemonic('w');
@@ -120,7 +120,7 @@ public class SearchBigFile extends AppFrame {
         cbSearches.setRenderer(cbSearchRenderer);
         cbSearches.setPrototypeDisplayValue("Pattern");
         addCBSearchAL();
-        AppLabel lblRSearches = new AppLabel("Recent Searches", cbSearches, 'H');
+        AppLabel lblRSearches = new AppLabel("Recent Searches", cbSearches, 'e');
         btnCancel = new AppButton("Cancel", 'C');
         btnCancel.addActionListener(evt -> cancelSearch());
 

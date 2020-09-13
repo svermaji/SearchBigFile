@@ -1,6 +1,10 @@
 # SearchBigFile
 Utility in Java to search big file (tested with nearly 400MB)
 
+## Test Results<br>
+ - File size `[1GB]`, type `[Text]`, lines processed `[13147035]` and pattern find `[794]` times, time taken `[167sec]`<br>
+ - Attachine result with name as `Test 1GB`<br>
+
 ## Recent Changes<br>
 #### On 13-Sep-2020<br>
 * Performance and UI improvement enhanced
@@ -31,3 +35,6 @@ Attaching screen shot of application:<br>
 
 Added on 11-Sep-2020. Attaching screen shot of application:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-recent-controls.png) 
+
+Added on 13-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB` :<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb.png) 
