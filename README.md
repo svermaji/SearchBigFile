@@ -1,11 +1,14 @@
 # SearchBigFile
-Utility in Java to search big file (tested with nearly 400MB)
+Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 
 ## Test Results<br>
  - File size `[1GB]`, type `[Text]`, lines processed `[13147035]` and pattern find `[794]` times, time taken `[167sec]`<br>
- - Attachine result with name as `Test 1GB`<br>
+ - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 14-Sep-2020<br>
+* Now combo boxes will be shown small initially but if list items are wider, then list will become wider to show it. 
+
 #### On 13-Sep-2020<br>
 * Performance and UI improvement enhanced
 * New callable to update statistics and append result

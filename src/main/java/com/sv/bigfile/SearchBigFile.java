@@ -4,14 +4,17 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.text.*;
-import javax.swing.text.html.HTML;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.ViewFactory;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -48,6 +51,7 @@ public class SearchBigFile extends AppFrame {
     private static boolean showWarning = false;
     private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 20;
     private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 200;
+    private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE =false;
 
     private static long startTime = System.currentTimeMillis();
     private static Status status = Status.NOT_STARTED;
@@ -98,6 +102,7 @@ public class SearchBigFile extends AppFrame {
         AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
         txtFilePath.setColumns(TXT_COLS);
         cbFiles = new JComboBox<>(getFiles());
+        cbFiles.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         JComboToolTipRenderer cbFilesRenderer = new JComboToolTipRenderer();
         cbFiles.setRenderer(cbFilesRenderer);
         cbFiles.setPrototypeDisplayValue("Recent Files");
@@ -116,6 +121,7 @@ public class SearchBigFile extends AppFrame {
         btnSearch = new AppButton("Search", 'S');
         btnSearch.addActionListener(evt -> searchFile());
         cbSearches = new JComboBox<>(getSearches());
+        cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
         cbSearches.setRenderer(cbSearchRenderer);
         cbSearches.setPrototypeDisplayValue("Pattern");
@@ -559,61 +565,5 @@ public class SearchBigFile extends AppFrame {
             return true;
         }
     }
-}
-
-class WrapColumnFactory extends HTMLEditorKit.HTMLFactory {
-
-    @Override
-    public View create(Element elem) {
-        View v = super.create(elem);
-
-        if (v instanceof LabelView) {
-
-            // the javax.swing.text.html.BRView (representing <br> tag) is a LabelView but must not be handled
-            // by a WrapLabelView. As BRView is private, check the html tag from elem attribute
-            Object o = elem.getAttributes().getAttribute(StyleConstants.NameAttribute);
-            if ((o instanceof HTML.Tag) && o == HTML.Tag.BR) {
-                return v;
-            }
-
-            return new WrapLabelView(elem);
-        }
-
-        return v;
-    }
-}
-
-class WrapLabelView extends LabelView {
-
-    public WrapLabelView(Element elem) {
-        super(elem);
-    }
-
-    @Override
-    public float getMinimumSpan(int axis) {
-        switch (axis) {
-            case View.X_AXIS:
-                return 0;
-            case View.Y_AXIS:
-                return super.getMinimumSpan(axis);
-            default:
-                throw new IllegalArgumentException("Invalid axis: " + axis);
-        }
-    }
-}
-
-class JComboToolTipRenderer extends DefaultListCellRenderer {
-
-    @Override
-    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-        // I'd extract the basic "text" representation of the value
-        // and pass that to the super call, which will apply it to the
-        // JLabel via the setText method, otherwise it will use the
-        // objects toString method to generate a representation
-        super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-        setToolTipText(value.toString());
-        return this;
-    }
-
 }
 
