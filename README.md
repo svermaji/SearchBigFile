@@ -41,3 +41,6 @@ Added on 11-Sep-2020. Attaching screen shot of application:<br>
 
 Added on 13-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB` :<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb.png) 
+
+Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-wider-cb.png) 
