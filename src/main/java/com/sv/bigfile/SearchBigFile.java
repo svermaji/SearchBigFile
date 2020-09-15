@@ -202,7 +202,12 @@ public class SearchBigFile extends AppFrame {
         return configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES).split(";");
     }
 
+    private void resetShowWarning() {
+        showWarning = false;
+    }
+
     private void cancelSearch() {
+        resetShowWarning();
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -210,6 +215,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void searchFile() {
+        resetShowWarning();
         if (isValidate()) {
             disableControls();
             emptyResults();
@@ -237,8 +243,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateRecentSearchVals() {
-        logger.log("recentFilesStr--" + recentFilesStr);
-        logger.log("recentSearchesStr--" + recentSearchesStr);
         recentFilesStr = checkItems(txtFilePath.getText(), recentFilesStr);
         recentSearchesStr = checkItems(txtSearch.getText(), recentSearchesStr);
         removeCBFilesAL();
@@ -263,9 +267,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String checkItems(String searchStr, String csv) {
-        if (!Utils.isInArray(csv.split(Utils.SEMI_COLON), searchStr)) {
-            csv = searchStr + Utils.SEMI_COLON + csv;
+        if (Utils.isInArray(csv.split(Utils.SEMI_COLON), searchStr)) {
+            // remove so after add it will come on top
+            csv = csv.replace(searchStr + Utils.SEMI_COLON, "");
         }
+        csv = searchStr + Utils.SEMI_COLON + csv;
 
         if (csv.split(Utils.SEMI_COLON).length >= RECENT_LIMIT) {
             csv = csv.substring(0, csv.lastIndexOf(Utils.SEMI_COLON));
