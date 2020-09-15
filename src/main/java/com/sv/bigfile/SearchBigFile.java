@@ -10,13 +10,12 @@ import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.text.NumberFormat;
-import java.util.*;
-import java.util.Timer;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Queue;
+import java.util.Scanner;
 import java.util.concurrent.*;
 
 public class SearchBigFile extends AppFrame {
@@ -40,13 +39,13 @@ public class SearchBigFile extends AppFrame {
     private final String REPLACER_SUFFIX = "</font>";
     private final String HTML_LINE_END = "<br>";
 
-    private JButton btnSearch, btnCancel, btnExit;
+    private JButton btnSearch, btnLast500, btnCancel, btnExit;
     private final String TITLE = "Search File";
     private static final int RECENT_LIMIT = 20;
     private static boolean showWarning = false;
     private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 20;
     private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 200;
-    private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE =false;
+    private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
 
     private static long startTime = System.currentTimeMillis();
     private static Status status = Status.NOT_STARTED;
@@ -115,6 +114,9 @@ public class SearchBigFile extends AppFrame {
         txtSearch.setColumns(TXT_COLS - 5);
         btnSearch = new AppButton("Search", 'S');
         btnSearch.addActionListener(evt -> searchFile());
+        btnLast500 = new AppButton("Last 500", 'L');
+        btnLast500.setToolTipText("Read last 500 lines and highlight");
+        btnLast500.addActionListener(evt -> readLast500Lines());
         cbSearches = new JComboBox<>(getSearches());
         cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
@@ -142,6 +144,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(txtSearch);
         searchPanel.add(lblRSearches);
         searchPanel.add(cbSearches);
+        searchPanel.add(btnLast500);
         searchPanel.add(btnSearch);
         searchPanel.add(btnCancel);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
@@ -171,6 +174,58 @@ public class SearchBigFile extends AppFrame {
         });
 
         setToCenter();
+    }
+
+    private void resetForNewSearch() {
+        resetShowWarning();
+        emptyResults();
+        updateRecentSearchVals();
+        qMsgsToAppend.clear();
+        setSearchStrings();
+        disableControls();
+        startTime = System.currentTimeMillis();
+    }
+
+    private void readLast500Lines() {
+        logger.log("Loading last 500 lines from: " + txtFilePath.getText());
+        resetForNewSearch();
+        int readLines = 0;
+        StringBuilder sb = new StringBuilder();
+        File file = new File(txtFilePath.getText());
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+            long fileLength = file.length() - 1;
+            // Set the pointer at the last of the file
+            randomAccessFile.seek(fileLength);
+
+            for (long pointer = fileLength; pointer >= 0; pointer--) {
+                randomAccessFile.seek(pointer);
+                char c;
+                // read from the last, one char at the time
+                c = (char) randomAccessFile.read();
+                // break when end of the line
+                if (c == '\n') {
+                    readLines++;
+                    if (readLines == 500) {
+                        break;
+                    }
+                }
+                sb.append(c);
+                fileLength = fileLength - pointer;
+            }
+            sb.reverse();
+            appendResult(sb.toString());
+        } catch (IOException e) {
+            logger.error(e);
+        }
+        int len = sb.toString().split(searchStr).length;
+        updateTitle(
+                getSearchResult(
+                        txtFilePath.getText(),
+                        TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
+                        readLines,
+                        len > 0 ? len - 1 : 0)
+        );
+        enableControls();
     }
 
     private void removeCBSearchAL() {
@@ -210,17 +265,14 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void searchFile() {
-        resetShowWarning();
-        qMsgsToAppend.clear();
+        resetForNewSearch();
         if (isValidate()) {
-            disableControls();
-            emptyResults();
             status = Status.READING;
-            startTime = System.currentTimeMillis();
-            updateRecentSearchVals();
             logger.log(getSearchDetails());
             threadPool.submit(new SearchFileCallable(this));
             threadPool.submit(new TimerCallable(this));
+        } else {
+            enableControls();
         }
     }
 
@@ -290,6 +342,7 @@ public class SearchBigFile extends AppFrame {
         txtFilePath.setEnabled(enable);
         txtSearch.setEnabled(enable);
         btnSearch.setEnabled(enable);
+        btnLast500.setEnabled(enable);
         cbFiles.setEnabled(enable);
         cbSearches.setEnabled(enable);
         jcbMatchCase.setEnabled(enable);
@@ -373,16 +426,18 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void appendResultNoFormat(String data) {
-        new AppendData(data).doInBackground();
+        data = data.replaceAll("\r?\n", HTML_LINE_END);
+        new AppendData(data.replaceAll(" ", "&nbsp;")).doInBackground();
     }
 
     public void appendResult(String data) {
-        data = data.replaceAll(System.lineSeparator(), HTML_LINE_END);
 
-        if (!isMatchCase()) {
-            data = replaceWithSameCase(data);
-        } else {
-            data = data.replaceAll(searchStr, searchStrReplace);
+        if (Utils.hasValue(searchStr)) {
+            if (!isMatchCase()) {
+                data = replaceWithSameCase(data);
+            } else {
+                data = data.replaceAll(searchStr, searchStrReplace);
+            }
         }
 
         // TODO
@@ -493,6 +548,7 @@ public class SearchBigFile extends AppFrame {
     class AppendMsgCallable implements Callable<Boolean> {
 
         SearchBigFile sbf;
+
         public AppendMsgCallable(SearchBigFile sbf) {
             this.sbf = sbf;
         }
@@ -546,7 +602,6 @@ public class SearchBigFile extends AppFrame {
                 long lineNum = 1, occurrences = 0;
                 SearchStats stats = new SearchStats(lineNum, occurrences, null);
                 SearchData searchData = new SearchData(stats);
-                sbf.setSearchStrings();
 
                 /*String line;
                 while ((line = br.readLine()) != null) {*/
@@ -558,7 +613,7 @@ public class SearchBigFile extends AppFrame {
                             || (isWholeWord() && line.matches(searchPattern))
                     );
 
-                        searchData.doInBackground();
+                    searchData.doInBackground();
                     if (status == Status.CANCELLED) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
                         break;
@@ -566,12 +621,7 @@ public class SearchBigFile extends AppFrame {
                 }
 
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
-                String result = String.format("File size: %s, " +
-                                "time taken: [%s sec], lines read: [%s], occurrences: [%s]",
-                        Utils.getFileSizeString(new File(path).length()),
-                        seconds,
-                        stats.getLineNum(),
-                        stats.getOccurrences());
+                String result = getSearchResult(path, seconds, stats.getLineNum(), stats.occurrences);
                 if (stats.getOccurrences() == 0) {
                     sbf.appendResultNoFormat("No match found. ");
                 }
@@ -593,6 +643,15 @@ public class SearchBigFile extends AppFrame {
 
             return true;
         }
+    }
+
+    private String getSearchResult(String path, long seconds, long lineNum, long occurrences) {
+        return String.format("File size: %s, " +
+                        "time taken: [%s sec], lines read: [%s], occurrences: [%s]",
+                Utils.getFileSizeString(new File(path).length()),
+                seconds,
+                lineNum,
+                occurrences);
     }
 }
 

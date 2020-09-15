@@ -10,6 +10,10 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 15-Sep-2020<br>
+* Greatly improved performance.
+* Now added a new feature to read last 500 lines of a file along with the highlight of search pattern  
+
 #### On 14-Sep-2020<br>
 * Threading used to draw search results in chunks.
 * This redraw/repaint of JEditorPane improved alot, 1GB of data searched now in 119 seconds !!  
@@ -55,3 +59,6 @@ Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list
 
 Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB New` :<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb-new.png) 
+
+Added on 15-Sep-2020. Attaching screen shot of application. Read last 500 and highlight :<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-500.png) 
