@@ -60,5 +60,5 @@ Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list
 Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB New` :<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb-new.png) 
 
-Added on 15-Sep-2020. Attaching screen shot of application. Read last 500 and highlight :<br>
+Added on 15-Sep-2020. Attaching screen shot of application. Read last 500 lines with highlight of pattern:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-500.png) 
