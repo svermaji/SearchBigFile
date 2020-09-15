@@ -13,6 +13,8 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 #### On 15-Sep-2020<br>
 * Greatly improved performance.
 * Now added a new feature to read last 500 lines of a file along with the highlight of search pattern  
+* Removed last 500 lines and give options till 5000 lines.  
+* Changed labels and added tooltips to accommodate UI.  
 
 #### On 14-Sep-2020<br>
 * Threading used to draw search results in chunks.
@@ -61,4 +63,4 @@ Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1G
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb-new.png) 
 
 Added on 15-Sep-2020. Attaching screen shot of application. Read last 500 lines with highlight of pattern:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-500.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-N.png) 

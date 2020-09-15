@@ -17,6 +17,7 @@ public class DefaultConfigs {
         FILEPATH("FilePath"),
         SEARCH("SearchString"),
         RECENT_SEARCHES("RecentSearches"),
+        LAST_N("LastN"),
         MATCH_CASE("MatchCase"),
         WHOLE_WORD("WholeWord");
 

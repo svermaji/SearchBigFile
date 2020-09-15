@@ -39,7 +39,7 @@ public class SearchBigFile extends AppFrame {
     private final String REPLACER_SUFFIX = "</font>";
     private final String HTML_LINE_END = "<br>";
 
-    private JButton btnSearch, btnLast500, btnCancel, btnExit;
+    private JButton btnSearch, btnLastN, btnCancel, btnExit;
     private final String TITLE = "Search File";
     private static final int RECENT_LIMIT = 20;
     private static boolean showWarning = false;
@@ -52,6 +52,7 @@ public class SearchBigFile extends AppFrame {
 
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<String> cbFiles, cbSearches;
+    private JComboBox<Integer> cbLastN;
     private Queue<String> qMsgsToAppend;
     private final int APPEND_MSG_CHUNK = 100;
     private AppendMsgCallable msgCallable;
@@ -101,29 +102,36 @@ public class SearchBigFile extends AppFrame {
         cbFiles.setRenderer(cbFilesRenderer);
         cbFiles.setPrototypeDisplayValue("Recent Files");
         addCBFilesAL();
-        AppLabel lblRFiles = new AppLabel("Recent Files", cbFiles, 'R');
-        jcbMatchCase = new JCheckBox("match case",
+        AppLabel lblRFiles = new AppLabel("Recent", cbFiles, 'R');
+        lblRFiles.setToolTipText("Recent files list");
+        jcbMatchCase = new JCheckBox("case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
         jcbMatchCase.setMnemonic('m');
-        jcbWholeWord = new JCheckBox("whole word",
+        jcbMatchCase.setToolTipText("Match case");
+        jcbWholeWord = new JCheckBox("word",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.WHOLE_WORD)));
         jcbWholeWord.setMnemonic('w');
+        jcbWholeWord.setToolTipText("Whole word");
 
         txtSearch = new JTextField(configs.getConfig(DefaultConfigs.Config.SEARCH));
         AppLabel lblSearch = new AppLabel("Search", txtSearch, 'H');
         txtSearch.setColumns(TXT_COLS - 5);
         btnSearch = new AppButton("Search", 'S');
         btnSearch.addActionListener(evt -> searchFile());
-        btnLast500 = new AppButton("Last 500", 'L');
-        btnLast500.setToolTipText("Read last 500 lines and highlight");
-        btnLast500.addActionListener(evt -> readLast500Lines());
+        cbLastN = new JComboBox<>(getLastNOptions());
+        cbLastN.setSelectedItem(Integer.parseInt(configs.getConfig(DefaultConfigs.Config.LAST_N)));
+        AppLabel lblLastN = new AppLabel("Last N", cbLastN, 'N');
+        btnLastN = new AppButton("Read", 'R');
+        btnLastN.setToolTipText("Read last N lines and highlight.");
+        btnLastN.addActionListener(evt -> readLastNLines());
         cbSearches = new JComboBox<>(getSearches());
         cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
         cbSearches.setRenderer(cbSearchRenderer);
         cbSearches.setPrototypeDisplayValue("Pattern");
         addCBSearchAL();
-        AppLabel lblRSearches = new AppLabel("Recent Searches", cbSearches, 'e');
+        AppLabel lblRSearches = new AppLabel("Recent", cbSearches, 'e');
+        lblRSearches.setToolTipText("Recent searches list");
         btnCancel = new AppButton("Cancel", 'C');
         btnCancel.addActionListener(evt -> cancelSearch());
 
@@ -144,8 +152,10 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(txtSearch);
         searchPanel.add(lblRSearches);
         searchPanel.add(cbSearches);
-        searchPanel.add(btnLast500);
         searchPanel.add(btnSearch);
+        searchPanel.add(lblLastN);
+        searchPanel.add(cbLastN);
+        searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
         searchPanel.setBorder(titledSP);
@@ -176,6 +186,10 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
+    private Integer[] getLastNOptions() {
+        return new Integer[] {500, 1000, 2000, 3000, 4000, 5000};
+    }
+
     private void resetForNewSearch() {
         resetShowWarning();
         emptyResults();
@@ -186,12 +200,13 @@ public class SearchBigFile extends AppFrame {
         startTime = System.currentTimeMillis();
     }
 
-    private void readLast500Lines() {
+    private void readLastNLines() {
         logger.log("Loading last 500 lines from: " + txtFilePath.getText());
         resetForNewSearch();
         int readLines = 0;
         StringBuilder sb = new StringBuilder();
         File file = new File(txtFilePath.getText());
+        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
             long fileLength = file.length() - 1;
             // Set the pointer at the last of the file
@@ -205,7 +220,7 @@ public class SearchBigFile extends AppFrame {
                 // break when end of the line
                 if (c == '\n') {
                     readLines++;
-                    if (readLines == 500) {
+                    if (readLines == LIMIT) {
                         break;
                     }
                 }
@@ -342,7 +357,7 @@ public class SearchBigFile extends AppFrame {
         txtFilePath.setEnabled(enable);
         txtSearch.setEnabled(enable);
         btnSearch.setEnabled(enable);
-        btnLast500.setEnabled(enable);
+        btnLastN.setEnabled(enable);
         cbFiles.setEnabled(enable);
         cbSearches.setEnabled(enable);
         jcbMatchCase.setEnabled(enable);
@@ -497,6 +512,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getWholeWord() {
         return jcbWholeWord.isSelected() + "";
+    }
+
+    public String getLastN() {
+        return cbLastN.getSelectedItem().toString();
     }
 
     public String getRecentSearches() {
