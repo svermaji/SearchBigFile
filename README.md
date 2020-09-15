@@ -1,11 +1,19 @@
 # SearchBigFile
 Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 
+## Test Results IMPROVED!!<br>
+ - File size `[1GB]`, type `[Text]`, lines processed `[13147035]` and pattern find `[794]` times, time taken `[119sec]`<br>
+ - Attaching result with the name as `Test 1GB New`<br>
+
 ## Test Results<br>
  - File size `[1GB]`, type `[Text]`, lines processed `[13147035]` and pattern find `[794]` times, time taken `[167sec]`<br>
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 14-Sep-2020<br>
+* Threading used to draw search results in chunks.
+* This redraw/repaint of JEditorPane improved alot, 1GB of data searched now in 119 seconds !!  
+
 #### On 14-Sep-2020<br>
 * Now combo boxes will be shown small initially but if list items are wider, then list will become wider to show it. 
 
@@ -44,3 +52,6 @@ Added on 13-Sep-2020. Attaching screen shot of application. Test Result `Test 1G
 
 Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-wider-cb-list.png) 
+
+Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB New` :<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb-new.png) 

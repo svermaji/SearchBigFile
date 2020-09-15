@@ -15,13 +15,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Scanner;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.Timer;
+import java.util.concurrent.*;
 
 public class SearchBigFile extends AppFrame {
 
@@ -57,7 +53,10 @@ public class SearchBigFile extends AppFrame {
 
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<String> cbFiles, cbSearches;
-    private static final ExecutorService threadPool = Executors.newFixedThreadPool(3);
+    private Queue<String> qMsgsToAppend;
+    private final int APPEND_MSG_CHUNK = 100;
+    private AppendMsgCallable msgCallable;
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(5);
 
     public static void main(String[] args) {
         new SearchBigFile().initComponents();
@@ -70,6 +69,8 @@ public class SearchBigFile extends AppFrame {
         logger = MyLogger.createLogger("search-big-file.log");
 
         configs = new DefaultConfigs(logger);
+        qMsgsToAppend = new ConcurrentLinkedQueue<>();
+        msgCallable = new AppendMsgCallable(this);
         recentFilesStr = configs.getConfig(DefaultConfigs.Config.RECENT_FILES);
         recentSearchesStr = configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES);
 
@@ -156,7 +157,7 @@ public class SearchBigFile extends AppFrame {
         inputPanel.add(exitPanel);
 
         JScrollPane jspResults = new JScrollPane(tpResults);
-        jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jspResults.setBorder(emptyBorder);
 
         parentContainer.add(inputPanel, BorderLayout.NORTH);
@@ -210,6 +211,7 @@ public class SearchBigFile extends AppFrame {
 
     private void searchFile() {
         resetShowWarning();
+        qMsgsToAppend.clear();
         if (isValidate()) {
             disableControls();
             emptyResults();
@@ -352,7 +354,11 @@ public class SearchBigFile extends AppFrame {
                 sb.append("<b>").append(lineNum).append("  </b>").append(stats.getLine()).append(System.lineSeparator());
             }
             stats.setLineNum(lineNum + 1);
-            appendResult(sb.toString());
+            //appendResult(sb.toString());
+            qMsgsToAppend.add(sb.toString());
+            if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                threadPool.submit(msgCallable);
+            }
 
             if (lineNum % LINES_TO_INFORM == 0) {
                 logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
@@ -482,6 +488,31 @@ public class SearchBigFile extends AppFrame {
 
     private String getWarning() {
         return " - Either search taking long or too many results !!  Cancel and try to narrow";
+    }
+
+    class AppendMsgCallable implements Callable<Boolean> {
+
+        SearchBigFile sbf;
+        public AppendMsgCallable(SearchBigFile sbf) {
+            this.sbf = sbf;
+        }
+
+        @Override
+        public Boolean call() {
+            StringBuilder sb = new StringBuilder();
+
+            while (!sbf.qMsgsToAppend.isEmpty()) {
+                String m = sbf.qMsgsToAppend.poll();
+                if (Utils.hasValue(m)) {
+                    sb.append(m);
+                }
+            }
+            if (sb.length() > 0) {
+                sbf.appendResult(sb.toString());
+            }
+
+            return true;
+        }
     }
 
     class SearchFileCallable implements Callable<Boolean> {
