@@ -4,6 +4,7 @@ public class SearchStats {
 
     long lineNum = 1, occurrences = 0;
     String line;
+    boolean match;
 
     public SearchStats(long lineNum, long occurrences, String line) {
         this.lineNum = lineNum;
@@ -35,11 +36,20 @@ public class SearchStats {
         return line;
     }
 
+    public boolean isMatch() {
+        return match;
+    }
+
+    public void setMatch(boolean match) {
+        this.match = match;
+    }
+
     @Override
     public String toString() {
         return "SearchStats{" +
                 "lineNum=" + lineNum +
                 ", occurrences=" + occurrences +
+                ", match=" + match +
                 '}';
     }
 }

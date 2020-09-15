@@ -344,17 +344,12 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Integer doInBackground() {
-            String line = stats.getLine();
-            long occurrences = stats.getOccurrences();
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
-            if ((!isMatchCase() && line.toLowerCase().contains(searchStr.toLowerCase()))
-                    || (isWholeWord() && line.matches(searchStr))
-                    || (isMatchCase() && line.contains(searchStr))
-            ) {
-                stats.setOccurrences(occurrences + 1);
-                sb.append("<b>").append(lineNum).append("  </b>").append(line).append(System.lineSeparator());
+            if (stats.isMatch()) {
+                stats.setOccurrences(stats.getOccurrences() + 1);
+                sb.append("<b>").append(lineNum).append("  </b>").append(stats.getLine()).append(System.lineSeparator());
             }
             stats.setLineNum(lineNum + 1);
             appendResult(sb.toString());
@@ -500,13 +495,13 @@ public class SearchBigFile extends AppFrame {
         @Override
         public Boolean call() {
             final int BUFFER_SIZE = 5 * 1024;
-            String searchStr = sbf.txtSearch.getText();
+            String searchPattern = sbf.txtSearch.getText();
 
             if (!sbf.isMatchCase()) {
-                searchStr = searchStr.toLowerCase();
+                searchPattern = searchPattern.toLowerCase();
             }
             if (sbf.isWholeWord()) {
-                searchStr = ".*\\b" + searchStr + "\\b.*";
+                searchPattern = ".*\\b" + searchPattern + "\\b.*";
             }
 
             String path = sbf.txtFilePath.getText();
@@ -525,8 +520,14 @@ public class SearchBigFile extends AppFrame {
                 /*String line;
                 while ((line = br.readLine()) != null) {*/
                 while (sc.hasNextLine()) {
-                    stats.setLine(sc.nextLine());
-                    searchData.doInBackground();
+                    String line = sc.nextLine();
+                    stats.setLine(line);
+                    stats.setMatch((!isMatchCase() && line.toLowerCase().contains(searchPattern))
+                            || (isMatchCase() && line.contains(searchPattern))
+                            || (isWholeWord() && line.matches(searchPattern))
+                    );
+
+                        searchData.doInBackground();
                     if (status == Status.CANCELLED) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
                         break;
