@@ -5,7 +5,6 @@ import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.ViewFactory;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
@@ -92,12 +91,7 @@ public class SearchBigFile extends AppFrame {
         tpResults.setContentType("text/html");
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
-        kit = new HTMLEditorKit() {
-            @Override
-            public ViewFactory getViewFactory() {
-                return new WrapColumnFactory();
-            }
-        };
+        kit = new HTMLEditorKit();
         txtFilePath = new JTextField(configs.getConfig(DefaultConfigs.Config.FILEPATH));
         AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
         txtFilePath.setColumns(TXT_COLS);
@@ -355,8 +349,8 @@ public class SearchBigFile extends AppFrame {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
-            if ((isWholeWord() && line.matches(searchStr))
-                    || (!isMatchCase() && line.toLowerCase().contains(searchStr.toLowerCase()))
+            if ((!isMatchCase() && line.toLowerCase().contains(searchStr.toLowerCase()))
+                    || (isWholeWord() && line.matches(searchStr))
                     || (isMatchCase() && line.contains(searchStr))
             ) {
                 stats.setOccurrences(occurrences + 1);
@@ -528,13 +522,10 @@ public class SearchBigFile extends AppFrame {
                 SearchData searchData = new SearchData(stats);
                 sbf.setSearchStrings();
 
-                while (sc.hasNextLine()) {
-                    String line = sc.nextLine();
-
                 /*String line;
                 while ((line = br.readLine()) != null) {*/
-
-                    stats.setLine(line);
+                while (sc.hasNextLine()) {
+                    stats.setLine(sc.nextLine());
                     searchData.doInBackground();
                     if (status == Status.CANCELLED) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
