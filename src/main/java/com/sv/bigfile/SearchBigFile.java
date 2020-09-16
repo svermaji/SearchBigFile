@@ -12,10 +12,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class SearchBigFile extends AppFrame {
@@ -53,10 +50,10 @@ public class SearchBigFile extends AppFrame {
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<String> cbFiles, cbSearches;
     private JComboBox<Integer> cbLastN;
-    private Queue<String> qMsgsToAppend;
+    private static Queue<String> qMsgsToAppend;
     private final int APPEND_MSG_CHUNK = 100;
-    private AppendMsgCallable msgCallable;
-    private static final ExecutorService threadPool = Executors.newFixedThreadPool(5);
+    private static AppendMsgCallable msgCallable;
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
     public static void main(String[] args) {
         new SearchBigFile().initComponents();
@@ -69,7 +66,7 @@ public class SearchBigFile extends AppFrame {
         logger = MyLogger.createLogger("search-big-file.log");
 
         configs = new DefaultConfigs(logger);
-        qMsgsToAppend = new ConcurrentLinkedQueue<>();
+        qMsgsToAppend = new LinkedBlockingQueue<>();
         msgCallable = new AppendMsgCallable(this);
         recentFilesStr = configs.getConfig(DefaultConfigs.Config.RECENT_FILES);
         recentSearchesStr = configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES);
@@ -187,7 +184,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private Integer[] getLastNOptions() {
-        return new Integer[] {500, 1000, 2000, 3000, 4000, 5000};
+        return new Integer[]{500, 1000, 2000, 3000, 4000, 5000};
     }
 
     private void resetForNewSearch() {
@@ -232,7 +229,7 @@ public class SearchBigFile extends AppFrame {
         } catch (IOException e) {
             logger.error(e);
         }
-        int len = sb.toString().split(searchStr).length;
+        int len = lowerCaseSplit(sb.toString(), searchStr);
         updateTitle(
                 getSearchResult(
                         txtFilePath.getText(),
@@ -241,6 +238,10 @@ public class SearchBigFile extends AppFrame {
                         len > 0 ? len - 1 : 0)
         );
         enableControls();
+    }
+
+    private int lowerCaseSplit(String line, String pattern) {
+        return line.toLowerCase().split(pattern.toLowerCase()).length;
     }
 
     private void removeCBSearchAL() {
@@ -403,7 +404,8 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    class SearchData extends SwingWorker<Integer, String> {
+    // To avoid async order of lines this cannot be worker
+    class SearchData {
 
         final int LINES_TO_INFORM = 500000;
         private final SearchStats stats;
@@ -412,21 +414,19 @@ public class SearchBigFile extends AppFrame {
             this.stats = stats;
         }
 
-        @Override
-        public Integer doInBackground() {
+        public Integer process() {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
             if (stats.isMatch()) {
-                stats.setOccurrences(stats.getOccurrences() + 1);
+                int occr = lowerCaseSplit(stats.getLine(), stats.getSearchPattern());
+                stats.setOccurrences(stats.getOccurrences() + occr - 1);
                 sb.append("<b>").append(lineNum).append("  </b>").append(stats.getLine()).append(System.lineSeparator());
+                synchronized (SearchBigFile.class) {
+                    qMsgsToAppend.add(sb.toString());
+                }
             }
             stats.setLineNum(lineNum + 1);
-            //appendResult(sb.toString());
-            qMsgsToAppend.add(sb.toString());
-            if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
-                threadPool.submit(msgCallable);
-            }
 
             if (lineNum % LINES_TO_INFORM == 0) {
                 logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
@@ -441,8 +441,16 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void appendResultNoFormat(String data) {
-        data = data.replaceAll("\r?\n", HTML_LINE_END);
-        new AppendData(data.replaceAll(" ", "&nbsp;")).doInBackground();
+        synchronized (SearchBigFile.class) {
+            //data = Utils.escape (data);
+            data = data.replaceAll("\r?\n", HTML_LINE_END);
+            // Needs to be sync else line numbers and data will be jumbled
+            try {
+                kit.insertHTML(htmlDoc, htmlDoc.getLength(), data.replaceAll(" ", "&nbsp;"), 0, 0, null);
+            } catch (BadLocationException | IOException e) {
+                logger.error("Unable to append data: " + data);
+            }
+        }
     }
 
     public void appendResult(String data) {
@@ -549,11 +557,7 @@ public class SearchBigFile extends AppFrame {
                         msg += sbf.getWarning();
                     }
                     sbf.updateTitle(msg);
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        sbf.logger.error(e.getMessage());
-                    }
+                    Utils.sleep(1000, sbf.logger);
                 }
             } while (status == Status.READING);
             return true;
@@ -576,8 +580,11 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             StringBuilder sb = new StringBuilder();
 
-            while (!sbf.qMsgsToAppend.isEmpty()) {
-                String m = sbf.qMsgsToAppend.poll();
+            while (!qMsgsToAppend.isEmpty()) {
+                String m;
+                synchronized (SearchBigFile.class) {
+                    m = qMsgsToAppend.poll();
+                }
                 if (Utils.hasValue(m)) {
                     sb.append(m);
                 }
@@ -619,7 +626,7 @@ public class SearchBigFile extends AppFrame {
                  BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
             ) {*/
                 long lineNum = 1, occurrences = 0;
-                SearchStats stats = new SearchStats(lineNum, occurrences, null);
+                SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
                 SearchData searchData = new SearchData(stats);
 
                 /*String line;
@@ -632,11 +639,21 @@ public class SearchBigFile extends AppFrame {
                             || (isWholeWord() && line.matches(searchPattern))
                     );
 
-                    searchData.doInBackground();
+                    //searchData.doInBackground();
+                    searchData.process();
+                    if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                        threadPool.submit(msgCallable);
+                    }
                     if (status == Status.CANCELLED) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
                         break;
                     }
+                }
+
+                while (qMsgsToAppend.size() > 0) {
+                    Utils.sleep(200, sbf.logger);
+                    threadPool.submit(msgCallable);
+                    Utils.sleep(200, sbf.logger);
                 }
 
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);

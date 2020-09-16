@@ -5,11 +5,13 @@ public class SearchStats {
     long lineNum = 1, occurrences = 0;
     String line;
     boolean match;
+    private String searchPattern;
 
-    public SearchStats(long lineNum, long occurrences, String line) {
+    public SearchStats(long lineNum, long occurrences, String line, String searchPattern) {
         this.lineNum = lineNum;
         this.occurrences = occurrences;
         this.line = line;
+        this.searchPattern = searchPattern;
     }
 
     public void setLine(String line) {
@@ -44,12 +46,17 @@ public class SearchStats {
         this.match = match;
     }
 
+    public String getSearchPattern() {
+        return searchPattern;
+    }
+
     @Override
     public String toString() {
         return "SearchStats{" +
                 "lineNum=" + lineNum +
                 ", occurrences=" + occurrences +
                 ", match=" + match +
+                ", searchPattern='" + searchPattern + '\'' +
                 '}';
     }
 }

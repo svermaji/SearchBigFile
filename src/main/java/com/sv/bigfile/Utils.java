@@ -22,6 +22,39 @@ public class Utils {
     // Set of values that imply a false value.
     private static final String[] falseValues = {"N", "NO", "FALSE", "F"};
 
+    public static String escape(String data) {
+        for (HtmlEsc h : HtmlEsc.values()) {
+            if (data.contains(h.getCh())) {
+                data = data.replaceAll(h.getCh(), h.getEscStr());
+            }
+        }
+        return data;
+    }
+
+    enum HtmlEsc {
+        LT ("<", "&lt;"),
+        GT (">", "&gt;"),
+        SQ ("'", "&#39;"),
+        DQ ("\"", "&quot;"),
+        AMP ("&", "&amp;");
+
+        String ch, escStr;
+
+        public String getCh() {
+            return ch;
+        }
+
+        public String getEscStr() {
+            return escStr;
+        }
+
+        HtmlEsc(String ch, String escStr) {
+            this.ch = ch;
+            this.escStr = escStr;
+        }
+    }
+
+
     /**
      * return true if param has non-null value
      *
@@ -160,6 +193,14 @@ public class Utils {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void sleep (long millis, MyLogger logger) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            logger.warn(e.getMessage());
         }
     }
 
