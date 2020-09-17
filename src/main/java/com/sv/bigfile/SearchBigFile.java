@@ -14,6 +14,7 @@ import java.io.*;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 public class SearchBigFile extends AppFrame {
 
@@ -35,6 +36,7 @@ public class SearchBigFile extends AppFrame {
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
     private final String HTML_LINE_END = "<br>";
+    private final String NEW_LINE_REGEX = "\r?\n";
 
     private JButton btnSearch, btnLastN, btnCancel, btnExit;
     private final String TITLE = "Search File";
@@ -184,7 +186,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private Integer[] getLastNOptions() {
-        return new Integer[]{500, 1000, 2000, 3000, 4000, 5000};
+        return new Integer[]{200, 500, 1000, 2000, 3000, 4000, 5000};
     }
 
     private void resetForNewSearch() {
@@ -198,16 +200,18 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void readLastNLines() {
-        logger.log("Loading last 500 lines from: " + txtFilePath.getText());
+        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+        logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
         resetForNewSearch();
         int readLines = 0;
         StringBuilder sb = new StringBuilder();
         File file = new File(txtFilePath.getText());
-        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
             long fileLength = file.length() - 1;
             // Set the pointer at the last of the file
             randomAccessFile.seek(fileLength);
+            // LIFO
+            Stack<String> reversedLines = new Stack<>();
 
             for (long pointer = fileLength; pointer >= 0; pointer--) {
                 randomAccessFile.seek(pointer);
@@ -216,16 +220,27 @@ public class SearchBigFile extends AppFrame {
                 c = (char) randomAccessFile.read();
                 // break when end of the line
                 if (c == '\n') {
+
+                    sb.reverse();
+                    reversedLines.push(sb.toString());
+                    sb = new StringBuilder();
                     readLines++;
                     if (readLines == LIMIT) {
                         break;
                     }
+                } else {
+                    sb.append(c);
                 }
-                sb.append(c);
                 fileLength = fileLength - pointer;
             }
             sb.reverse();
-            appendResult(sb.toString());
+            reversedLines.push(sb.toString());
+
+            // Transferring stack to Q and use common appender
+            IntStream.range(0, reversedLines.size()).
+                    forEach(i -> qMsgsToAppend.add(getLineNumStr(i + 1) + reversedLines.pop() + System.lineSeparator()));
+            threadPool.submit(msgCallable);
+
         } catch (IOException e) {
             logger.error(e);
         }
@@ -238,6 +253,10 @@ public class SearchBigFile extends AppFrame {
                         len > 0 ? len - 1 : 0)
         );
         enableControls();
+    }
+
+    private String getLineNumStr(long line) {
+        return "<b>" + line + "</b> ";
     }
 
     private int lowerCaseSplit(String line, String pattern) {
@@ -361,6 +380,7 @@ public class SearchBigFile extends AppFrame {
         btnLastN.setEnabled(enable);
         cbFiles.setEnabled(enable);
         cbSearches.setEnabled(enable);
+        cbLastN.setEnabled(enable);
         jcbMatchCase.setEnabled(enable);
         jcbWholeWord.setEnabled(enable);
     }
@@ -386,6 +406,8 @@ public class SearchBigFile extends AppFrame {
         searchStrReplace = REPLACER_PREFIX + searchStr + REPLACER_SUFFIX;
     }
 
+    // For now its obsolete
+    @Deprecated
     class AppendData extends SwingWorker<Integer, String> {
         String data;
 
@@ -395,11 +417,7 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Integer doInBackground() {
-            try {
-                kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
-            } catch (BadLocationException | IOException e) {
-                logger.error("Unable to append data: " + data);
-            }
+            appendResultNoFormat(data);
             return 1;
         }
     }
@@ -421,7 +439,7 @@ public class SearchBigFile extends AppFrame {
             if (stats.isMatch()) {
                 int occr = lowerCaseSplit(stats.getLine(), stats.getSearchPattern());
                 stats.setOccurrences(stats.getOccurrences() + occr - 1);
-                sb.append("<b>").append(lineNum).append("  </b>").append(stats.getLine()).append(System.lineSeparator());
+                sb.append(getLineNumStr(lineNum)).append(stats.getLine()).append(System.lineSeparator());
                 synchronized (SearchBigFile.class) {
                     qMsgsToAppend.add(sb.toString());
                 }
@@ -442,15 +460,22 @@ public class SearchBigFile extends AppFrame {
 
     public void appendResultNoFormat(String data) {
         synchronized (SearchBigFile.class) {
-            //data = Utils.escape (data);
-            data = data.replaceAll("\r?\n", HTML_LINE_END);
+            data = convertForHtml(data);
             // Needs to be sync else line numbers and data will be jumbled
             try {
-                kit.insertHTML(htmlDoc, htmlDoc.getLength(), data.replaceAll(" ", "&nbsp;"), 0, 0, null);
+                kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
+                // Go to end
+                tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
             } catch (BadLocationException | IOException e) {
                 logger.error("Unable to append data: " + data);
             }
         }
+    }
+
+    private String convertForHtml(String data) {
+        //data = Utils.escape (data); // not needed now
+        data = data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
+        return data.replaceAll(" ", "&nbsp;");
     }
 
     public void appendResult(String data) {
