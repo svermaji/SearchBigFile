@@ -134,7 +134,7 @@ public class SearchBigFile extends AppFrame {
         AppLabel lblLastN = new AppLabel("Last N", cbLastN, 'N');
         btnLastN = new AppButton("Read", 'R');
         btnLastN.setToolTipText("Read last N lines and highlight.");
-        btnLastN.addActionListener(evt -> readLastNLines());
+        btnLastN.addActionListener(evt -> threadPool.submit(new LastNRead(this)));
         cbSearches = new JComboBox<>(getSearches());
         cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
@@ -355,70 +355,6 @@ public class SearchBigFile extends AppFrame {
         readNFlag = false;
     }
 
-    private void readLastNLines() {
-        resetForNewSearch();
-        boolean hasError = false;
-        readNFlag = true;
-        threadPool.submit(new TimerCallable(this));
-        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
-        updateTitle("Reading last " + LIMIT + " lines");
-        logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
-        int readLines = 0;
-        StringBuilder sb = new StringBuilder();
-        File file = new File(txtFilePath.getText());
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-            long fileLength = file.length() - 1;
-            // Set the pointer at the last of the file
-            randomAccessFile.seek(fileLength);
-
-            for (long pointer = fileLength; pointer >= 0; pointer--) {
-                randomAccessFile.seek(pointer);
-                char c;
-                // read from the last, one char at the time
-                c = (char) randomAccessFile.read();
-                // break when end of the line
-                if (c == '\n') {
-
-                    if (Utils.hasValue(sb.toString())) {
-                        sb.reverse();
-                    }
-                    appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
-                    sb = new StringBuilder();
-                    readLines++;
-                    // Last line will be printed after loop
-                    if (readLines == LIMIT - 1) {
-                        break;
-                    }
-                } else {
-                    sb.append(c);
-                }
-                fileLength = fileLength - pointer;
-            }
-            if (Utils.hasValue(sb.toString())) {
-                sb.reverse();
-            }
-            appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
-            readLines++;
-        } catch (IOException e) {
-            updateTitle("Error in reading file");
-            hasError = true;
-            logger.error(e);
-        } finally {
-            enableControls();
-        }
-        status = Status.DONE;
-        int len = lowerCaseSplit(sb.toString(), searchStr);
-        if (!hasError) {
-            updateTitle(
-                    getSearchResult(
-                            txtFilePath.getText(),
-                            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
-                            readLines,
-                            len > 0 ? len - 1 : 0)
-            );
-        }
-    }
-
     private String getLineNumStr(long line) {
         return "<b>" + line + "</b> ";
     }
@@ -576,6 +512,89 @@ public class SearchBigFile extends AppFrame {
     private void setSearchStrings() {
         searchStr = txtSearch.getText();
         searchStrReplace = REPLACER_PREFIX + searchStr + REPLACER_SUFFIX;
+    }
+
+    class LastNRead implements Callable<Boolean> {
+
+        SearchBigFile sbf;
+
+        LastNRead(SearchBigFile sbf) {
+            this.sbf = sbf;
+        }
+
+        @Override
+        public Boolean call () {
+            resetForNewSearch();
+            boolean hasError = false;
+            readNFlag = true;
+            threadPool.submit(new TimerCallable(sbf));
+            final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+            updateTitle("Reading last " + LIMIT + " lines");
+            logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
+            int readLines = 0;
+            StringBuilder sb = new StringBuilder();
+            File file = new File(txtFilePath.getText());
+            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+                long fileLength = file.length() - 1;
+                // Set the pointer at the last of the file
+                randomAccessFile.seek(fileLength);
+
+                for (long pointer = fileLength; pointer >= 0; pointer--) {
+                    randomAccessFile.seek(pointer);
+                    char c;
+                    // read from the last, one char at the time
+                    c = (char) randomAccessFile.read();
+                    // break when end of the line
+                    if (c == '\n') {
+
+                        if (Utils.hasValue(sb.toString())) {
+                            sb.reverse();
+                        }
+                        //TODO: think to avoid repaint error - NOT HARMFUL though
+                        appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
+                        sb = new StringBuilder();
+                        readLines++;
+                        // Last line will be printed after loop
+                        if (readLines == LIMIT - 1) {
+                            break;
+                        }
+                        if (status == Status.CANCELLED) {
+                            appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
+                            break;
+                        }
+
+                    } else {
+                        sb.append(c);
+                    }
+                    fileLength = fileLength - pointer;
+                }
+                if (Utils.hasValue(sb.toString())) {
+                    sb.reverse();
+                }
+                appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
+                readLines++;
+            } catch (IOException e) {
+                updateTitle("Error in reading file");
+                hasError = true;
+                logger.error(e);
+            } finally {
+                enableControls();
+            }
+
+            int len = lowerCaseSplit(sb.toString(), searchStr);
+            if (!hasError) {
+                String result = getSearchResult(
+                        txtFilePath.getText(),
+                        TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
+                        readLines,
+                        len > 0 ? len - 1 : 0);
+                String statusStr = status == Status.CANCELLED ? "Read cancelled - " : "Read complete - ";
+                updateTitle(statusStr + result);
+            }
+            status = Status.DONE;
+
+            return true;
+        }
     }
 
     // For now its obsolete
