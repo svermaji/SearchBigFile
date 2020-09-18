@@ -4,6 +4,10 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
 import javax.swing.text.StyleConstants;
@@ -11,8 +15,7 @@ import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -20,6 +23,7 @@ import java.util.Date;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.concurrent.*;
+import java.util.regex.PatternSyntaxException;
 
 public class SearchBigFile extends AppFrame {
 
@@ -40,10 +44,9 @@ public class SearchBigFile extends AppFrame {
     private String recentFilesStr, recentSearchesStr;
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
-    private final String HTML_LINE_END = "<br>";
-    private final String NEW_LINE_REGEX = "\r?\n";
 
-    private JButton btnSearch, btnListRF, btnListRS, btnLastN, btnCancel, btnExit;
+    private JButton btnSearch;
+    private JButton btnLastN;
     private final String TITLE = "Search File";
     private static final int RECENT_LIMIT = 20;
     private static boolean showWarning = false;
@@ -58,10 +61,11 @@ public class SearchBigFile extends AppFrame {
     private JComboBox<String> cbFiles, cbSearches;
     private JComboBox<Integer> cbLastN;
     private static Queue<String> qMsgsToAppend;
-    private final int APPEND_MSG_CHUNK = 100;
     private static boolean readNFlag = false;
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
+
+    private static final Border emptyBorder = new EmptyBorder(new Insets(5, 5, 5, 5));
 
     public static void main(String[] args) {
         new SearchBigFile().initComponents();
@@ -89,8 +93,6 @@ public class SearchBigFile extends AppFrame {
 
         setTitle(TITLE);
 
-        Border emptyBorder = new EmptyBorder(new Insets(5, 5, 5, 5));
-
         final int TXT_COLS = 15;
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
@@ -110,7 +112,7 @@ public class SearchBigFile extends AppFrame {
         AppLabel lblRFiles = new AppLabel("Recent", cbFiles, 'R');
         lblRFiles.setToolTipText("Recent used files list");
 
-        btnListRF = new AppButton("", 'T', "Search recently used file list.  Shortcut: Alt+T", "./search-icon.png");
+        JButton btnListRF = new AppButton("", 'T', "Search recently used file list.  Shortcut: Alt+T", "./search-icon.png");
         btnListRF.addActionListener(e -> showListRF());
 
         jcbMatchCase = new JCheckBox("case",
@@ -140,12 +142,12 @@ public class SearchBigFile extends AppFrame {
         cbSearches.setPrototypeDisplayValue("Pattern");
         addCBSearchAL();
         AppLabel lblRSearches = new AppLabel("Recent", cbSearches, 'e', "Recently used searche-patterns list");
-        btnListRS = new AppButton("", 'I', "Search recently used search-patterns list.  Shortcut: Alt+I", "./search-icon.png");
+        JButton btnListRS = new AppButton("", 'I', "Search recently used search-patterns list.  Shortcut: Alt+I", "./search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
-        btnCancel = new AppButton("", 'C', "Cancel Search. Shortcut: Alt+C", "./cancel-icon.png");
+        JButton btnCancel = new AppButton("", 'C', "Cancel Search. Shortcut: Alt+C", "./cancel-icon.png");
         btnCancel.addActionListener(evt -> cancelSearch());
 
-        btnExit = new AppExitButton();
+        JButton btnExit = new AppExitButton();
 
         filePanel.setLayout(new FlowLayout());
         filePanel.add(lblFilePath);
@@ -199,15 +201,142 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showListRF() {
-
+        showRecentList(cbFiles, txtFilePath, "Recently used files");
     }
 
     private void showListRS() {
-
+        showRecentList(cbSearches, txtSearch, "Recently used search-pattern");
     }
 
-    private void showRecentList(Component src, Component destination) {
+    private void showRecentList(JComboBox<String> src, JTextField destination, String colName) {
+        DefaultTableModel model = new DefaultTableModel() {
 
+            @Override
+            public int getColumnCount() {
+                return 1;
+            }
+
+            @Override
+            public String getColumnName(int index) {
+                return colName;
+            }
+
+        };
+
+        JFrame frame = new JFrame();
+
+        JTextField txtFilter = new JTextField();
+        txtFilter.setColumns(30);
+        JTable table = new JTable(model);
+        deleteAndCreateRows(src, table, model);
+
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
+
+        table.getColumnModel().getColumn(0).setMinWidth(25);
+
+        addFilter(sorter, txtFilter);
+
+        // For making contents non editable
+        table.setDefaultEditor(Object.class, null);
+
+        table.setAutoscrolls(true);
+        table.setPreferredScrollableViewportSize(table.getPreferredSize());
+
+        JPanel panel = new JPanel(new BorderLayout());
+
+        table.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent mouseEvent) {
+                JTable table = (JTable) mouseEvent.getSource();
+                Point point = mouseEvent.getPoint();
+                int row = table.rowAtPoint(point);
+                if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
+                    destination.setText(table.getValueAt(row, 0).toString());
+                    frame.setVisible(false);
+                }
+            }
+        });
+
+        InputMap im = table.getInputMap();
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "Action.RunCmdCell");
+        ActionMap am = table.getActionMap();
+        am.put("Action.RunCmdCell", new CopyCommandAction(table, destination, frame));
+
+        txtFilter.getDocument().addDocumentListener(
+                new DocumentListener() {
+                    public void changedUpdate(DocumentEvent e) {
+                        addFilter(sorter, txtFilter);
+                    }
+
+                    public void insertUpdate(DocumentEvent e) {
+                        addFilter(sorter, txtFilter);
+                    }
+
+                    public void removeUpdate(DocumentEvent e) {
+                        addFilter(sorter, txtFilter);
+                    }
+                });
+
+        JPanel topP = new JPanel();
+        topP.add(new AppLabel("Filter", txtFilter, 'R'));
+        topP.add(txtFilter);
+        table.setBorder(emptyBorder);
+        panel.add(topP, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.setBorder(emptyBorder);
+
+        Container pc = frame.getContentPane();
+        pc.setLayout(new BorderLayout());
+        pc.add(panel);
+        frame.setTitle("Double-click OR select & Enter");
+        frame.setAlwaysOnTop(true);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+        frame.setBackground(Color.CYAN);
+        frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+    }
+
+    static class CopyCommandAction extends AbstractAction {
+
+        private final JTable table;
+        private final JTextField destination;
+        private final JFrame frame;
+
+        public CopyCommandAction(JTable table, JTextField dest, JFrame frame) {
+            this.table = table;
+            this.destination = dest;
+            this.frame = frame;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            destination.setText((table.getValueAt(table.getSelectedRow(), 0).toString()));
+            frame.setVisible(false);
+        }
+    }
+
+
+    private void addFilter(TableRowSorter<DefaultTableModel> sorter, JTextField txtFilter) {
+        RowFilter<DefaultTableModel, Object> rf;
+        try {
+            rf = RowFilter.regexFilter(txtFilter.getText(), 0);
+        } catch (PatternSyntaxException e) {
+            return;
+        }
+        sorter.setRowFilter(rf);
+    }
+
+    private void deleteAndCreateRows(JComboBox<String> src, JTable table, DefaultTableModel model) {
+        int rows = table.getRowCount();
+        for (int i = 0; i < rows; i++) {
+            model.removeRow(i);
+        }
+
+        int items = src.getItemCount();
+        for (int i = 0; i < items; i++) {
+            model.addRow(new String[]{src.getItemAt(i)});
+        }
     }
 
     private Integer[] getLastNOptions() {
@@ -303,7 +432,15 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void addCBSearchAL() {
-        cbSearches.addActionListener(e -> txtSearch.setText(cbSearches.getSelectedItem().toString()));
+        cbSearches.addActionListener(e -> setSearchPattern(cbSearches.getSelectedItem().toString()));
+    }
+
+    private void setSearchPattern(String s) {
+        txtSearch.setText(s);
+    }
+
+    private void setFileToSearch(String s) {
+        txtFilePath.setText(s);
     }
 
     private void removeCBFilesAL() {
@@ -311,7 +448,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void addCBFilesAL() {
-        cbFiles.addActionListener(e -> txtFilePath.setText(cbFiles.getSelectedItem().toString()));
+        cbFiles.addActionListener(e -> setFileToSearch(cbFiles.getSelectedItem().toString()));
     }
 
     private String[] getFiles() {
@@ -543,6 +680,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String convertForHtml(String data) {
+        String NEW_LINE_REGEX = "\r?\n";
+        String HTML_LINE_END = "<br>";
         return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
     }
 
@@ -734,6 +873,7 @@ public class SearchBigFile extends AppFrame {
 
                     //searchData.doInBackground();
                     searchData.process();
+                    int APPEND_MSG_CHUNK = 100;
                     if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                         threadPool.submit(msgCallable);
                     }
