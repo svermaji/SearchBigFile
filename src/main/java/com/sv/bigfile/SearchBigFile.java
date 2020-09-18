@@ -43,7 +43,7 @@ public class SearchBigFile extends AppFrame {
     private final String HTML_LINE_END = "<br>";
     private final String NEW_LINE_REGEX = "\r?\n";
 
-    private JButton btnSearch, btnLastN, btnCancel, btnExit;
+    private JButton btnSearch, btnListRF, btnListRS, btnLastN, btnCancel, btnExit;
     private final String TITLE = "Search File";
     private static final int RECENT_LIMIT = 20;
     private static boolean showWarning = false;
@@ -108,7 +108,11 @@ public class SearchBigFile extends AppFrame {
         cbFiles.setPrototypeDisplayValue("Recent Files");
         addCBFilesAL();
         AppLabel lblRFiles = new AppLabel("Recent", cbFiles, 'R');
-        lblRFiles.setToolTipText("Recent files list");
+        lblRFiles.setToolTipText("Recent used files list");
+
+        btnListRF = new AppButton("", 'T', "Search recently used file list.  Shortcut: Alt+T", "./search-icon.png");
+        btnListRF.addActionListener(e -> showListRF());
+
         jcbMatchCase = new JCheckBox("case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
         jcbMatchCase.setMnemonic('m');
@@ -135,9 +139,10 @@ public class SearchBigFile extends AppFrame {
         cbSearches.setRenderer(cbSearchRenderer);
         cbSearches.setPrototypeDisplayValue("Pattern");
         addCBSearchAL();
-        AppLabel lblRSearches = new AppLabel("Recent", cbSearches, 'e');
-        lblRSearches.setToolTipText("Recent searches list");
-        btnCancel = new AppButton("Cancel", 'C');
+        AppLabel lblRSearches = new AppLabel("Recent", cbSearches, 'e', "Recently used searche-patterns list");
+        btnListRS = new AppButton("", 'I', "Search recently used search-patterns list.  Shortcut: Alt+I", "./search-icon.png");
+        btnListRS.addActionListener(e -> showListRS());
+        btnCancel = new AppButton("", 'C', "Cancel Search. Shortcut: Alt+C", "./cancel-icon.png");
         btnCancel.addActionListener(evt -> cancelSearch());
 
         btnExit = new AppExitButton();
@@ -146,6 +151,7 @@ public class SearchBigFile extends AppFrame {
         filePanel.add(lblFilePath);
         filePanel.add(txtFilePath);
         filePanel.add(lblRFiles);
+        filePanel.add(btnListRF);
         filePanel.add(cbFiles);
         filePanel.add(jcbMatchCase);
         filePanel.add(jcbWholeWord);
@@ -156,6 +162,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(lblSearch);
         searchPanel.add(txtSearch);
         searchPanel.add(lblRSearches);
+        searchPanel.add(btnListRS);
         searchPanel.add(cbSearches);
         searchPanel.add(btnSearch);
         searchPanel.add(lblLastN);
@@ -189,6 +196,18 @@ public class SearchBigFile extends AppFrame {
         });
 
         setToCenter();
+    }
+
+    private void showListRF() {
+
+    }
+
+    private void showListRS() {
+
+    }
+
+    private void showRecentList(Component src, Component destination) {
+
     }
 
     private Integer[] getLastNOptions() {
@@ -234,7 +253,7 @@ public class SearchBigFile extends AppFrame {
                     if (Utils.hasValue(sb.toString())) {
                         sb.reverse();
                     }
-                    appendResult(getLineNumStr(readLines + 1) + sb.toString() + System.lineSeparator());
+                    appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
                     sb = new StringBuilder();
                     readLines++;
                     // Last line will be printed after loop
@@ -249,7 +268,7 @@ public class SearchBigFile extends AppFrame {
             if (Utils.hasValue(sb.toString())) {
                 sb.reverse();
             }
-            appendResult(getLineNumStr(readLines + 1) + sb.toString() + System.lineSeparator());
+            appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
             readLines++;
         } catch (IOException e) {
             updateTitle("Error in reading file");
@@ -457,7 +476,7 @@ public class SearchBigFile extends AppFrame {
                 stats.setOccurrences(stats.getOccurrences() + occr - 1);
                 sb.append(getLineNumStr(lineNum)).append(stats.getLine()).append(System.lineSeparator());
                 synchronized (SearchBigFile.class) {
-                    qMsgsToAppend.add(sb.toString());
+                    qMsgsToAppend.add(convertStartingSpacesForHtml(sb.toString()));
                 }
             }
             stats.setLineNum(lineNum + 1);
@@ -508,10 +527,23 @@ public class SearchBigFile extends AppFrame {
         return body;
     }
 
+    private String convertStartingSpacesForHtml(String data) {
+        StringBuilder sb = new StringBuilder();
+        int idx = 0;
+        char[] arr = data.toCharArray();
+        for (char c : arr) {
+            if (Character.isWhitespace(c)) {
+                sb.append("&nbsp;");
+                idx++;
+            } else {
+                break;
+            }
+        }
+        return sb.toString() + data.substring(idx);
+    }
+
     private String convertForHtml(String data) {
-        //data = Utils.escape (data); // not needed now
-        data = data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
-        return data.replaceAll(Utils.SPACE, "&nbsp;");
+        return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
     }
 
     public void appendResult(String data) {
