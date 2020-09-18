@@ -5,6 +5,9 @@ import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Element;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
@@ -12,9 +15,11 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Queue;
+import java.util.Scanner;
 import java.util.concurrent.*;
-import java.util.stream.IntStream;
 
 public class SearchBigFile extends AppFrame {
 
@@ -54,6 +59,7 @@ public class SearchBigFile extends AppFrame {
     private JComboBox<Integer> cbLastN;
     private static Queue<String> qMsgsToAppend;
     private final int APPEND_MSG_CHUNK = 100;
+    private static boolean readNFlag = false;
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
@@ -190,19 +196,25 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void resetForNewSearch() {
+        disableControls();
         resetShowWarning();
         emptyResults();
         updateRecentSearchVals();
         qMsgsToAppend.clear();
         setSearchStrings();
-        disableControls();
         startTime = System.currentTimeMillis();
+        status = Status.READING;
+        readNFlag = false;
     }
 
     private void readLastNLines() {
-        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
-        logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
         resetForNewSearch();
+        boolean hasError = false;
+        readNFlag = true;
+        threadPool.submit(new TimerCallable(this));
+        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+        updateTitle("Reading last " + LIMIT + " lines");
+        logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
         int readLines = 0;
         StringBuilder sb = new StringBuilder();
         File file = new File(txtFilePath.getText());
@@ -210,8 +222,6 @@ public class SearchBigFile extends AppFrame {
             long fileLength = file.length() - 1;
             // Set the pointer at the last of the file
             randomAccessFile.seek(fileLength);
-            // LIFO
-            Stack<String> reversedLines = new Stack<>();
 
             for (long pointer = fileLength; pointer >= 0; pointer--) {
                 randomAccessFile.seek(pointer);
@@ -221,11 +231,14 @@ public class SearchBigFile extends AppFrame {
                 // break when end of the line
                 if (c == '\n') {
 
-                    sb.reverse();
-                    reversedLines.push(sb.toString());
+                    if (Utils.hasValue(sb.toString())) {
+                        sb.reverse();
+                    }
+                    appendResult(getLineNumStr(readLines + 1) + sb.toString() + System.lineSeparator());
                     sb = new StringBuilder();
                     readLines++;
-                    if (readLines == LIMIT) {
+                    // Last line will be printed after loop
+                    if (readLines == LIMIT - 1) {
                         break;
                     }
                 } else {
@@ -233,26 +246,29 @@ public class SearchBigFile extends AppFrame {
                 }
                 fileLength = fileLength - pointer;
             }
-            sb.reverse();
-            reversedLines.push(sb.toString());
-
-            // Transferring stack to Q and use common appender
-            IntStream.range(0, reversedLines.size()).
-                    forEach(i -> qMsgsToAppend.add(getLineNumStr(i + 1) + reversedLines.pop() + System.lineSeparator()));
-            threadPool.submit(msgCallable);
-
+            if (Utils.hasValue(sb.toString())) {
+                sb.reverse();
+            }
+            appendResult(getLineNumStr(readLines + 1) + sb.toString() + System.lineSeparator());
+            readLines++;
         } catch (IOException e) {
+            updateTitle("Error in reading file");
+            hasError = true;
             logger.error(e);
+        } finally {
+            enableControls();
         }
+        status = Status.DONE;
         int len = lowerCaseSplit(sb.toString(), searchStr);
-        updateTitle(
-                getSearchResult(
-                        txtFilePath.getText(),
-                        TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
-                        readLines,
-                        len > 0 ? len - 1 : 0)
-        );
-        enableControls();
+        if (!hasError) {
+            updateTitle(
+                    getSearchResult(
+                            txtFilePath.getText(),
+                            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
+                            readLines,
+                            len > 0 ? len - 1 : 0)
+            );
+        }
     }
 
     private String getLineNumStr(long line) {
@@ -463,7 +479,14 @@ public class SearchBigFile extends AppFrame {
             data = convertForHtml(data);
             // Needs to be sync else line numbers and data will be jumbled
             try {
-                kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
+                if (readNFlag) {
+                    Element body = getBodyElement();
+                    // This is working but without formatting
+//                    tpResults.getDocument().insertString(0, data, null);
+                    kit.insertHTML(htmlDoc, body.getStartOffset(), data, 0, 0, null);
+                } else {
+                    kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
+                }
                 // Go to end
                 tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
             } catch (BadLocationException | IOException e) {
@@ -472,10 +495,23 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    private Element getBodyElement() {
+        Element[] roots = htmlDoc.getRootElements(); // #0 is the HTML element, #1 the bidi-root
+        Element body = null;
+        for (int i = 0; i < roots[0].getElementCount(); i++) {
+            Element element = roots[0].getElement(i);
+            if (element.getAttributes().getAttribute(StyleConstants.NameAttribute) == HTML.Tag.BODY) {
+                body = element;
+                break;
+            }
+        }
+        return body;
+    }
+
     private String convertForHtml(String data) {
         //data = Utils.escape (data); // not needed now
         data = data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
-        return data.replaceAll(" ", "&nbsp;");
+        return data.replaceAll(Utils.SPACE, "&nbsp;");
     }
 
     public void appendResult(String data) {
@@ -610,11 +646,11 @@ public class SearchBigFile extends AppFrame {
                 synchronized (SearchBigFile.class) {
                     m = qMsgsToAppend.poll();
                 }
-                if (Utils.hasValue(m)) {
+                if (readNFlag || Utils.hasValue(m)) {
                     sb.append(m);
                 }
             }
-            if (sb.length() > 0) {
+            if (readNFlag || sb.length() > 0) {
                 sbf.appendResult(sb.toString());
             }
 

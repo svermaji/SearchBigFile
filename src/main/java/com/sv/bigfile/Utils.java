@@ -32,6 +32,7 @@ public class Utils {
     }
 
     enum HtmlEsc {
+        SP (" ", "&nbsp;"),
         LT ("<", "&lt;"),
         GT (">", "&gt;"),
         SQ ("'", "&#39;"),
