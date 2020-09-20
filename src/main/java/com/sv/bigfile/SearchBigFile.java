@@ -514,6 +514,10 @@ public class SearchBigFile extends AppFrame {
         searchStrReplace = REPLACER_PREFIX + searchStr + REPLACER_SUFFIX;
     }
 
+    private void startThread(Callable<Boolean> callable) {
+        threadPool.submit (callable);
+    }
+
     class LastNRead implements Callable<Boolean> {
 
         SearchBigFile sbf;
@@ -527,7 +531,7 @@ public class SearchBigFile extends AppFrame {
             resetForNewSearch();
             boolean hasError = false;
             readNFlag = true;
-            threadPool.submit(new TimerCallable(sbf));
+            startThread(new TimerCallable(sbf));
             final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
             updateTitle("Reading last " + LIMIT + " lines");
             logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
@@ -551,8 +555,14 @@ public class SearchBigFile extends AppFrame {
                         if (Utils.hasValue(sb.toString())) {
                             sb.reverse();
                         }
+
+                        String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
+                        // No error in repaint but lines jumbled
+//                        qMsgsToAppend.add(strToAppend);
+//                        startThread(msgCallable);
                         //TODO: think to avoid repaint error - NOT HARMFUL though only for large number of lines
-                        appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
+                        // Lines in order but repaint error
+                        appendResult(strToAppend);
                         int len = sb.toString().split(searchStr).length;
                         occr += len > 0 ? len - 1 : 0;
                         sb = new StringBuilder();
@@ -824,7 +834,7 @@ public class SearchBigFile extends AppFrame {
         return " - Either search taking long or too many results !!  Cancel and try to narrow";
     }
 
-    class AppendMsgCallable implements Callable<Boolean> {
+    static class AppendMsgCallable implements Callable<Boolean> {
 
         SearchBigFile sbf;
 
@@ -899,7 +909,7 @@ public class SearchBigFile extends AppFrame {
                     searchData.process();
                     int APPEND_MSG_CHUNK = 100;
                     if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
-                        threadPool.submit(msgCallable);
+                        startThread(msgCallable);
                     }
                     if (status == Status.CANCELLED) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
@@ -909,7 +919,7 @@ public class SearchBigFile extends AppFrame {
 
                 while (qMsgsToAppend.size() > 0) {
                     Utils.sleep(200, sbf.logger);
-                    threadPool.submit(msgCallable);
+                    startThread(msgCallable);
                     Utils.sleep(200, sbf.logger);
                 }
 
