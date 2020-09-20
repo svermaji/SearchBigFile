@@ -523,7 +523,7 @@ public class SearchBigFile extends AppFrame {
         }
 
         @Override
-        public Boolean call () {
+        public Boolean call() {
             resetForNewSearch();
             boolean hasError = false;
             readNFlag = true;
@@ -533,6 +533,7 @@ public class SearchBigFile extends AppFrame {
             logger.log("Loading last " + LIMIT + " lines from: " + txtFilePath.getText());
             int readLines = 0;
             StringBuilder sb = new StringBuilder();
+            int occr = 0;
             File file = new File(txtFilePath.getText());
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
                 long fileLength = file.length() - 1;
@@ -550,8 +551,10 @@ public class SearchBigFile extends AppFrame {
                         if (Utils.hasValue(sb.toString())) {
                             sb.reverse();
                         }
-                        //TODO: think to avoid repaint error - NOT HARMFUL though
+                        //TODO: think to avoid repaint error - NOT HARMFUL though only for large number of lines
                         appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
+                        int len = sb.toString().split(searchStr).length;
+                        occr += len > 0 ? len - 1 : 0;
                         sb = new StringBuilder();
                         readLines++;
                         // Last line will be printed after loop
@@ -582,12 +585,13 @@ public class SearchBigFile extends AppFrame {
             }
 
             int len = lowerCaseSplit(sb.toString(), searchStr);
+            occr += len > 0 ? len - 1 : 0;
             if (!hasError) {
                 String result = getSearchResult(
                         txtFilePath.getText(),
                         TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
                         readLines,
-                        len > 0 ? len - 1 : 0);
+                        occr);
                 String statusStr = status == Status.CANCELLED ? "Read cancelled - " : "Read complete - ";
                 updateTitle(statusStr + result);
             }
@@ -656,9 +660,10 @@ public class SearchBigFile extends AppFrame {
             try {
                 if (readNFlag) {
                     Element body = getBodyElement();
+                    int offs = Math.max(body.getStartOffset(), 0);
                     // This is working but without formatting
 //                    tpResults.getDocument().insertString(0, data, null);
-                    kit.insertHTML(htmlDoc, body.getStartOffset(), data, 0, 0, null);
+                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
                 } else {
                     kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
                 }

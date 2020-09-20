@@ -12,7 +12,9 @@ class JComboToolTipRenderer extends DefaultListCellRenderer {
         // JLabel via the setText method, otherwise it will use the
         // objects toString method to generate a representation
         super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-        setToolTipText(value.toString());
+        if (value != null && Utils.hasValue(value.toString())) {
+            setToolTipText(value.toString());
+        }
         return this;
     }
 }
