@@ -18,10 +18,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.PatternSyntaxException;
 
@@ -52,6 +49,7 @@ public class SearchBigFile extends AppFrame {
     private static boolean showWarning = false;
     private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 20;
     private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 200;
+    private static final int APPEND_MSG_CHUNK = 100;
     private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
 
     private static long startTime = System.currentTimeMillis();
@@ -60,6 +58,7 @@ public class SearchBigFile extends AppFrame {
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<String> cbFiles, cbSearches;
     private JComboBox<Integer> cbLastN;
+    // LIFO
     private static Queue<String> qMsgsToAppend;
     private static boolean readNFlag = false;
     private static AppendMsgCallable msgCallable;
@@ -515,7 +514,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void startThread(Callable<Boolean> callable) {
-        threadPool.submit (callable);
+        threadPool.submit(callable);
     }
 
     class LastNRead implements Callable<Boolean> {
@@ -543,6 +542,8 @@ public class SearchBigFile extends AppFrame {
                 long fileLength = file.length() - 1;
                 // Set the pointer at the last of the file
                 randomAccessFile.seek(fileLength);
+                // FIFO
+                Stack<String> stack = new Stack<>();
 
                 for (long pointer = fileLength; pointer >= 0; pointer--) {
                     randomAccessFile.seek(pointer);
@@ -557,12 +558,17 @@ public class SearchBigFile extends AppFrame {
                         }
 
                         String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
-                        // No error in repaint but lines jumbled
-//                        qMsgsToAppend.add(strToAppend);
-//                        startThread(msgCallable);
-                        //TODO: think to avoid repaint error - NOT HARMFUL though only for large number of lines
-                        // Lines in order but repaint error
-                        appendResult(strToAppend);
+                        synchronized (SearchBigFile.class) {
+                            // emptying stack to Q
+                            stack.push(strToAppend);
+                            if (stack.size() > APPEND_MSG_CHUNK) {
+                                while (!stack.empty()) {
+                                    qMsgsToAppend.add(stack.pop());
+                                }
+                                startThread(msgCallable);
+                            }
+                        }
+
                         int len = sb.toString().split(searchStr).length;
                         occr += len > 0 ? len - 1 : 0;
                         sb = new StringBuilder();
@@ -584,7 +590,14 @@ public class SearchBigFile extends AppFrame {
                 if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
                 }
-                appendResult(getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator());
+                String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
+                synchronized (SearchBigFile.class) {
+                    stack.push(strToAppend);
+                    while (!stack.empty()) {
+                        qMsgsToAppend.add(stack.pop());
+                    }
+                    startThread(msgCallable);
+                }
                 readLines++;
             } catch (IOException e) {
                 updateTitle("Error in reading file");
@@ -611,7 +624,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    // For now its obsolete
+    // For now its obsolete due to async line numbers
     @Deprecated
     class AppendData extends SwingWorker<Integer, String> {
         String data;
@@ -671,8 +684,6 @@ public class SearchBigFile extends AppFrame {
                 if (readNFlag) {
                     Element body = getBodyElement();
                     int offs = Math.max(body.getStartOffset(), 0);
-                    // This is working but without formatting
-//                    tpResults.getDocument().insertString(0, data, null);
                     kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
                 } else {
                     kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
@@ -907,7 +918,6 @@ public class SearchBigFile extends AppFrame {
 
                     //searchData.doInBackground();
                     searchData.process();
-                    int APPEND_MSG_CHUNK = 100;
                     if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                         startThread(msgCallable);
                     }
