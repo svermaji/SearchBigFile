@@ -18,6 +18,7 @@ public class DefaultConfigs {
         SEARCH("SearchString"),
         RECENT_SEARCHES("RecentSearches"),
         LAST_N("LastN"),
+        FONT_SIZE("FontSize"),
         MATCH_CASE("MatchCase"),
         WHOLE_WORD("WholeWord");
 

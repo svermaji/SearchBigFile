@@ -6,7 +6,9 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
  - Attaching result with the name as `Test 1GB New`<br>
 
 ## Description<br>
-* Program stores last searched file and search string. <br>
+* Program stores the last searched file and search string. <br>
+* Controls to increase/decrease font size. <br>
+* A warning indicator is shown and show the occurrences so war in case if there are too many matches. <br>
 * Match case and whole word search options are available. <br>
 * Search button action will result only matched strings lines with highlighted background. <br>
 * Line number will be displayed as bold at the start of line to match with an original file. <br>
@@ -39,3 +41,6 @@ Added on 15-Sep-2020. Attaching screen shot of application. Read last N (500 to 
 
 Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-recent-filter.png) 
+
+Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-warn-font.png) 

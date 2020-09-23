@@ -10,6 +10,11 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 23-Sep-2020<br>
+* Controls to increase/decrease font size.
+* A warning indicator is shown and show the occurrences so war in case if there are too many matches.
+* Image attached as `app-image-warn-font.png`  
+
 #### On 18-Sep-2020<br>
 * UI improvement.
 * Iconified few buttons and added functionality to use filter on recent items.
@@ -50,25 +55,3 @@ Only search matched result will be displayed. <br>
 Matched string will be highlighted with yellow background. <br>
 Line number will be displayed as bold at the start of line to match with an original file. <br>
 Summary will be displayed in title bar with file size, time taken and number of occurrences matched. <br>
-
-#### Images<br>
-Attaching screen shot of application:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image.png) 
-
-Added on 11-Sep-2020. Attaching screen shot of application:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-recent-controls.png) 
-
-Added on 13-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB` :<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb.png) 
-
-Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-wider-cb-list.png) 
-
-Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB New` :<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb-new.png) 
-
-Added on 15-Sep-2020. Attaching screen shot of application. Read last N (500 to 5000) lines with highlight of pattern:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-N.png) 
-
-Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-recent-filter.png) 

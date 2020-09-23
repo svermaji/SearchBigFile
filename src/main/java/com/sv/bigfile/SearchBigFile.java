@@ -17,6 +17,7 @@ import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -28,9 +29,20 @@ public class SearchBigFile extends AppFrame {
         NOT_STARTED, READING, DONE, CANCELLED
     }
 
+    enum FONT_OPR {
+        INCREASE, DECREASE, RESET
+    }
+
     private JTextField txtFilePath;
     private JTextField txtSearch;
     private JEditorPane tpResults;
+    private static final String PREFERRED_FONT = "Calibri";
+    private static final int PREFERRED_FONT_SIZE = 12;
+    private static final String DEFAULT_FONT = "Dialog.plain";
+    private static final int DEFAULT_FONT_SIZE = 12;
+    private static final int MIN_FONT_SIZE = 8;
+    private static final int MAX_FONT_SIZE = 24;
+    private long occrTillNow;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
 
@@ -42,6 +54,7 @@ public class SearchBigFile extends AppFrame {
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
 
+    private JButton btnWarning;
     private JButton btnSearch;
     private JButton btnLastN;
     private final String TITLE = "Search File";
@@ -67,7 +80,7 @@ public class SearchBigFile extends AppFrame {
     private static final Border emptyBorder = new EmptyBorder(new Insets(5, 5, 5, 5));
 
     public static void main(String[] args) {
-        new SearchBigFile().initComponents();
+        SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
     }
 
     /**
@@ -96,9 +109,15 @@ public class SearchBigFile extends AppFrame {
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
+        tpResults.setFont(getFontForEditor(tpResults.getFont(), configs.getConfig(DefaultConfigs.Config.FONT_SIZE)));
+        tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
         kit = new HTMLEditorKit();
+
+        JToolBar jtbActions = new JToolBar();
+        jtbActions.setFloatable(false);
+        jtbActions.setRollover(false);
         txtFilePath = new JTextField(configs.getConfig(DefaultConfigs.Config.FILEPATH));
         AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
         txtFilePath.setColumns(TXT_COLS);
@@ -108,11 +127,19 @@ public class SearchBigFile extends AppFrame {
         cbFiles.setRenderer(cbFilesRenderer);
         cbFiles.setPrototypeDisplayValue("Recent Files");
         addCBFilesAL();
-        AppLabel lblRFiles = new AppLabel("Recent", cbFiles, 'R');
-        lblRFiles.setToolTipText("Recent used files list");
-
-        JButton btnListRF = new AppButton("", 'T', "Search recently used file list.  Shortcut: Alt+T", "./search-icon.png");
+        AppLabel lblRFiles = new AppLabel("Recent", cbFiles, 'R', "Recent used files list");
+        JButton btnListRF = new AppButton("", 'T', "Search recently used file list.", "./search-icon.png");
         btnListRF.addActionListener(e -> showListRF());
+
+        JButton btnPlusFont = new AppButton("+", '=', "Increase font size for file contents.");
+        btnPlusFont.addActionListener(e -> increaseFontSize());
+        JButton btnMinusFont = new AppButton("—", '-', "Decrease font size for file contents.");//, "./font-minus-icon.png", true);
+        btnMinusFont.addActionListener(e -> decreaseFontSize());
+        JButton btnResetFont = new AppButton("✔", '0', "Reset font size for file contents.");//, "./font-reset-icon.png", true);
+        btnResetFont.addActionListener(e -> resetFontSize());
+        btnWarning = new JButton("!");
+        btnWarning.setToolTipText("Warning indicator.");
+        setColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnWarning});
 
         jcbMatchCase = new JCheckBox("case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
@@ -131,8 +158,7 @@ public class SearchBigFile extends AppFrame {
         cbLastN = new JComboBox<>(getLastNOptions());
         cbLastN.setSelectedItem(Integer.parseInt(configs.getConfig(DefaultConfigs.Config.LAST_N)));
         AppLabel lblLastN = new AppLabel("Last N", cbLastN, 'N');
-        btnLastN = new AppButton("Read", 'R');
-        btnLastN.setToolTipText("Read last N lines and highlight.");
+        btnLastN = new AppButton("Read", 'R', "Read last N lines and highlight.");
         btnLastN.addActionListener(evt -> threadPool.submit(new LastNRead(this)));
         cbSearches = new JComboBox<>(getSearches());
         cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
@@ -141,9 +167,9 @@ public class SearchBigFile extends AppFrame {
         cbSearches.setPrototypeDisplayValue("Pattern");
         addCBSearchAL();
         AppLabel lblRSearches = new AppLabel("Recent", cbSearches, 'e', "Recently used searche-patterns list");
-        JButton btnListRS = new AppButton("", 'I', "Search recently used search-patterns list.  Shortcut: Alt+I", "./search-icon.png");
+        JButton btnListRS = new AppButton("", 'I', "Search recently used search-patterns list.", "./search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
-        JButton btnCancel = new AppButton("", 'C', "Cancel Search. Shortcut: Alt+C", "./cancel-icon.png");
+        JButton btnCancel = new AppButton("", 'C', "Cancel/Stop Search/Read.", "./cancel-icon.png", false);
         btnCancel.addActionListener(evt -> cancelSearch());
 
         JButton btnExit = new AppExitButton();
@@ -170,6 +196,12 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(cbLastN);
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
+        searchPanel.add(jtbActions);
+//        jtbActions.add(btnCancel);
+        jtbActions.add(btnPlusFont);
+        jtbActions.add(btnMinusFont);
+        jtbActions.add(btnResetFont);
+        jtbActions.add(btnWarning);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
         searchPanel.setBorder(titledSP);
 
@@ -197,6 +229,82 @@ public class SearchBigFile extends AppFrame {
         });
 
         setToCenter();
+    }
+
+    private void setColors(JButton[] btns) {
+        for (JButton b : btns) {
+            b.setBackground(Color.GRAY);
+            b.setForeground(Color.WHITE);
+        }
+    }
+
+    private Font getFontForEditor(Font defaultFont, String sizeStr) {
+        Font retVal = defaultFont;
+        GraphicsEnvironment g = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        for (Font font : g.getAllFonts()) {
+            if (font.getName().equals(PREFERRED_FONT)) {
+                retVal = font;
+                break;
+            }
+        }
+        int fs = Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE;
+        retVal = new Font(retVal.getName(), retVal.getStyle(), fs);
+        logger.log("Returning " + printFontDetail(retVal));
+        return retVal;
+    }
+
+    private String printFontDetail(Font font) {
+        return String.format("Font %s of size %s", font.getName(), font.getSize());
+    }
+
+    private void increaseFontSize() {
+        setFontSize(FONT_OPR.INCREASE);
+    }
+
+    private void decreaseFontSize() {
+        setFontSize(FONT_OPR.DECREASE);
+    }
+
+    private void resetFontSize() {
+        setFontSize(FONT_OPR.RESET);
+    }
+
+    private void setFontSize(FONT_OPR opr) {
+        Font font = tpResults.getFont();
+        boolean changed = false;
+        int fs = font.getName().equals(PREFERRED_FONT) ? PREFERRED_FONT_SIZE : DEFAULT_FONT_SIZE;
+
+        switch (opr) {
+            case RESET:
+                if (font.getSize() != fs) {
+                    font = getNewFont(font, fs);
+                    changed = true;
+                }
+                break;
+            case DECREASE:
+                if (font.getSize() > MIN_FONT_SIZE) {
+                    font = getNewFont(font, font.getSize() - 1);
+                    changed = true;
+                }
+                break;
+            case INCREASE:
+                if (font.getSize() < MAX_FONT_SIZE) {
+                    font = getNewFont(font, font.getSize() + 1);
+                    changed = true;
+                }
+                break;
+        }
+
+        if (changed) {
+            logger.log("Applying new font as " + printFontDetail(font));
+            tpResults.setFont(font);
+        } else {
+            logger.log("Ignoring request for " + opr + "font. Present " + printFontDetail(font));
+        }
+    }
+
+    private Font getNewFont(Font font, int size) {
+        return new Font(font.getName(), font.getStyle(), size);
     }
 
     private void showListRF() {
@@ -396,14 +504,18 @@ public class SearchBigFile extends AppFrame {
 
     private void resetShowWarning() {
         showWarning = false;
+        occrTillNow = 0;
+        btnWarning.setBackground(Color.GRAY);
     }
 
     private void cancelSearch() {
+        //SwingUtilities.invokeLater(() -> {
         resetShowWarning();
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
         }
+        //});
     }
 
     private void searchFile() {
@@ -641,7 +753,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     // To avoid async order of lines this cannot be worker
-    class SearchData {
+    class SearchData {//} extends SwingWorker<Integer, String> {
 
         final int LINES_TO_INFORM = 500000;
         private final SearchStats stats;
@@ -651,6 +763,8 @@ public class SearchBigFile extends AppFrame {
         }
 
         public Integer process() {
+//        @Override
+//        public Integer doInBackground() {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
@@ -658,9 +772,9 @@ public class SearchBigFile extends AppFrame {
                 int occr = lowerCaseSplit(stats.getLine(), stats.getSearchPattern());
                 stats.setOccurrences(stats.getOccurrences() + occr - 1);
                 sb.append(getLineNumStr(lineNum)).append(stats.getLine()).append(System.lineSeparator());
-                synchronized (SearchBigFile.class) {
-                    qMsgsToAppend.add(convertStartingSpacesForHtml(sb.toString()));
-                }
+                //synchronized (SearchBigFile.class) {
+                qMsgsToAppend.add(convertStartingSpacesForHtml(sb.toString()));
+                //}
             }
             stats.setLineNum(lineNum + 1);
 
@@ -668,6 +782,7 @@ public class SearchBigFile extends AppFrame {
                 logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
             }
 
+            occrTillNow = stats.getOccurrences();
             if (!showWarning && stats.getOccurrences() > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
                 showWarning = true;
             }
@@ -787,6 +902,10 @@ public class SearchBigFile extends AppFrame {
         return txtFilePath.getText();
     }
 
+    public String getFontSize() {
+        return tpResults.getFont().getSize() + "";
+    }
+
     public String getSearchString() {
         return txtSearch.getText();
     }
@@ -813,6 +932,9 @@ public class SearchBigFile extends AppFrame {
 
     public void updateTitle(String info) {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
+        /*SwingUtilities.invokeLater(() ->
+                setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE))
+        );*/
     }
 
     static class TimerCallable implements Callable<Boolean> {
@@ -832,6 +954,9 @@ public class SearchBigFile extends AppFrame {
                     String msg = timeElapse + " sec";
                     if (showWarning || timeElapse > TIME_LIMIT_FOR_WARN_IN_SEC) {
                         msg += sbf.getWarning();
+                        sbf.btnWarning.setBackground(
+                                sbf.btnWarning.getBackground() == Color.RED ?
+                                        Color.GRAY : Color.RED);
                     }
                     sbf.updateTitle(msg);
                     Utils.sleep(1000, sbf.logger);
@@ -842,7 +967,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getWarning() {
-        return " - Either search taking long or too many results !!  Cancel and try to narrow";
+        return " - Either search taking long or too many results [" + occrTillNow + "] !!  Cancel and try to narrow";
     }
 
     static class AppendMsgCallable implements Callable<Boolean> {
@@ -859,9 +984,9 @@ public class SearchBigFile extends AppFrame {
 
             while (!qMsgsToAppend.isEmpty()) {
                 String m;
-                synchronized (SearchBigFile.class) {
-                    m = qMsgsToAppend.poll();
-                }
+                //synchronized (SearchBigFile.class) {
+                m = qMsgsToAppend.poll();
+                //}
                 if (readNFlag || Utils.hasValue(m)) {
                     sb.append(m);
                 }
@@ -916,6 +1041,11 @@ public class SearchBigFile extends AppFrame {
                             || (isWholeWord() && line.matches(searchPattern))
                     );
 
+                    /*try {
+                        SwingUtilities.invokeAndWait(searchData);
+                    } catch (InterruptedException | InvocationTargetException e) {
+                        logger.error(e);
+                    }*/
                     //searchData.doInBackground();
                     searchData.process();
                     if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
