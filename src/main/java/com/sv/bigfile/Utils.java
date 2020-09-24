@@ -86,7 +86,7 @@ public class Utils {
      */
     public static boolean getBoolean(String value) throws Exception {
         if (!hasValue(value)) {
-            throw new Exception("ERROR: Can't convert a null/empty string value to a boolean."); //throw new Exception("ERROR: Can't convert a null/empty string value to a boolean."); throw new Exception("ERROR: Can't convert a null/empty string value to a boolean.");
+            throw new  Exception("ERROR: Can't convert a null/empty string value to a boolean."); //throw new Exception("ERROR: Can't convert a null/empty string value to a boolean."); throw new Exception("ERROR: Can't convert a null/empty string value to a boolean.");
         }
 
         value = value.trim();
