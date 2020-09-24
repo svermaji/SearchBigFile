@@ -10,6 +10,10 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 24-Sep-2020<br>
+* Now recent files/searches can be tagged for quick searching.
+* Any recent files/searches starting with `*` will be added as favourite button `(max 5)`.
+
 #### On 23-Sep-2020<br>
 * Controls to increase/decrease font size.
 * A warning indicator is shown and show the occurrences so war in case if there are too many matches.
