@@ -776,6 +776,10 @@ public class SearchBigFile extends AppFrame {
 
                             int len = sb.toString().toLowerCase().split(searchPattern).length;
                             occr += len > 0 ? len - 1 : 0;
+                            occrTillNow = occr;
+                            if (!showWarning && occr > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
+                                showWarning = true;
+                            }
                             sb = new StringBuilder();
                             readLines++;
                             // Last line will be printed after loop
