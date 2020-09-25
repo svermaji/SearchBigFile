@@ -6,15 +6,16 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
  - Attaching result with the name as `Test 1GB New`<br>
 
 ## Description<br>
-* Program stores the last searched file and search string. <br>
-* Controls to increase/decrease font size. <br>
-* A warning indicator is shown and show the occurrences so war in case if there are too many matches. <br>
-* Match case and whole word search options are available. <br>
-* Search button action will result only matched strings lines with highlighted background. <br>
+* Program stores the last searched file and search string. 
+* Controls to increase/decrease font size. 
+* A warning indicator is shown and show the occurrences so war in case if there are too many matches. 
+* An indicator showing present font size of file contents pane.
+* Match case and whole word search options are available. 
+* Search button action will result only matched strings lines with highlighted background. 
 * Recent files/searches can be tagged for quick searching with space at end in brackets `FILE (TAG)`.
 * Any recent files/searches starting with `*` will be added as favourite button `(max 5)`, ex. `*FILE (TAG)`.
-* Line number will be displayed as bold at the start of line to match with an original file. <br>
-* Summary will be displayed in title bar with file size, time taken and number of occurrences matched. <br>
+* Line number will be displayed as bold at the start of line to match with an original file. 
+* Summary will be displayed in title bar with file size, time taken and number of occurrences matched.
 * Another feature added to read last N (200-5000) lines of a file along with the highlight of search pattern  
 * Recently searched files and search-patterns will be stored. 
 * Additional filtering is provided to search among recent lists
@@ -49,3 +50,6 @@ Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:
 
 Added on 24-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-recent-favs.png) 
+
+Added on 25-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-font-info.png) 

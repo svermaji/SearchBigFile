@@ -59,7 +59,7 @@ public class SearchBigFile extends AppFrame {
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
 
-    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnWarning;
+    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning;
     private JButton btnSearch;
     private JButton btnLastN;
     private final String TITLE = "Search File";
@@ -145,9 +145,11 @@ public class SearchBigFile extends AppFrame {
         btnMinusFont.addActionListener(e -> decreaseFontSize());
         btnResetFont = new AppButton("✔", '0', "Reset font size for file contents.");//, "./font-reset-icon.png", true);
         btnResetFont.addActionListener(e -> resetFontSize());
+        btnFontInfo = new JButton(getFontSize());
+        btnFontInfo.setToolTipText("Present font size.");
         btnWarning = new JButton("!");
         btnWarning.setToolTipText("Warning indicator.");
-        setColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnWarning});
+        setColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
 
         jcbMatchCase = new JCheckBox("case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
@@ -209,6 +211,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
+        jtbActions.add(btnFontInfo);
         jtbActions.add(btnWarning);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
         searchPanel.setBorder(titledSP);
@@ -306,6 +309,7 @@ public class SearchBigFile extends AppFrame {
         if (changed) {
             logger.log("Applying new font as " + printFontDetail(font));
             tpResults.setFont(font);
+            btnFontInfo.setText(getFontSize());
         } else {
             logger.log("Ignoring request for " + opr + "font. Present " + printFontDetail(font));
         }

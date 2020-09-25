@@ -10,6 +10,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 25-Sep-2020<br>
+* Added indicator showing present font size of file contents pane.
+
 #### On 24-Sep-2020<br>
 * Bug fixes, performance improvement, icon change.
 * Now recent files/searches can be tagged for quick searching.
