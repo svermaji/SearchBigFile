@@ -2,12 +2,13 @@
 Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 ## Test Results!!<br>
- - File size `[1GB]`, type `[Text]`, lines processed `[13147035]` and pattern find `[794]` times, time taken `[119sec]`<br>
- - Attaching result with the name as `Test 1GB New`<br>
+ - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
+ - Attaching result with the name as `With BufferedReader`<br>
 
 ## Description<br>
 * Program stores the last searched file and search string. 
 * Controls to increase/decrease font size. 
+* Shows number of lines processed till time while searching or reading. 
 * A warning indicator is shown and show the occurrences so war in case if there are too many matches. 
 * An indicator showing present font size of file contents pane.
 * Match case and whole word search options are available. 
@@ -53,3 +54,6 @@ Added on 24-Sep-2020. Attaching screen shot of application. Recent items filter:
 
 Added on 25-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-font-info.png) 
+
+Added on 26-Sep-2020. Attaching screen shot of application. With BufferedReader:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-test-result-BR.png) 

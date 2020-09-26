@@ -1,6 +1,11 @@
 # SearchBigFile
 Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 
+## Test Results with BufferedReader!!<br>
+ - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
+ - Attaching result with the name as `With BufferedReader`<br>
+ - Analysing some line difference due to line endings<br>
+
 ## Test Results IMPROVED!!<br>
  - File size `[1GB]`, type `[Text]`, lines processed `[13147035]` and pattern find `[794]` times, time taken `[119sec]`<br>
  - Attaching result with the name as `Test 1GB New`<br>
