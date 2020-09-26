@@ -73,6 +73,8 @@ public class SearchBigFile extends AppFrame {
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
 
+    private String lastRecentFile, lastRecentSearch;
+
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning;
     private JButton btnSearch;
     private JButton btnLastN;
@@ -98,8 +100,8 @@ public class SearchBigFile extends AppFrame {
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
-    private static int ebWidth = 5;
-    private static final Border emptyBorder = new EmptyBorder(new Insets(ebWidth, ebWidth, ebWidth, ebWidth));
+    private static final int eb = 5;
+    private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
 
     // TODO: Fav remove via * or updating tag
     public static void main(String[] args) {
@@ -397,7 +399,7 @@ public class SearchBigFile extends AppFrame {
         for (int i = 0; i < FAV_BTN_LIMIT; i++) {
             btnFavs[i] = new JButton();
         }
-        redrawFavBtns(btnFavs, favs, destination, frame);
+        redrawFavBtns(btnFavs, favs, destination, frame, src);
 
         JPanel favBtnPanel = new JPanel(new GridBagLayout());
         TitledBorder titledFP = new TitledBorder("Favourites (starts with *)");
@@ -424,7 +426,7 @@ public class SearchBigFile extends AppFrame {
                 Point point = mouseEvent.getPoint();
                 int row = table.rowAtPoint(point);
                 if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
-                    destination.setText(table.getValueAt(row, 0).toString());
+                    src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
                     frame.setVisible(false);
                 }
             }
@@ -433,7 +435,7 @@ public class SearchBigFile extends AppFrame {
         InputMap im = table.getInputMap();
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "Action.RunCmdCell");
         ActionMap am = table.getActionMap();
-        am.put("Action.RunCmdCell", new CopyCommandAction(table, destination, frame));
+        am.put("Action.RunCmdCell", new CopyCommandAction(table, destination, frame, src));
 
         txtFilter.getDocument().addDocumentListener(
                 new DocumentListener() {
@@ -506,7 +508,7 @@ public class SearchBigFile extends AppFrame {
         return s;
     }
 
-    private void redrawFavBtns(JButton[] btnFavs, List<String> favs, JTextField destination, JFrame frame) {
+    private void redrawFavBtns(JButton[] btnFavs, List<String> favs, JTextField destination, JFrame frame, JComboBox<String> src) {
         final int LIMIT = 5;
         cleanFavBtns(btnFavs);
         AtomicInteger idx = new AtomicInteger();
@@ -520,7 +522,7 @@ public class SearchBigFile extends AppFrame {
             b.setToolTipText(fn);
             if (b.getActionListeners() != null && b.getActionListeners().length == 0) {
                 b.addActionListener(evt -> {
-                    destination.setText(b.getToolTipText());
+                    src.setSelectedItem(b.getToolTipText());
                     frame.setVisible(false);
                 });
             }
@@ -533,16 +535,18 @@ public class SearchBigFile extends AppFrame {
         private final JTable table;
         private final JTextField destination;
         private final JFrame frame;
+        private final JComboBox<String> src;
 
-        public CopyCommandAction(JTable table, JTextField dest, JFrame frame) {
+        public CopyCommandAction(JTable table, JTextField dest, JFrame frame, JComboBox<String> src) {
             this.table = table;
             this.destination = dest;
             this.frame = frame;
+            this.src = src;
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            destination.setText((table.getValueAt(table.getSelectedRow(), 0).toString()));
+            src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
             frame.setVisible(false);
         }
     }
@@ -660,6 +664,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    //TODO: remove star tagging and fav concept
     private boolean isValidate() {
         updateTitle("");
         boolean result = true;
@@ -680,8 +685,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateRecentSearchVals() {
-        recentFilesStr = checkItems(getFilePath(), recentFilesStr);
-        recentSearchesStr = checkItems(getSearchString(), recentSearchesStr);
+        recentFilesStr = checkItems(getFilePath(), recentFilesStr, cbFiles.getSelectedItem().toString());
+        recentSearchesStr = checkItems(getSearchString(), recentSearchesStr, cbSearches.getSelectedItem().toString());
         removeCBFilesAL();
         cbFiles.removeAllItems();
         Arrays.stream(recentFilesStr.split(Utils.SEMI_COLON)).
@@ -703,10 +708,10 @@ public class SearchBigFile extends AppFrame {
         addCBSearchAL();
     }
 
-    private String checkItems(String searchStr, String csv) {
-        if (Utils.isInArray(csv.split(Utils.SEMI_COLON), searchStr)) {
+    private String checkItems(String searchStr, String csv, String selectedItem) {
+        if (removeTagAndStar(selectedItem.toLowerCase()).equals(removeTagAndStar(searchStr.toLowerCase()))) {
             // remove item and add it again to bring it on top
-            csv = csv.replace(searchStr + Utils.SEMI_COLON, "");
+            csv = csv.replace(selectedItem + Utils.SEMI_COLON, "");
         }
         csv = searchStr + Utils.SEMI_COLON + csv;
 
@@ -756,7 +761,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setSearchStrings() {
-        searchStr = getSearchString();
+        searchStr = removeTagAndStar(getSearchString());
         searchStrReplace = REPLACER_PREFIX + searchStr + REPLACER_SUFFIX;
     }
 
@@ -783,7 +788,7 @@ public class SearchBigFile extends AppFrame {
                 startThread(new TimerCallable(sbf));
                 final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
                 updateTitle("Reading last " + LIMIT + " lines");
-                String fn = getFileToSearch(getFilePath());
+                String fn = removeTagAndStar(getFilePath());
                 logger.log("Loading last " + LIMIT + " lines from: " + fn);
                 int readLines = 0;
                 StringBuilder sb = new StringBuilder();
@@ -1152,7 +1157,7 @@ public class SearchBigFile extends AppFrame {
             final int BUFFER_SIZE = 5 * 1024;
             String searchPattern = sbf.processPattern();
 
-            String path = getFileToSearch(sbf.getFilePath());
+            String path = removeTagAndStar(sbf.getFilePath());
 
             /*try (InputStream stream = new FileInputStream(path);
                  Scanner sc = new Scanner(stream, "UTF-8")
@@ -1217,7 +1222,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String processPattern() {
-        String searchPattern = getSearchString();
+        String searchPattern = searchStr;
 
         if (!isMatchCase()) {
             searchPattern = searchPattern.toLowerCase();
@@ -1256,10 +1261,10 @@ public class SearchBigFile extends AppFrame {
         return cmd;
     }
 
-    private String getFileToSearch(String name) {
+    private String removeTagAndStar(String name) {
         String chk = " (";
         name = name.contains(chk) ?
-                name.substring(0, name.indexOf(chk)) : name;
+                name.substring(0, name.lastIndexOf(chk)) : name;
         return chopStar(name);
     }
 
