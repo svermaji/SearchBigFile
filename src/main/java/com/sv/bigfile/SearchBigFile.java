@@ -3,7 +3,6 @@ package com.sv.bigfile;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -18,7 +17,6 @@ import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
@@ -96,7 +94,7 @@ public class SearchBigFile extends AppFrame {
      * This method initializes the form.
      */
     private void initComponents() {
-        logger = MyLogger.createLogger(Utils.createLogFileName(getClass()));
+        logger = MyLogger.createLogger(getClass());
 
         configs = new DefaultConfigs(logger);
         qMsgsToAppend = new LinkedBlockingQueue<>();
@@ -119,7 +117,7 @@ public class SearchBigFile extends AppFrame {
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
-        tpResults.setFont(getFontForEditor(tpResults.getFont(), configs.getConfig(DefaultConfigs.Config.FONT_SIZE)));
+        tpResults.setFont(getFontForEditor(configs.getConfig(DefaultConfigs.Config.FONT_SIZE)));
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
@@ -252,8 +250,8 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private Font getFontForEditor(Font defaultFont, String sizeStr) {
-        Font retVal = defaultFont;
+    private Font getFontForEditor(String sizeStr) {
+        Font retVal = new Font(DEFAULT_FONT, Font.PLAIN, DEFAULT_FONT_SIZE);
         GraphicsEnvironment g = GraphicsEnvironment.getLocalGraphicsEnvironment();
         for (Font font : g.getAllFonts()) {
             if (font.getName().equals(PREFERRED_FONT)) {
@@ -368,7 +366,7 @@ public class SearchBigFile extends AppFrame {
         for (int i = 0; i < FAV_BTN_LIMIT; i++) {
             btnFavs[i] = new JButton();
         }
-        redrawFavBtns(btnFavs, favs, FAV_BTN_LIMIT, destination, frame);
+        redrawFavBtns(btnFavs, favs, destination, frame);
 
         JPanel favBtnPanel = new JPanel(new GridBagLayout());
         TitledBorder titledFP = new TitledBorder("Favourites (starts with *)");
@@ -465,11 +463,12 @@ public class SearchBigFile extends AppFrame {
         return s;
     }
 
-    private void redrawFavBtns(JButton[] btnFavs, List<String> favs, int FAV_BTN_LIMIT, JTextField destination, JFrame frame) {
+    private void redrawFavBtns(JButton[] btnFavs, List<String> favs, JTextField destination, JFrame frame) {
+        final int LIMIT = 5;
         cleanFavBtns(btnFavs);
         AtomicInteger idx = new AtomicInteger();
         for (String fn : favs) {
-            if (idx.get() >= FAV_BTN_LIMIT) {
+            if (idx.get() >= LIMIT) {
                 break;
             }
             JButton b = btnFavs[idx.get()];
@@ -861,7 +860,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     // To avoid async order of lines this cannot be worker
-    class SearchData {//} extends SwingWorker<Integer, String> {
+    class SearchData {
 
         final int LINES_TO_INFORM = 500000;
         private final SearchStats stats;
@@ -871,8 +870,6 @@ public class SearchBigFile extends AppFrame {
         }
 
         public Integer process() {
-//        @Override
-//        public Integer doInBackground() {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
@@ -1106,21 +1103,11 @@ public class SearchBigFile extends AppFrame {
                 synchronized (SearchBigFile.class) {
                     insertCounter++;
                     idxMsgsToAppend.put(insertCounter, sb.toString());
-                    //callAndWait (new AppendData());
                     SwingUtilities.invokeLater(new AppendData());
                 }
-                //sbf.appendResult(sb.toString());
             }
 
             return true;
-        }
-    }
-
-    private void callAndWait(Runnable runnable) {
-        try {
-            SwingUtilities.invokeAndWait(runnable);
-        } catch (InterruptedException | InvocationTargetException e) {
-            logger.error(e);
         }
     }
 

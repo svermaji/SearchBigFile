@@ -76,26 +76,6 @@ public class Utils {
         return Arrays.stream(arr).anyMatch(a -> a.equalsIgnoreCase(val));
     }
 
-    public static String createLogFileName(Class<?> clazz) {
-        String className = clazz.getSimpleName();
-        char[] carr = className.toCharArray();
-        StringBuilder sb = new StringBuilder();
-        int idx = 0;
-        for (char c : carr) {
-            if (Character.isUpperCase(c)) {
-                if (idx > 0) {
-                    sb.append(DASH);
-                }
-                sb.append(Character.toLowerCase(c));
-                idx++;
-            } else {
-                sb.append(c);
-            }
-        }
-        sb.append(".log");
-        return sb.toString();
-    }
-
     /**
      * Return the boolean equivalent of the string argument.
      *

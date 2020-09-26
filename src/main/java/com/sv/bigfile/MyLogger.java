@@ -11,6 +11,26 @@ public class MyLogger {
     private Writer logWriter = null;
     private static MyLogger logger = null;
 
+    public static MyLogger createLogger(Class<?> clazz) {
+        String className = clazz.getSimpleName();
+        char[] carr = className.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        int idx = 0;
+        for (char c : carr) {
+            if (Character.isUpperCase(c)) {
+                if (idx > 0) {
+                    sb.append(Utils.DASH);
+                }
+                sb.append(Character.toLowerCase(c));
+                idx++;
+            } else {
+                sb.append(c);
+            }
+        }
+        sb.append(".log");
+        return createLogger(sb.toString());
+    }
+
     public static MyLogger createLogger(String logFilename) {
         if (logger == null) {
             logger = new MyLogger();
@@ -35,11 +55,11 @@ public class MyLogger {
     }
 
     void warn(String message) {
-        log ("WARN: " + message);
+        log("WARN: " + message);
     }
 
     void error(String message) {
-        log ("ERROR: " + message);
+        log("ERROR: " + message);
     }
 
     void error(Throwable throwable) {
@@ -90,6 +110,6 @@ public class MyLogger {
     }
 
     private String getTime() {
-        return "["+LocalDateTime.now()+"]: ";
+        return "[" + LocalDateTime.now() + "]: ";
     }
 }
