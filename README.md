@@ -1,6 +1,10 @@
 # SearchBigFile
 Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
+> This branch has complete codebase in one
+> Branch `master` is targeted to have separate modules as UI and Core
+> UI and Core modules will be dependency for this project
+
 ## Test Results!!<br>
  - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
  - Attaching result with the name as `With BufferedReader`<br>
