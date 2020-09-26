@@ -3,6 +3,7 @@ package com.sv.bigfile;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -148,9 +149,11 @@ public class SearchBigFile extends AppFrame {
         btnResetFont.addActionListener(e -> resetFontSize());
         btnFontInfo = new JButton(getFontSize());
         btnFontInfo.setToolTipText("Present font size.");
-        btnWarning = new JButton("!");
-        btnWarning.setToolTipText("Warning indicator will blink indicating -> Either search taking long or too many results.");
-        setColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
+        btnWarning = new AppButton(" ! ", '`');
+        btnWarning.setToolTipText("Warning indicator. When blinks indicate -> Either search taking long or too many results.");
+        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
+        btnWarning.setBackground(Color.PINK);
+        btnWarning.setBorder(BorderFactory.createEmptyBorder());
 
         jcbMatchCase = new JCheckBox("case",
                 Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
@@ -208,12 +211,11 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
         searchPanel.add(jtbActions);
-//        jtbActions.add(btnCancel);
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
         jtbActions.add(btnFontInfo);
-        jtbActions.add(btnWarning);
+        searchPanel.add(btnWarning);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
         searchPanel.setBorder(titledSP);
 
@@ -243,7 +245,7 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
-    private void setColors(JButton[] btns) {
+    private void setBkColors(JButton[] btns) {
         for (JButton b : btns) {
             b.setBackground(Color.GRAY);
             b.setForeground(Color.WHITE);
@@ -595,17 +597,16 @@ public class SearchBigFile extends AppFrame {
         showWarning = false;
         occrTillNow = 0;
         linesTillNow = 0;
-        btnWarning.setBackground(Color.GRAY);
+        btnWarning.setBackground(Color.PINK);
+//        btnWarning.setIcon(new ImageIcon("./warning-icon.png"));
     }
 
     private void cancelSearch() {
-        //SwingUtilities.invokeLater(() -> {
         resetShowWarning();
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
         }
-        //});
     }
 
     private void searchFile() {
@@ -1062,9 +1063,11 @@ public class SearchBigFile extends AppFrame {
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
                     if (showWarning || timeElapse > TIME_LIMIT_FOR_WARN_IN_SEC) {
                         msg += sbf.getWarning();
-                        sbf.btnWarning.setBackground(
-                                sbf.btnWarning.getBackground() == Color.RED ?
-                                        Color.GRAY : Color.RED);
+                        if (sbf.btnWarning.getBackground() == Color.RED) {
+                            sbf.btnWarning.setBackground(Color.PINK);
+                        } else {
+                            sbf.btnWarning.setBackground(Color.RED);
+                        }
                     }
                     sbf.updateTitle(msg);
                     Utils.sleep(1000, sbf.logger);
