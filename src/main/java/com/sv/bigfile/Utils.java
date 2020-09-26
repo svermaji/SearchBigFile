@@ -14,7 +14,7 @@ public class Utils {
     public static final String ELLIPSIS = "..";
     public static final String SLASH = "\\";
     public static final String SEMI_COLON = ";";
-    public static final String DOUBLE_SPACE = SPACE+SPACE;
+    public static final String DOUBLE_SPACE = SPACE + SPACE;
     public static final String DASH = "-";
     public static final String SP_DASH_SP = SPACE + DASH + SPACE;
 
@@ -34,12 +34,12 @@ public class Utils {
     }
 
     enum HtmlEsc {
-        SP (" ", "&nbsp;"),
-        LT ("<", "&lt;"),
-        GT (">", "&gt;"),
-        SQ ("'", "&#39;"),
-        DQ ("\"", "&quot;"),
-        AMP ("&", "&amp;");
+        SP(" ", "&nbsp;"),
+        LT("<", "&lt;"),
+        GT(">", "&gt;"),
+        SQ("'", "&#39;"),
+        DQ("\"", "&quot;"),
+        AMP("&", "&amp;");
 
         String ch, escStr;
 
@@ -64,17 +64,36 @@ public class Utils {
      * @param item string to be checked
      * @return boolean status of operation
      */
-    public static boolean hasValue ( String item )
-    {
-        return( (item != null) && (item.length() > 0) );
+    public static boolean hasValue(String item) {
+        return ((item != null) && (item.length() > 0));
     }
 
-    public static Path createPath (String path) {
+    public static Path createPath(String path) {
         return FileSystems.getDefault().getPath(path);
     }
 
-    public static boolean isInArray (String[] arr, String val) {
+    public static boolean isInArray(String[] arr, String val) {
         return Arrays.stream(arr).anyMatch(a -> a.equalsIgnoreCase(val));
+    }
+
+    public static String createLogFileName(Class<?> clazz) {
+        String className = clazz.getSimpleName();
+        char[] carr = className.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        int idx = 0;
+        for (char c : carr) {
+            if (Character.isUpperCase(c)) {
+                if (idx > 0) {
+                    sb.append(DASH);
+                }
+                sb.append(Character.toLowerCase(c));
+                idx++;
+            } else {
+                sb.append(c);
+            }
+        }
+        sb.append(".log");
+        return sb.toString();
     }
 
     /**
@@ -86,7 +105,7 @@ public class Utils {
      */
     public static boolean getBoolean(String value) throws Exception {
         if (!hasValue(value)) {
-            throw new  Exception("ERROR: Can't convert a null/empty string value to a boolean."); //throw new Exception("ERROR: Can't convert a null/empty string value to a boolean."); throw new Exception("ERROR: Can't convert a null/empty string value to a boolean.");
+            throw new Exception("ERROR: Can't convert a null/empty string value to a boolean."); //throw new Exception("ERROR: Can't convert a null/empty string value to a boolean."); throw new Exception("ERROR: Can't convert a null/empty string value to a boolean.");
         }
 
         value = value.trim();
@@ -117,7 +136,7 @@ public class Utils {
         }
 
         throw new Exception("ERROR: Candidate boolean value [" + value
-            + "] not in valid-value set [" + validValues.toString() + "].");
+                + "] not in valid-value set [" + validValues.toString() + "].");
     }
 
 
@@ -188,10 +207,10 @@ public class Utils {
             return "";
         if (!hasValue(fileType))
             return file;
-        return (file.endsWith(fileType)) ? file.substring(0, file.indexOf(fileType)-1) : file;
+        return (file.endsWith(fileType)) ? file.substring(0, file.indexOf(fileType) - 1) : file;
     }
 
-    public static void sleep (long millis) {
+    public static void sleep(long millis) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
@@ -199,7 +218,7 @@ public class Utils {
         }
     }
 
-    public static void sleep (long millis, MyLogger logger) {
+    public static void sleep(long millis, MyLogger logger) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
@@ -209,15 +228,15 @@ public class Utils {
 
     public static String getFileSizeString(long fs) {
         long KB = 1024;
-        float inKB = (float) fs/KB;
-        float inMB = inKB/KB;
-        float inGB = inMB/KB;
+        float inKB = (float) fs / KB;
+        float inMB = inKB / KB;
+        float inGB = inMB / KB;
         if (inGB > 1) {
-            return String.format("[%sGB]", formatFloat (inGB));
+            return String.format("[%sGB]", formatFloat(inGB));
         } else if (inMB > 1) {
-            return String.format("[%sMB]", formatFloat (inMB));
+            return String.format("[%sMB]", formatFloat(inMB));
         } else if (inKB > 1) {
-            return String.format("[%sKB]", formatFloat (inKB));
+            return String.format("[%sKB]", formatFloat(inKB));
         }
         return String.format("[%sBytes]", fs);
     }

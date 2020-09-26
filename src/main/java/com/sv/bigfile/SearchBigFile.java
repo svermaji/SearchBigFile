@@ -48,6 +48,7 @@ public class SearchBigFile extends AppFrame {
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private long occrTillNow;
+    private long linesTillNow;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
 
@@ -94,7 +95,7 @@ public class SearchBigFile extends AppFrame {
      * This method initializes the form.
      */
     private void initComponents() {
-        logger = MyLogger.createLogger("search-big-file.log");
+        logger = MyLogger.createLogger(Utils.createLogFileName(getClass()));
 
         configs = new DefaultConfigs(logger);
         qMsgsToAppend = new LinkedBlockingQueue<>();
@@ -148,7 +149,7 @@ public class SearchBigFile extends AppFrame {
         btnFontInfo = new JButton(getFontSize());
         btnFontInfo.setToolTipText("Present font size.");
         btnWarning = new JButton("!");
-        btnWarning.setToolTipText("Warning indicator.");
+        btnWarning.setToolTipText("Warning indicator will blink indicating -> Either search taking long or too many results.");
         setColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
 
         jcbMatchCase = new JCheckBox("case",
@@ -593,6 +594,7 @@ public class SearchBigFile extends AppFrame {
     private void resetShowWarning() {
         showWarning = false;
         occrTillNow = 0;
+        linesTillNow = 0;
         btnWarning.setBackground(Color.GRAY);
     }
 
@@ -688,7 +690,7 @@ public class SearchBigFile extends AppFrame {
 
     private void updateControls(boolean enable) {
         Component[] components = {
-                txtFilePath, btnSearch, btnLastN, cbFiles, cbSearches, cbLastN, jcbMatchCase,
+                txtFilePath, txtSearch, btnSearch, btnLastN, cbFiles, cbSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont
         };
 
@@ -781,6 +783,7 @@ public class SearchBigFile extends AppFrame {
                             int len = sb.toString().toLowerCase().split(searchPattern).length;
                             occr += len > 0 ? len - 1 : 0;
                             occrTillNow = occr;
+                            linesTillNow = readLines;
                             if (!showWarning && occr > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
                                 showWarning = true;
                             }
@@ -887,6 +890,7 @@ public class SearchBigFile extends AppFrame {
             }
 
             occrTillNow = stats.getOccurrences();
+            linesTillNow = stats.getLineNum();
             if (!showWarning && stats.getOccurrences() > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
                 showWarning = true;
             }
@@ -1055,7 +1059,7 @@ public class SearchBigFile extends AppFrame {
                 // Due to multi threading, separate if is imposed
                 if (status == Status.READING) {
                     long timeElapse = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
-                    String msg = timeElapse + " sec";
+                    String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
                     if (showWarning || timeElapse > TIME_LIMIT_FOR_WARN_IN_SEC) {
                         msg += sbf.getWarning();
                         sbf.btnWarning.setBackground(
@@ -1132,20 +1136,20 @@ public class SearchBigFile extends AppFrame {
 
             String path = getFileToSearch(sbf.getFilePath());
 
-            try (InputStream stream = new FileInputStream(path);
-                 Scanner sc = new Scanner(stream, "UTF-8")
-            ) {
             /*try (InputStream stream = new FileInputStream(path);
-                 BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
+                 Scanner sc = new Scanner(stream, "UTF-8")
             ) {*/
+            try (InputStream stream = new FileInputStream(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
+            ) {
                 long lineNum = 1, occurrences = 0;
                 SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
                 SearchData searchData = new SearchData(stats);
 
-                /*String line;
-                while ((line = br.readLine()) != null) {*/
-                while (sc.hasNextLine()) {
-                    String line = sc.nextLine();
+                String line;
+                while ((line = br.readLine()) != null) {
+                /*while (sc.hasNextLine()) {
+                    String line = sc.nextLine();*/
                     stats.setLine(line);
                     stats.setMatch((!isMatchCase() && line.toLowerCase().contains(searchPattern))
                             || (isMatchCase() && line.contains(searchPattern))
