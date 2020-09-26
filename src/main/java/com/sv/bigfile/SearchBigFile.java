@@ -1,5 +1,8 @@
 package com.sv.bigfile;
 
+import com.sv.core.*;
+import com.sv.swingui.*;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
@@ -25,7 +28,18 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.PatternSyntaxException;
 
+/**
+ * Written by Shailendra Verma
+ * Java Utility to search big files.
+ * <p>
+ * Searched for a string files of size 1GB
+ */
 public class SearchBigFile extends AppFrame {
+
+    enum Configs {
+        RecentFiles, FilePath, SearchString, RecentSearches,
+        LastN, FontSize, MatchCase, WholeWord
+    }
 
     enum Status {
         NOT_STARTED, READING, DONE, CANCELLED
@@ -84,8 +98,10 @@ public class SearchBigFile extends AppFrame {
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
-    private static final Border emptyBorder = new EmptyBorder(new Insets(5, 5, 5, 5));
+    private static int ebWidth = 5;
+    private static final Border emptyBorder = new EmptyBorder(new Insets(ebWidth, ebWidth, ebWidth, ebWidth));
 
+    // TODO: Fav remove via * or updating tag
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
     }
@@ -96,12 +112,12 @@ public class SearchBigFile extends AppFrame {
     private void initComponents() {
         logger = MyLogger.createLogger(getClass());
 
-        configs = new DefaultConfigs(logger);
+        configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         msgCallable = new AppendMsgCallable(this);
-        recentFilesStr = configs.getConfig(DefaultConfigs.Config.RECENT_FILES);
-        recentSearchesStr = configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES);
+        recentFilesStr = configs.getConfig(Configs.RecentFiles.name());
+        recentSearchesStr = configs.getConfig(Configs.RecentSearches.name());
 
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
@@ -117,7 +133,7 @@ public class SearchBigFile extends AppFrame {
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
-        tpResults.setFont(getFontForEditor(configs.getConfig(DefaultConfigs.Config.FONT_SIZE)));
+        tpResults.setFont(getFontForEditor(configs.getConfig(Configs.FontSize.name())));
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
@@ -126,8 +142,9 @@ public class SearchBigFile extends AppFrame {
         JToolBar jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
         jtbActions.setRollover(false);
-        txtFilePath = new JTextField(configs.getConfig(DefaultConfigs.Config.FILEPATH));
-        AppLabel lblFilePath = new AppLabel("File", txtFilePath, 'F');
+        txtFilePath = new JTextField(configs.getConfig(Configs.FilePath.name()));
+        UIName uin = UIName.LBL_FILE;
+        AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         txtFilePath.setColumns(TXT_COLS);
         cbFiles = new JComboBox<>(getFiles());
         cbFiles.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
@@ -135,42 +152,53 @@ public class SearchBigFile extends AppFrame {
         cbFiles.setRenderer(cbFilesRenderer);
         cbFiles.setPrototypeDisplayValue("Recent Files");
         addCBFilesAL();
-        AppLabel lblRFiles = new AppLabel("Recent", cbFiles, 'R', "Recent used files list");
-        JButton btnListRF = new AppButton("", 'T', "Search recently used file list.", "./search-icon.png");
+        uin = UIName.LBL_RFILES;
+        AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);
+        uin = UIName.BTN_LISTRF;
+        JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./search-icon.png");
         btnListRF.addActionListener(e -> showListRF());
 
-        btnPlusFont = new AppButton("+", '=', "Increase font size for file contents.");
+        uin = UIName.BTN_PLUSFONT;
+        btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPlusFont.addActionListener(e -> increaseFontSize());
-        btnMinusFont = new AppButton("—", '-', "Decrease font size for file contents.");//, "./font-minus-icon.png", true);
+        uin = UIName.BTN_MINUSFONT;
+        btnMinusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnMinusFont.addActionListener(e -> decreaseFontSize());
-        btnResetFont = new AppButton("✔", '0', "Reset font size for file contents.");//, "./font-reset-icon.png", true);
+        uin = UIName.BTN_RESETFONT;
+        btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
         btnFontInfo = new JButton(getFontSize());
         btnFontInfo.setToolTipText("Present font size.");
-        btnWarning = new AppButton(" ! ", '`');
-        btnWarning.setToolTipText("Warning indicator. When blinks indicate -> Either search taking long or too many results.");
+        uin = UIName.BTN_WARNING;
+        btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
         btnWarning.setBackground(Color.PINK);
         btnWarning.setBorder(BorderFactory.createEmptyBorder());
 
-        jcbMatchCase = new JCheckBox("case",
-                Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.MATCH_CASE)));
-        jcbMatchCase.setMnemonic('m');
-        jcbMatchCase.setToolTipText("Match case");
-        jcbWholeWord = new JCheckBox("word",
-                Boolean.parseBoolean(configs.getConfig(DefaultConfigs.Config.WHOLE_WORD)));
-        jcbWholeWord.setMnemonic('w');
-        jcbWholeWord.setToolTipText("Whole word");
+        uin = UIName.JCB_MATCHCASE;
+        jcbMatchCase = new JCheckBox(uin.name,
+                Boolean.parseBoolean(configs.getConfig(Configs.MatchCase.name())));
+        jcbMatchCase.setMnemonic(uin.mnemonic);
+        jcbMatchCase.setToolTipText(uin.tip);
+        uin = UIName.JCB_WHOLEWORD;
+        jcbWholeWord = new JCheckBox(uin.name,
+                Boolean.parseBoolean(configs.getConfig(Configs.WholeWord.name())));
+        jcbWholeWord.setMnemonic(uin.mnemonic);
+        jcbWholeWord.setToolTipText(uin.tip);
 
-        txtSearch = new JTextField(configs.getConfig(DefaultConfigs.Config.SEARCH));
-        AppLabel lblSearch = new AppLabel("Search", txtSearch, 'H');
+        txtSearch = new JTextField(configs.getConfig(Configs.SearchString.name()));
+        uin = UIName.LBL_SEARCH;
+        AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         txtSearch.setColumns(TXT_COLS - 5);
-        btnSearch = new AppButton("Search", 'S');
+        uin = UIName.BTN_SEARCH;
+        btnSearch = new AppButton(uin.name, uin.mnemonic);
         btnSearch.addActionListener(evt -> searchFile());
         cbLastN = new JComboBox<>(getLastNOptions());
-        cbLastN.setSelectedItem(Integer.parseInt(configs.getConfig(DefaultConfigs.Config.LAST_N)));
-        AppLabel lblLastN = new AppLabel("Last N", cbLastN, 'N');
-        btnLastN = new AppButton("Read", 'R', "Read last N lines and highlight.");
+        cbLastN.setSelectedItem(Integer.parseInt(configs.getConfig(Configs.LastN.name())));
+        uin = UIName.LBL_LASTN;
+        AppLabel lblLastN = new AppLabel(uin.name, cbLastN, uin.mnemonic);
+        uin = UIName.BTN_LASTN;
+        btnLastN = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLastN.addActionListener(evt -> threadPool.submit(new LastNRead(this)));
         cbSearches = new JComboBox<>(getSearches());
         cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
@@ -178,10 +206,13 @@ public class SearchBigFile extends AppFrame {
         cbSearches.setRenderer(cbSearchRenderer);
         cbSearches.setPrototypeDisplayValue("Pattern");
         addCBSearchAL();
-        AppLabel lblRSearches = new AppLabel("Recent", cbSearches, 'e', "Recently used searche-patterns list");
-        JButton btnListRS = new AppButton("", 'I', "Search recently used search-patterns list.", "./search-icon.png");
+        uin = UIName.LBL_RSEARCHES;
+        AppLabel lblRSearches = new AppLabel(uin.name, cbSearches, uin.mnemonic, uin.tip);
+        uin = UIName.BTN_LISTRS;
+        JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
-        JButton btnCancel = new AppButton("", 'C', "Cancel/Stop Search/Read.", "./cancel-icon.png", false);
+        uin = UIName.BTN_CANCEL;
+        JButton btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./cancel-icon.png", false);
         btnCancel.addActionListener(evt -> cancelSearch());
 
         JButton btnExit = new AppExitButton();
@@ -198,6 +229,7 @@ public class SearchBigFile extends AppFrame {
         filePanel.setBorder(titledFP);
 
         searchPanel.setLayout(new FlowLayout());
+        searchPanel.add(btnWarning);
         searchPanel.add(lblSearch);
         searchPanel.add(txtSearch);
         searchPanel.add(lblRSearches);
@@ -213,7 +245,6 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
         jtbActions.add(btnFontInfo);
-        searchPanel.add(btnWarning);
         TitledBorder titledSP = new TitledBorder("Pattern to search");
         searchPanel.setBorder(titledSP);
 
@@ -321,11 +352,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showListRF() {
-        showRecentList(cbFiles, txtFilePath, "Recently used files");
+        showRecentList(cbFiles, txtFilePath, "Recent files");
     }
 
     private void showListRS() {
-        showRecentList(cbSearches, txtSearch, "Recently used search-pattern");
+        showRecentList(cbSearches, txtSearch, "Recent searches");
     }
 
     private void showRecentList(JComboBox<String> src, JTextField destination, String colName) {
@@ -338,7 +369,7 @@ public class SearchBigFile extends AppFrame {
 
             @Override
             public String getColumnName(int index) {
-                return colName;
+                return colName + " - Dbl-click or select & ENTER";
             }
 
         };
@@ -380,7 +411,6 @@ public class SearchBigFile extends AppFrame {
             c.gridx++;
             favBtnPanel.add(b, c);
         }
-
 
         // For making contents non editable
         table.setDefaultEditor(Object.class, null);
@@ -438,13 +468,26 @@ public class SearchBigFile extends AppFrame {
         Container pc = frame.getContentPane();
         pc.setLayout(new BorderLayout());
         pc.add(panel);
-        frame.setTitle("Double-click OR select & Enter");
+        frame.setTitle("ESC to Hide");
         frame.setAlwaysOnTop(true);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
         frame.setBackground(Color.CYAN);
         frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+        addEscKeyAction(frame);
+    }
+
+    private void addEscKeyAction(JFrame frame) {
+        frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel");
+        frame.getRootPane().getActionMap().put("Cancel", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                frame.setVisible(false);
+            }
+        });
+
     }
 
     private void cleanFavBtns(JButton[] btnFavs) {
@@ -535,7 +578,6 @@ public class SearchBigFile extends AppFrame {
         return new Integer[]{200, 500, 1000, 2000, 3000, 4000, 5000};
     }
 
-    //TODO: sync appending and putting in contents async with order or indexing
     private void resetForNewSearch() {
         insertCounter = 0;
         readCounter = 0;
@@ -585,11 +627,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String[] getFiles() {
-        return configs.getConfig(DefaultConfigs.Config.RECENT_FILES).split(";");
+        return configs.getConfig(Configs.RecentFiles.name()).split(";");
     }
 
     private String[] getSearches() {
-        return configs.getConfig(DefaultConfigs.Config.RECENT_SEARCHES).split(";");
+        return configs.getConfig(Configs.RecentSearches.name()).split(";");
     }
 
     private void resetShowWarning() {
@@ -597,7 +639,6 @@ public class SearchBigFile extends AppFrame {
         occrTillNow = 0;
         linesTillNow = 0;
         btnWarning.setBackground(Color.PINK);
-//        btnWarning.setIcon(new ImageIcon("./warning-icon.png"));
     }
 
     private void cancelSearch() {
@@ -664,7 +705,7 @@ public class SearchBigFile extends AppFrame {
 
     private String checkItems(String searchStr, String csv) {
         if (Utils.isInArray(csv.split(Utils.SEMI_COLON), searchStr)) {
-            // remove so after add it will come on top
+            // remove item and add it again to bring it on top
             csv = csv.replace(searchStr + Utils.SEMI_COLON, "");
         }
         csv = searchStr + Utils.SEMI_COLON + csv;
@@ -690,13 +731,12 @@ public class SearchBigFile extends AppFrame {
 
     private void updateControls(boolean enable) {
         Component[] components = {
-                txtFilePath, txtSearch, btnSearch, btnLastN, cbFiles, cbSearches, cbLastN, jcbMatchCase,
+                txtFilePath, txtSearch, btnSearch, btnLastN,
+                cbFiles, cbSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont
         };
 
-        for (Component c : components) {
-            c.setEnabled(enable);
-        }
+        Arrays.stream(components).forEach(c -> c.setEnabled(enable));
     }
 
     private void disableControls() {
@@ -842,12 +882,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    // For now its obsolete due to async line numbers
-    //@Deprecated
     class AppendData extends SwingWorker<Integer, String> {
-
-        AppendData() {
-        }
 
         @Override
         public Integer doInBackground() {
@@ -869,7 +904,7 @@ public class SearchBigFile extends AppFrame {
             this.stats = stats;
         }
 
-        public Integer process() {
+        public void process() {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
@@ -877,9 +912,7 @@ public class SearchBigFile extends AppFrame {
                 int occr = lowerCaseSplit(stats.getLine(), stats.getSearchPattern());
                 stats.setOccurrences(stats.getOccurrences() + occr - 1);
                 sb.append(getLineNumStr(lineNum)).append(stats.getLine()).append(System.lineSeparator());
-                //synchronized (SearchBigFile.class) {
                 qMsgsToAppend.add(convertStartingSpacesForHtml(sb.toString()));
-                //}
             }
             stats.setLineNum(lineNum + 1);
 
@@ -892,8 +925,6 @@ public class SearchBigFile extends AppFrame {
             if (!showWarning && stats.getOccurrences() > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
                 showWarning = true;
             }
-
-            return 1;
         }
     }
 
@@ -1038,9 +1069,6 @@ public class SearchBigFile extends AppFrame {
 
     public void updateTitle(String info) {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
-        /*SwingUtilities.invokeLater(() ->
-                setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE))
-        );*/
     }
 
     static class TimerCallable implements Callable<Boolean> {
@@ -1146,12 +1174,6 @@ public class SearchBigFile extends AppFrame {
                             || (isWholeWord() && line.matches(searchPattern))
                     );
 
-                    /*try {
-                        SwingUtilities.invokeAndWait(searchData);
-                    } catch (InterruptedException | InvocationTargetException e) {
-                        logger.error(e);
-                    }*/
-                    //searchData.doInBackground();
                     searchData.process();
                     if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                         startThread(msgCallable);

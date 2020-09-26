@@ -7,6 +7,13 @@
     <artifactId>search-big-file</artifactId>
     <version>1.0</version>
     <name>Search Large Files Utility</name>
+    <dependencies>
+        <dependency>
+            <groupId>com.sv</groupId>
+            <artifactId>swing-ui</artifactId>
+            <version>1.0</version>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>

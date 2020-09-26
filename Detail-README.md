@@ -15,6 +15,12 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 26-Sep-2020<br>
+* ESC key to hide inner-frame for recent searches.
+* Names are in separate files now.
+* Configs are now in the file.
+* UI and Core modules are used that has logic for logger, Utils and SwingUI.
+
 #### On 25-Sep-2020<br>
 * Added indicator showing present font size of file contents pane.
 
