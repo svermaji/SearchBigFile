@@ -1,6 +1,8 @@
 package com.sv.bigfile;
 
-import com.sv.core.*;
+import com.sv.core.DefaultConfigs;
+import com.sv.core.MyLogger;
+import com.sv.core.Utils;
 import com.sv.swingui.*;
 
 import javax.swing.*;
@@ -21,11 +23,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.List;
 import java.util.Queue;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.PatternSyntaxException;
 
 /**
@@ -72,8 +72,6 @@ public class SearchBigFile extends AppFrame {
     private String recentFilesStr, recentSearchesStr;
     private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
     private final String REPLACER_SUFFIX = "</font>";
-
-    private String lastRecentFile, lastRecentSearch;
 
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning;
     private JButton btnSearch;
@@ -354,14 +352,14 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showListRF() {
-        showRecentList(cbFiles, txtFilePath, "Recent files");
+        showRecentList(cbFiles, "Recent files");
     }
 
     private void showListRS() {
-        showRecentList(cbSearches, txtSearch, "Recent searches");
+        showRecentList(cbSearches, "Recent searches");
     }
 
-    private void showRecentList(JComboBox<String> src, JTextField destination, String colName) {
+    private void showRecentList(JComboBox<String> src, String colName) {
         DefaultTableModel model = new DefaultTableModel() {
 
             @Override
@@ -378,12 +376,10 @@ public class SearchBigFile extends AppFrame {
 
         JFrame frame = new JFrame();
 
-        List<String> favs = new ArrayList<>();
-
         JTextField txtFilter = new JTextField();
         txtFilter.setColumns(30);
         JTable table = new JTable(model);
-        deleteAndCreateRows(src, table, model, favs);
+        deleteAndCreateRows(src, table, model);
 
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
@@ -391,28 +387,6 @@ public class SearchBigFile extends AppFrame {
         table.getColumnModel().getColumn(0).setMinWidth(25);
 
         addFilter(sorter, txtFilter);
-
-        JButton[] btnFavs;
-        final int FAV_BTN_LIMIT = 5;
-
-        btnFavs = new JButton[FAV_BTN_LIMIT];
-        for (int i = 0; i < FAV_BTN_LIMIT; i++) {
-            btnFavs[i] = new JButton();
-        }
-        redrawFavBtns(btnFavs, favs, destination, frame, src);
-
-        JPanel favBtnPanel = new JPanel(new GridBagLayout());
-        TitledBorder titledFP = new TitledBorder("Favourites (starts with *)");
-        favBtnPanel.setBorder(titledFP);
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0.5;
-        c.gridx = 0;
-        c.gridy = 0;
-        for (JButton b : btnFavs) {
-            c.gridx++;
-            favBtnPanel.add(b, c);
-        }
 
         // For making contents non editable
         table.setDefaultEditor(Object.class, null);
@@ -423,8 +397,9 @@ public class SearchBigFile extends AppFrame {
         table.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent mouseEvent) {
                 JTable table = (JTable) mouseEvent.getSource();
-                Point point = mouseEvent.getPoint();
-                int row = table.rowAtPoint(point);
+                //TODO: check if this is ok to remove
+                //Point point = mouseEvent.getPoint();
+                //int row = table.rowAtPoint(point);
                 if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
                     src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
                     frame.setVisible(false);
@@ -435,7 +410,7 @@ public class SearchBigFile extends AppFrame {
         InputMap im = table.getInputMap();
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "Action.RunCmdCell");
         ActionMap am = table.getActionMap();
-        am.put("Action.RunCmdCell", new CopyCommandAction(table, destination, frame, src));
+        am.put("Action.RunCmdCell", new CopyCommandAction(table, frame, src));
 
         txtFilter.getDocument().addDocumentListener(
                 new DocumentListener() {
@@ -459,7 +434,6 @@ public class SearchBigFile extends AppFrame {
         filterPanel.add(txtFilter);
 
         JPanel topPanel = new JPanel(new GridLayout(2, 1));
-        topPanel.add(favBtnPanel);
         topPanel.add(filterPanel);
 
         JPanel panel = new JPanel(new BorderLayout());
@@ -492,54 +466,14 @@ public class SearchBigFile extends AppFrame {
 
     }
 
-    private void cleanFavBtns(JButton[] btnFavs) {
-        for (JButton b : btnFavs) {
-            b.setText("X");
-            b.setToolTipText("");
-            b.setEnabled(false);
-        }
-    }
-
-    private String checkLength(String s) {
-        final int BTN_TEXT_LIMIT = 8;
-        if (s.length() > BTN_TEXT_LIMIT) {
-            return s.substring(0, BTN_TEXT_LIMIT - Utils.ELLIPSIS.length()) + Utils.ELLIPSIS;
-        }
-        return s;
-    }
-
-    private void redrawFavBtns(JButton[] btnFavs, List<String> favs, JTextField destination, JFrame frame, JComboBox<String> src) {
-        final int LIMIT = 5;
-        cleanFavBtns(btnFavs);
-        AtomicInteger idx = new AtomicInteger();
-        for (String fn : favs) {
-            if (idx.get() >= LIMIT) {
-                break;
-            }
-            JButton b = btnFavs[idx.get()];
-            b.setEnabled(true);
-            b.setText(checkLength(getDisplayName(fn)));
-            b.setToolTipText(fn);
-            if (b.getActionListeners() != null && b.getActionListeners().length == 0) {
-                b.addActionListener(evt -> {
-                    src.setSelectedItem(b.getToolTipText());
-                    frame.setVisible(false);
-                });
-            }
-            idx.getAndIncrement();
-        }
-    }
-
     static class CopyCommandAction extends AbstractAction {
 
         private final JTable table;
-        private final JTextField destination;
         private final JFrame frame;
         private final JComboBox<String> src;
 
-        public CopyCommandAction(JTable table, JTextField dest, JFrame frame, JComboBox<String> src) {
+        public CopyCommandAction(JTable table, JFrame frame, JComboBox<String> src) {
             this.table = table;
-            this.destination = dest;
             this.frame = frame;
             this.src = src;
         }
@@ -562,7 +496,7 @@ public class SearchBigFile extends AppFrame {
         sorter.setRowFilter(rf);
     }
 
-    private void deleteAndCreateRows(JComboBox<String> src, JTable table, DefaultTableModel model, List<String> favs) {
+    private void deleteAndCreateRows(JComboBox<String> src, JTable table, DefaultTableModel model) {
         int rows = table.getRowCount();
         for (int i = 0; i < rows; i++) {
             model.removeRow(i);
@@ -572,9 +506,6 @@ public class SearchBigFile extends AppFrame {
         for (int i = 0; i < items; i++) {
             String s = src.getItemAt(i);
             model.addRow(new String[]{s});
-            if (s.startsWith("*")) {
-                favs.add(s);
-            }
         }
     }
 
@@ -709,7 +640,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String checkItems(String searchStr, String csv, String selectedItem) {
-        if (removeTagAndStar(selectedItem.toLowerCase()).equals(removeTagAndStar(searchStr.toLowerCase()))) {
+        if (selectedItem.toLowerCase().equals(searchStr.toLowerCase())) {
             // remove item and add it again to bring it on top
             csv = csv.replace(selectedItem + Utils.SEMI_COLON, "");
         }
@@ -761,7 +692,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setSearchStrings() {
-        searchStr = removeTagAndStar(getSearchString());
+        searchStr = getSearchString();
         searchStrReplace = REPLACER_PREFIX + searchStr + REPLACER_SUFFIX;
     }
 
@@ -788,7 +719,7 @@ public class SearchBigFile extends AppFrame {
                 startThread(new TimerCallable(sbf));
                 final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
                 updateTitle("Reading last " + LIMIT + " lines");
-                String fn = removeTagAndStar(getFilePath());
+                String fn = getFilePath();
                 logger.log("Loading last " + LIMIT + " lines from: " + fn);
                 int readLines = 0;
                 StringBuilder sb = new StringBuilder();
@@ -1157,7 +1088,7 @@ public class SearchBigFile extends AppFrame {
             final int BUFFER_SIZE = 5 * 1024;
             String searchPattern = sbf.processPattern();
 
-            String path = removeTagAndStar(sbf.getFilePath());
+            String path = sbf.getFilePath();
 
             /*try (InputStream stream = new FileInputStream(path);
                  Scanner sc = new Scanner(stream, "UTF-8")
@@ -1253,27 +1184,5 @@ public class SearchBigFile extends AppFrame {
         logger.log(result);
         return result;
     }
-
-    private String chopStar(String cmd) {
-        if (cmd.startsWith("*")) {
-            cmd = cmd.substring(1);
-        }
-        return cmd;
-    }
-
-    private String removeTagAndStar(String name) {
-        String chk = " (";
-        name = name.contains(chk) ?
-                name.substring(0, name.lastIndexOf(chk)) : name;
-        return chopStar(name);
-    }
-
-    private String getDisplayName(String cmd) {
-        String chk = " (";
-        return cmd.contains(chk) ?
-                cmd.substring(cmd.indexOf(chk) + chk.length(), cmd.lastIndexOf(")")) :
-                cmd.substring(cmd.lastIndexOf(Utils.SLASH) + Utils.SLASH.length());
-    }
-
 }
 

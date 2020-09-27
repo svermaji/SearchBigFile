@@ -2,6 +2,7 @@
 Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 > * For complete codebase in one refer branch `complete-code`
+> * For the feature of favourite buttons and tagging in files and searches refer branch `with-fav-in-recent`
 > * This branch `master` is targeted to have separate modules as UI and Core
 > * UI and Core modules will be dependency for this project
 >   - Core module `https://github.com/svermaji/Core`
