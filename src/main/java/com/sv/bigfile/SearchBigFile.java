@@ -12,6 +12,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
@@ -384,7 +385,10 @@ public class SearchBigFile extends AppFrame {
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
 
-        table.getColumnModel().getColumn(0).setMinWidth(25);
+        // ToolTip and alignment
+        TableColumn firstCol = table.getColumnModel().getColumn(0);
+        firstCol.setMinWidth(25);
+        firstCol.setCellRenderer(new CellRendererLeftAlign());
 
         addFilter(sorter, txtFilter);
 
