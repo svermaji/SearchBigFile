@@ -8,6 +8,11 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 >   - Core module `https://github.com/svermaji/Core`
 >   - UI module `https://github.com/svermaji/SwingUI`
 
+## Author Information<br>
+* **Name:** Shailendra Verma
+* **Email:** shailendravermag@gmail.com
+* **Blogs:** `https://sv-technical.blogspot.com/`
+
 ## Test Results!!<br>
  - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
  - Attaching result with the name as `With BufferedReader`<br>
@@ -34,34 +39,34 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 #### Images of different stages of development/features<br>
 Attaching screen shot of application:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png) 
 
 Added on 11-Sep-2020. Attaching screen shot of application:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-recent-controls.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-controls.png) 
 
 Added on 13-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB` :<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb.png) 
 
 Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-wider-cb-list.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-wider-cb-list.png) 
 
 Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB New` :<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-test-1gb-new.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb-new.png) 
 
 Added on 15-Sep-2020. Attaching screen shot of application. Read last N (500 to 5000) lines with highlight of pattern:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-N.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-N.png) 
 
 Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-recent-filter.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-recent-filter.png) 
 
 Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-warn-font.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-warn-font.png) 
 
 Added on 24-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-recent-favs.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-favs.png) 
 
 Added on 25-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-font-info.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-font-info.png) 
 
 Added on 26-Sep-2020. Attaching screen shot of application. With BufferedReader:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-image-test-result-BR.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-test-result-BR.png) 

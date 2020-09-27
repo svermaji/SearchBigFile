@@ -30,13 +30,17 @@ import java.util.concurrent.*;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * Written by Shailendra Verma
  * Java Utility to search big files.
- * <p>
  * Searched for a string files of size 1GB
  */
 public class SearchBigFile extends AppFrame {
 
+    /**
+     * This is config and program will search getter
+     * of each enum to store in config file.
+     *
+     * e.g. if enum is Xyz then when storing getXyz will be called
+     */
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches,
         LastN, FontSize, MatchCase, WholeWord
@@ -102,7 +106,6 @@ public class SearchBigFile extends AppFrame {
     private static final int eb = 5;
     private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
 
-    // TODO: Fav remove via * or updating tag
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
     }
@@ -156,7 +159,8 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.LBL_RFILES;
         AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);
         uin = UIName.BTN_LISTRF;
-        JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./search-icon.png");
+
+        JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRF.addActionListener(e -> showListRF());
 
         uin = UIName.BTN_PLUSFONT;
@@ -210,10 +214,10 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.LBL_RSEARCHES;
         AppLabel lblRSearches = new AppLabel(uin.name, cbSearches, uin.mnemonic, uin.tip);
         uin = UIName.BTN_LISTRS;
-        JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./search-icon.png");
+        JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
         uin = UIName.BTN_CANCEL;
-        JButton btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./cancel-icon.png", false);
+        JButton btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", false);
         btnCancel.addActionListener(evt -> cancelSearch());
 
         JButton btnExit = new AppExitButton();
@@ -273,6 +277,12 @@ public class SearchBigFile extends AppFrame {
         });
 
         setToCenter();
+    }
+
+    private String getResourcePath (String path) {
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        System.out.println("pt = " + classloader.getResource(path).toString());
+        return classloader.getResource(path).toString();
     }
 
     private void setBkColors(JButton[] btns) {
@@ -401,9 +411,6 @@ public class SearchBigFile extends AppFrame {
         table.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent mouseEvent) {
                 JTable table = (JTable) mouseEvent.getSource();
-                //TODO: check if this is ok to remove
-                //Point point = mouseEvent.getPoint();
-                //int row = table.rowAtPoint(point);
                 if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
                     src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
                     frame.setVisible(false);
