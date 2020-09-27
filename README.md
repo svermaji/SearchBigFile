@@ -11,7 +11,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Author Information<br>
 * **Name:** Shailendra Verma
 * **Email:** shailendravermag@gmail.com
-* **Blogs:** `https://sv-technical.blogspot.com/`
+* **Blogs:** https://sv-technical.blogspot.com/
 
 ## Test Results!!<br>
  - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
