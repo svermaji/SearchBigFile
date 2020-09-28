@@ -208,7 +208,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_RESETFONT;
         btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
-        btnFontInfo = new JButton(getFontSize());
+        btnFontInfo = new JButton();
         btnFontInfo.setToolTipText("Present font size.");
         uin = UIName.BTN_WARNING;
         btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
@@ -273,6 +273,7 @@ public class SearchBigFile extends AppFrame {
             }
         });
 
+        btnFontInfo.setText(getFontSize());
         setToCenter();
     }
 
