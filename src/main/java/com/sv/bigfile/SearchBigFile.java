@@ -54,57 +54,58 @@ public class SearchBigFile extends AppFrame {
         INCREASE, DECREASE, RESET
     }
 
-    private JTextField txtFilePath;
-    private JTextField txtSearch;
-    private JEditorPane tpResults;
-    private static final String PREFERRED_FONT = "Calibri";
-    private static final int PREFERRED_FONT_SIZE = 12;
-    private static final String DEFAULT_FONT = "Dialog.plain";
-    private static final int DEFAULT_FONT_SIZE = 12;
-    private static final int MIN_FONT_SIZE = 8;
-    private static final int MAX_FONT_SIZE = 24;
-    private static long insertCounter = 0;
-    private static long readCounter = 0;
-    private long occrTillNow;
-    private long linesTillNow;
-    private HTMLDocument htmlDoc;
-    private HTMLEditorKit kit;
-
     private MyLogger logger;
     private DefaultConfigs configs;
-
-    private String searchStr, searchStrReplace;
-    private String recentFilesStr, recentSearchesStr;
-    private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
-    private final String REPLACER_SUFFIX = "</font>";
 
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning;
     private JButton btnSearch;
     private JButton btnLastN;
-    private final String TITLE = "Search File";
-    private static final int RECENT_LIMIT = 20;
-    private static boolean showWarning = false;
-    private static final int WARN_LIMIT_TIME = 20;
-    private static final int WARN_LIMIT_OCCR = 200;
-    private static final int APPEND_MSG_CHUNK = 100;
-    private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
-
-    private static long startTime = System.currentTimeMillis();
-    private static Status status = Status.NOT_STARTED;
-
+    private JTextField txtFilePath;
+    private JTextField txtSearch;
+    private JEditorPane tpResults;
+    private HTMLDocument htmlDoc;
+    private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<String> cbFiles, cbSearches;
     private JComboBox<Integer> cbLastN;
+
+    private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
+    private static final String PREFERRED_FONT = "Calibri";
+    private static final String DEFAULT_FONT = "Dialog.plain";
+    private static final int PREFERRED_FONT_SIZE = 12;
+    private static final int DEFAULT_FONT_SIZE = 12;
+    private static final int MIN_FONT_SIZE = 8;
+    private static final int MAX_FONT_SIZE = 24;
+    private static final int RECENT_LIMIT = 20;
+    private static final int WARN_LIMIT_TIME = 20;
+    private static final int WARN_LIMIT_OCCR = 200;
+    private static final int APPEND_MSG_CHUNK = 100;
+    private static final int eb = 5;
+    private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
+
+    private final String TITLE = "Search File";
+    private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
+    private final String REPLACER_SUFFIX = "</font>";
+
+    private static boolean showWarning = false;
+    private static boolean readNFlag = false;
+    private static long insertCounter = 0;
+    private static long readCounter = 0;
+    private static long startTime = System.currentTimeMillis();
+
+    private String searchStr, searchStrReplace;
+    private String recentFilesStr, recentSearchesStr;
+    private long occrTillNow;
+    private long linesTillNow;
+
+    private static Status status = Status.NOT_STARTED;
+
     // indexed structure to maintain line indexing
     private static Map<Long, String> idxMsgsToAppend;
     // LIFO
     private static Queue<String> qMsgsToAppend;
-    private static boolean readNFlag = false;
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
-
-    private static final int eb = 5;
-    private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
@@ -119,71 +120,32 @@ public class SearchBigFile extends AppFrame {
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
-        msgCallable = new AppendMsgCallable(this);
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
+        msgCallable = new AppendMsgCallable(this);
 
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
 
-        JPanel searchPanel = new JPanel();
-        JPanel filePanel = new JPanel();
-        JPanel exitPanel = new JPanel();
-        JPanel inputPanel = new JPanel();
-
         setTitle(TITLE);
 
-        final int TXT_COLS = 15;
-        tpResults = new JEditorPane();
-        tpResults.setEditable(false);
-        tpResults.setContentType("text/html");
-        //tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
-        tpResults.setFont(getNewFont(tpResults.getFont(), getIntCfg(Configs.FontSize)));
-        tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        htmlDoc = new HTMLDocument();
-        tpResults.setDocument(htmlDoc);
-        kit = new HTMLEditorKit();
+        JPanel filePanel = new JPanel();
 
-        JToolBar jtbActions = new JToolBar();
-        jtbActions.setFloatable(false);
-        jtbActions.setRollover(false);
-        txtFilePath = new JTextField(getCfg(Configs.FilePath));
+        final int TXT_COLS = 15;
         UIName uin = UIName.LBL_FILE;
+        txtFilePath = new JTextField(getCfg(Configs.FilePath));
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         txtFilePath.setColumns(TXT_COLS);
         cbFiles = new JComboBox<>(getFiles());
         cbFiles.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
-        JComboToolTipRenderer cbFilesRenderer = new JComboToolTipRenderer();
-        cbFiles.setRenderer(cbFilesRenderer);
+        cbFiles.setRenderer(new JComboToolTipRenderer());
         cbFiles.setPrototypeDisplayValue("Recent Files");
-        addCBFilesAL();
+        addCBFilesAction();
         uin = UIName.LBL_RFILES;
         AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);
         uin = UIName.BTN_LISTRF;
-
         JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRF.addActionListener(e -> showListRF());
-
-        uin = UIName.BTN_PLUSFONT;
-        btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnPlusFont.addActionListener(e -> increaseFontSize());
-        uin = UIName.BTN_MINUSFONT;
-        btnMinusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnMinusFont.addActionListener(e -> decreaseFontSize());
-        uin = UIName.BTN_RESETFONT;
-        btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnResetFont.addActionListener(e -> resetFontSize());
-        btnFontInfo = new JButton(getFontSize());
-        btnFontInfo.setToolTipText("Present font size.");
-        uin = UIName.BTN_WARNING;
-        btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnWarning.setToolTipText("Warning indicator. If blinks then Either search taking more than ["+ WARN_LIMIT_TIME
-                +"sec] or search occurrences are more than ["+ WARN_LIMIT_OCCR +"].");
-
-        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
-        btnWarning.setBackground(Color.PINK);
-        btnWarning.setBorder(BorderFactory.createEmptyBorder());
-
         uin = UIName.JCB_MATCHCASE;
         jcbMatchCase = new JCheckBox(uin.name, getBooleanCfg(Configs.MatchCase));
         jcbMatchCase.setMnemonic(uin.mnemonic);
@@ -192,6 +154,18 @@ public class SearchBigFile extends AppFrame {
         jcbWholeWord = new JCheckBox(uin.name, getBooleanCfg(Configs.WholeWord));
         jcbWholeWord.setMnemonic(uin.mnemonic);
         jcbWholeWord.setToolTipText(uin.tip);
+
+        filePanel.setLayout(new FlowLayout());
+        filePanel.add(lblFilePath);
+        filePanel.add(txtFilePath);
+        filePanel.add(lblRFiles);
+        filePanel.add(btnListRF);
+        filePanel.add(cbFiles);
+        filePanel.add(jcbMatchCase);
+        filePanel.add(jcbWholeWord);
+        filePanel.setBorder(new TitledBorder("File to search"));
+
+        JPanel searchPanel = new JPanel();
 
         txtSearch = new JTextField(getCfg(Configs.SearchString));
         uin = UIName.LBL_SEARCH;
@@ -212,7 +186,7 @@ public class SearchBigFile extends AppFrame {
         JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
         cbSearches.setRenderer(cbSearchRenderer);
         cbSearches.setPrototypeDisplayValue("Pattern");
-        addCBSearchAL();
+        addCBSearchAction();
         uin = UIName.LBL_RSEARCHES;
         AppLabel lblRSearches = new AppLabel(uin.name, cbSearches, uin.mnemonic, uin.tip);
         uin = UIName.BTN_LISTRS;
@@ -222,18 +196,28 @@ public class SearchBigFile extends AppFrame {
         JButton btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", false);
         btnCancel.addActionListener(evt -> cancelSearch());
 
-        JButton btnExit = new AppExitButton();
+        JToolBar jtbActions = new JToolBar();
+        jtbActions.setFloatable(false);
+        jtbActions.setRollover(false);
+        uin = UIName.BTN_PLUSFONT;
+        btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnPlusFont.addActionListener(e -> increaseFontSize());
+        uin = UIName.BTN_MINUSFONT;
+        btnMinusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnMinusFont.addActionListener(e -> decreaseFontSize());
+        uin = UIName.BTN_RESETFONT;
+        btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnResetFont.addActionListener(e -> resetFontSize());
+        btnFontInfo = new JButton(getFontSize());
+        btnFontInfo.setToolTipText("Present font size.");
+        uin = UIName.BTN_WARNING;
+        btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnWarning.setToolTipText("Warning indicator. If blinks then Either search taking more than [" + WARN_LIMIT_TIME
+                + "sec] or search occurrences are more than [" + WARN_LIMIT_OCCR + "].");
 
-        filePanel.setLayout(new FlowLayout());
-        filePanel.add(lblFilePath);
-        filePanel.add(txtFilePath);
-        filePanel.add(lblRFiles);
-        filePanel.add(btnListRF);
-        filePanel.add(cbFiles);
-        filePanel.add(jcbMatchCase);
-        filePanel.add(jcbWholeWord);
-        TitledBorder titledFP = new TitledBorder("File to search");
-        filePanel.setBorder(titledFP);
+        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
+        btnWarning.setBackground(Color.PINK);
+        btnWarning.setBorder(BorderFactory.createEmptyBorder());
 
         searchPanel.setLayout(new FlowLayout());
         searchPanel.add(btnWarning);
@@ -252,18 +236,29 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
         jtbActions.add(btnFontInfo);
-        TitledBorder titledSP = new TitledBorder("Pattern to search");
-        searchPanel.setBorder(titledSP);
+        searchPanel.setBorder(new TitledBorder("Pattern to search"));
 
+        JPanel exitPanel = new JPanel();
+        JButton btnExit = new AppExitButton();
         TitledBorder titledEP = new TitledBorder("Exit");
         exitPanel.setBorder(titledEP);
         exitPanel.add(btnExit);
 
+        JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new GridBagLayout());
         inputPanel.add(filePanel);
         inputPanel.add(searchPanel);
         inputPanel.add(exitPanel);
 
+        tpResults = new JEditorPane();
+        tpResults.setEditable(false);
+        tpResults.setContentType("text/html");
+        //tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
+        tpResults.setFont(getNewFont(tpResults.getFont(), getIntCfg(Configs.FontSize)));
+        tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        htmlDoc = new HTMLDocument();
+        tpResults.setDocument(htmlDoc);
+        kit = new HTMLEditorKit();
         JScrollPane jspResults = new JScrollPane(tpResults);
         jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jspResults.setBorder(emptyBorder);
@@ -361,6 +356,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private Font getNewFont(Font font, int size) {
+        log("Returning font as " + font.getName() + ", of size " + size);
         return new Font(font.getName(), font.getStyle(), size);
     }
 
@@ -479,26 +475,6 @@ public class SearchBigFile extends AppFrame {
 
     }
 
-    static class CopyCommandAction extends AbstractAction {
-
-        private final JTable table;
-        private final JFrame frame;
-        private final JComboBox<String> src;
-
-        public CopyCommandAction(JTable table, JFrame frame, JComboBox<String> src) {
-            this.table = table;
-            this.frame = frame;
-            this.src = src;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
-            frame.setVisible(false);
-        }
-    }
-
-
     private void addFilter(TableRowSorter<DefaultTableModel> sorter, JTextField txtFilter) {
         RowFilter<DefaultTableModel, Object> rf;
         try {
@@ -554,7 +530,7 @@ public class SearchBigFile extends AppFrame {
         Arrays.stream(cbSearches.getActionListeners()).forEach(a -> cbSearches.removeActionListener(a));
     }
 
-    private void addCBSearchAL() {
+    private void addCBSearchAction() {
         cbSearches.addActionListener(e -> setSearchPattern(cbSearches.getSelectedItem().toString()));
     }
 
@@ -570,7 +546,7 @@ public class SearchBigFile extends AppFrame {
         Arrays.stream(cbFiles.getActionListeners()).forEach(a -> cbFiles.removeActionListener(a));
     }
 
-    private void addCBFilesAL() {
+    private void addCBFilesAction() {
         cbFiles.addActionListener(e -> setFileToSearch(cbFiles.getSelectedItem().toString()));
     }
 
@@ -639,7 +615,7 @@ public class SearchBigFile extends AppFrame {
                         cbFiles.addItem(s);
                     }
                 });
-        addCBFilesAL();
+        addCBFilesAction();
 
         removeCBSearchAL();
         cbSearches.removeAllItems();
@@ -649,7 +625,7 @@ public class SearchBigFile extends AppFrame {
                         cbSearches.addItem(s);
                     }
                 });
-        addCBSearchAL();
+        addCBSearchAction();
     }
 
     private String checkItems(String searchStr, String csv, String selectedItem) {
@@ -711,6 +687,233 @@ public class SearchBigFile extends AppFrame {
 
     private void startThread(Callable<Boolean> callable) {
         threadPool.submit(callable);
+    }
+
+    public void appendResultNoFormat(String data) {
+        synchronized (SearchBigFile.class) {
+            data = convertForHtml(data);
+            // Needs to be sync else line numbers and data will be jumbled
+            try {
+                if (readNFlag) {
+                    Element body = getBodyElement();
+                    int offs = Math.max(body.getStartOffset(), 0);
+                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
+                } else {
+                    kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
+                }
+            } catch (BadLocationException | IOException e) {
+                logger.error("Unable to append data: " + data);
+            }
+        }
+    }
+
+    private Element getBodyElement() {
+        Element[] roots = htmlDoc.getRootElements(); // #0 is the HTML element, #1 the bidi-root
+        Element body = null;
+        for (int i = 0; i < roots[0].getElementCount(); i++) {
+            Element element = roots[0].getElement(i);
+            if (element.getAttributes().getAttribute(StyleConstants.NameAttribute) == HTML.Tag.BODY) {
+                body = element;
+                break;
+            }
+        }
+        return body;
+    }
+
+    private String convertStartingSpacesForHtml(String data) {
+        StringBuilder sb = new StringBuilder();
+        int idx = 0;
+        char[] arr = data.toCharArray();
+        for (char c : arr) {
+            if (Character.isWhitespace(c)) {
+                sb.append("&nbsp;");
+                idx++;
+            } else {
+                break;
+            }
+        }
+        return sb.toString() + data.substring(idx);
+    }
+
+    private String convertForHtml(String data) {
+        String NEW_LINE_REGEX = "\r?\n";
+        String HTML_LINE_END = "<br>";
+        return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
+    }
+
+    public void appendResult(String data) {
+
+        if (Utils.hasValue(searchStr)) {
+            if (!isMatchCase()) {
+                data = replaceWithSameCase(data);
+            } else {
+                data = data.replaceAll(searchStr, searchStrReplace);
+            }
+        }
+
+        // TODO
+        /*if (isWholeWord()) {
+            searchStr = ".*\\b" + searchStr + "\\b.*";
+        }*/
+
+        appendResultNoFormat(data);
+    }
+
+    private String replaceWithSameCase(String data) {
+        StringBuilder sb = new StringBuilder();
+        while (data.toLowerCase().contains(searchStr.toLowerCase())) {
+            int idx = data.toLowerCase().indexOf(searchStr.toLowerCase());
+            sb.append(data, 0, idx)
+                    .append(REPLACER_PREFIX)
+                    .append(data, idx, idx + searchStr.length())
+                    .append(REPLACER_SUFFIX);
+            data = data.substring(idx + searchStr.length());
+        }
+        sb.append(data);
+        return sb.toString();
+    }
+
+    private void emptyResults() {
+        tpResults.setText("");
+    }
+
+    private void setToCenter() {
+        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+
+    /**
+     * Exit the Application
+     */
+    private void exitForm() {
+        configs.saveConfig(this);
+        setVisible(false);
+        dispose();
+        logger.dispose();
+        System.exit(0);
+    }
+
+    public String getFilePath() {
+        return txtFilePath.getText();
+    }
+
+    public String getFontSize() {
+        return tpResults.getFont().getSize() + "";
+    }
+
+    public String getSearchString() {
+        return txtSearch.getText();
+    }
+
+    public String getMatchCase() {
+        return jcbMatchCase.isSelected() + "";
+    }
+
+    public String getWholeWord() {
+        return jcbWholeWord.isSelected() + "";
+    }
+
+    public String getLastN() {
+        return cbLastN.getSelectedItem().toString();
+    }
+
+    public String getRecentSearches() {
+        return recentSearchesStr;
+    }
+
+    public String getRecentFiles() {
+        return recentFilesStr;
+    }
+
+    public void updateTitle(String info) {
+        setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
+    }
+
+    private String getWarning() {
+        return " - Either search taking long or too many results [" + occrTillNow + "] !!  Cancel and try to narrow";
+    }
+
+    private String processPattern() {
+        String searchPattern = searchStr;
+
+        if (!isMatchCase()) {
+            searchPattern = searchPattern.toLowerCase();
+        }
+        if (isWholeWord()) {
+            searchPattern = ".*\\b" + searchPattern + "\\b.*";
+        }
+        return searchPattern;
+    }
+
+    private void printCounters() {
+        logger.log("insertCounter [" + insertCounter
+                + "], readCounter [" + readCounter
+                + "], qMsgsToAppend size [" + qMsgsToAppend.size()
+                + "], idxMsgsToAppend size [" + idxMsgsToAppend.size()
+                + "]");
+    }
+
+    private String getSearchResult(String path, String seconds, long lineNum, long occurrences) {
+        String result =
+                String.format("File size: %s, " +
+                                "time taken: %s, lines read: [%s], occurrences: [%s]",
+                        Utils.getFileSizeString(new File(path).length()),
+                        seconds,
+                        lineNum,
+                        occurrences);
+
+        logger.log(result);
+        return result;
+    }
+
+    public String getSecondsElapsedStr(long time) {
+        return "[" + getSecondsElapsed(time) + " sec]";
+    }
+
+    public long getSecondsElapsed(long time) {
+        return TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - time);
+    }
+
+    public void log(String s) {
+        logger.log(s);
+    }
+
+    public void finishAction() {
+        printCounters();
+        // Go to end
+        tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
+    }
+
+    public boolean getBooleanCfg(Configs c) {
+        return configs.getBooleanConfig(c.name());
+    }
+
+    public int getIntCfg(Configs c) {
+        return configs.getIntConfig(c.name());
+    }
+
+    public String getCfg(Configs c) {
+        return configs.getConfig(c.name());
+    }
+
+    static class CopyCommandAction extends AbstractAction {
+
+        private final JTable table;
+        private final JFrame frame;
+        private final JComboBox<String> src;
+
+        public CopyCommandAction(JTable table, JFrame frame, JComboBox<String> src) {
+            this.table = table;
+            this.frame = frame;
+            this.src = src;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
+            frame.setVisible(false);
+        }
     }
 
     class LastNRead implements Callable<Boolean> {
@@ -889,147 +1092,6 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    public void appendResultNoFormat(String data) {
-        synchronized (SearchBigFile.class) {
-            data = convertForHtml(data);
-            // Needs to be sync else line numbers and data will be jumbled
-            try {
-                if (readNFlag) {
-                    Element body = getBodyElement();
-                    int offs = Math.max(body.getStartOffset(), 0);
-                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
-                } else {
-                    kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
-                }
-            } catch (BadLocationException | IOException e) {
-                logger.error("Unable to append data: " + data);
-            }
-        }
-    }
-
-    private Element getBodyElement() {
-        Element[] roots = htmlDoc.getRootElements(); // #0 is the HTML element, #1 the bidi-root
-        Element body = null;
-        for (int i = 0; i < roots[0].getElementCount(); i++) {
-            Element element = roots[0].getElement(i);
-            if (element.getAttributes().getAttribute(StyleConstants.NameAttribute) == HTML.Tag.BODY) {
-                body = element;
-                break;
-            }
-        }
-        return body;
-    }
-
-    private String convertStartingSpacesForHtml(String data) {
-        StringBuilder sb = new StringBuilder();
-        int idx = 0;
-        char[] arr = data.toCharArray();
-        for (char c : arr) {
-            if (Character.isWhitespace(c)) {
-                sb.append("&nbsp;");
-                idx++;
-            } else {
-                break;
-            }
-        }
-        return sb.toString() + data.substring(idx);
-    }
-
-    private String convertForHtml(String data) {
-        String NEW_LINE_REGEX = "\r?\n";
-        String HTML_LINE_END = "<br>";
-        return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
-    }
-
-    public void appendResult(String data) {
-
-        if (Utils.hasValue(searchStr)) {
-            if (!isMatchCase()) {
-                data = replaceWithSameCase(data);
-            } else {
-                data = data.replaceAll(searchStr, searchStrReplace);
-            }
-        }
-
-        // TODO
-        /*if (isWholeWord()) {
-            searchStr = ".*\\b" + searchStr + "\\b.*";
-        }*/
-
-        appendResultNoFormat(data);
-    }
-
-    private String replaceWithSameCase(String data) {
-        StringBuilder sb = new StringBuilder();
-        while (data.toLowerCase().contains(searchStr.toLowerCase())) {
-            int idx = data.toLowerCase().indexOf(searchStr.toLowerCase());
-            sb.append(data, 0, idx)
-                    .append(REPLACER_PREFIX)
-                    .append(data, idx, idx + searchStr.length())
-                    .append(REPLACER_SUFFIX);
-            data = data.substring(idx + searchStr.length());
-        }
-        sb.append(data);
-        return sb.toString();
-    }
-
-    private void emptyResults() {
-        tpResults.setText("");
-    }
-
-    private void setToCenter() {
-        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
-        setLocationRelativeTo(null);
-        setVisible(true);
-    }
-
-    /**
-     * Exit the Application
-     */
-    private void exitForm() {
-        configs.saveConfig(this);
-        setVisible(false);
-        dispose();
-        logger.dispose();
-        System.exit(0);
-    }
-
-    public String getFilePath() {
-        return txtFilePath.getText();
-    }
-
-    public String getFontSize() {
-        return tpResults.getFont().getSize() + "";
-    }
-
-    public String getSearchString() {
-        return txtSearch.getText();
-    }
-
-    public String getMatchCase() {
-        return jcbMatchCase.isSelected() + "";
-    }
-
-    public String getWholeWord() {
-        return jcbWholeWord.isSelected() + "";
-    }
-
-    public String getLastN() {
-        return cbLastN.getSelectedItem().toString();
-    }
-
-    public String getRecentSearches() {
-        return recentSearchesStr;
-    }
-
-    public String getRecentFiles() {
-        return recentFilesStr;
-    }
-
-    public void updateTitle(String info) {
-        setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
-    }
-
     class TimerCallable implements Callable<Boolean> {
 
         private final SearchBigFile sbf;
@@ -1040,10 +1102,11 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
+            long timeElapse = 0;
             do {
                 // Due to multi threading, separate if is imposed
                 if (status == Status.READING) {
-                    long timeElapse = sbf.getSecondsElapsed(startTime);
+                    timeElapse = sbf.getSecondsElapsed(startTime);
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
                     if (showWarning || timeElapse > WARN_LIMIT_TIME) {
                         msg += sbf.getWarning();
@@ -1054,13 +1117,9 @@ public class SearchBigFile extends AppFrame {
                 }
             } while (status == Status.READING);
 
-            sbf.logger.log("Timer stopped after ");
+            sbf.logger.log("Timer stopped after " + timeElapse + " sec");
             return true;
         }
-    }
-
-    private String getWarning() {
-        return " - Either search taking long or too many results [" + occrTillNow + "] !!  Cancel and try to narrow";
     }
 
     class AppendMsgCallable implements Callable<Boolean> {
@@ -1175,67 +1234,5 @@ public class SearchBigFile extends AppFrame {
 
     }
 
-    private String processPattern() {
-        String searchPattern = searchStr;
-
-        if (!isMatchCase()) {
-            searchPattern = searchPattern.toLowerCase();
-        }
-        if (isWholeWord()) {
-            searchPattern = ".*\\b" + searchPattern + "\\b.*";
-        }
-        return searchPattern;
-    }
-
-    private void printCounters() {
-        logger.log("insertCounter [" + insertCounter
-                + "], readCounter [" + readCounter
-                + "], qMsgsToAppend size [" + qMsgsToAppend.size()
-                + "], idxMsgsToAppend size [" + idxMsgsToAppend.size()
-                + "]");
-    }
-
-    private String getSearchResult(String path, String seconds, long lineNum, long occurrences) {
-        String result =
-                String.format("File size: %s, " +
-                                "time taken: %s, lines read: [%s], occurrences: [%s]",
-                        Utils.getFileSizeString(new File(path).length()),
-                        seconds,
-                        lineNum,
-                        occurrences);
-
-        logger.log(result);
-        return result;
-    }
-
-    public String getSecondsElapsedStr(long time) {
-        return "[" + getSecondsElapsed(time) + "sec]";
-    }
-
-    public long getSecondsElapsed(long time) {
-        return TimeUnit.MILLISECONDS.toSeconds(time);
-    }
-
-    /*public void log(String s) {
-        logger.log(s);
-    }*/
-
-    public void finishAction() {
-        printCounters();
-        // Go to end
-        tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
-    }
-
-    public boolean getBooleanCfg(Configs c) {
-        return Boolean.parseBoolean(getCfg(c));
-    }
-
-    public int getIntCfg(Configs c) {
-        return Integer.parseInt(getCfg(c));
-    }
-
-    public String getCfg(Configs c) {
-        return configs.getConfig(c.name());
-    }
 }
 
