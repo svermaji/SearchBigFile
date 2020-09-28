@@ -38,7 +38,7 @@ public class SearchBigFile extends AppFrame {
     /**
      * This is config and program will search getter
      * of each enum to store in config file.
-     *
+     * <p>
      * e.g. if enum is Xyz then when storing getXyz will be called
      */
     enum Configs {
@@ -84,8 +84,8 @@ public class SearchBigFile extends AppFrame {
     private final String TITLE = "Search File";
     private static final int RECENT_LIMIT = 20;
     private static boolean showWarning = false;
-    private static final int TIME_LIMIT_FOR_WARN_IN_SEC = 20;
-    private static final int OCCUR_LIMIT_FOR_WARN_IN_SEC = 200;
+    private static final int WARN_LIMIT_TIME = 20;
+    private static final int WARN_LIMIT_OCCR = 200;
     private static final int APPEND_MSG_CHUNK = 100;
     private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
 
@@ -120,8 +120,8 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         msgCallable = new AppendMsgCallable(this);
-        recentFilesStr = configs.getConfig(Configs.RecentFiles.name());
-        recentSearchesStr = configs.getConfig(Configs.RecentSearches.name());
+        recentFilesStr = getCfg(Configs.RecentFiles);
+        recentSearchesStr = getCfg(Configs.RecentSearches);
 
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
@@ -137,7 +137,8 @@ public class SearchBigFile extends AppFrame {
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
-        tpResults.setFont(getFontForEditor(configs.getConfig(Configs.FontSize.name())));
+        //tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
+        tpResults.setFont(getNewFont(tpResults.getFont(), getIntCfg(Configs.FontSize)));
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
@@ -146,7 +147,7 @@ public class SearchBigFile extends AppFrame {
         JToolBar jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
         jtbActions.setRollover(false);
-        txtFilePath = new JTextField(configs.getConfig(Configs.FilePath.name()));
+        txtFilePath = new JTextField(getCfg(Configs.FilePath));
         UIName uin = UIName.LBL_FILE;
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         txtFilePath.setColumns(TXT_COLS);
@@ -176,22 +177,23 @@ public class SearchBigFile extends AppFrame {
         btnFontInfo.setToolTipText("Present font size.");
         uin = UIName.BTN_WARNING;
         btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnWarning.setToolTipText("Warning indicator. If blinks then Either search taking more than ["+ WARN_LIMIT_TIME
+                +"sec] or search occurrences are more than ["+ WARN_LIMIT_OCCR +"].");
+
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
         btnWarning.setBackground(Color.PINK);
         btnWarning.setBorder(BorderFactory.createEmptyBorder());
 
         uin = UIName.JCB_MATCHCASE;
-        jcbMatchCase = new JCheckBox(uin.name,
-                Boolean.parseBoolean(configs.getConfig(Configs.MatchCase.name())));
+        jcbMatchCase = new JCheckBox(uin.name, getBooleanCfg(Configs.MatchCase));
         jcbMatchCase.setMnemonic(uin.mnemonic);
         jcbMatchCase.setToolTipText(uin.tip);
         uin = UIName.JCB_WHOLEWORD;
-        jcbWholeWord = new JCheckBox(uin.name,
-                Boolean.parseBoolean(configs.getConfig(Configs.WholeWord.name())));
+        jcbWholeWord = new JCheckBox(uin.name, getBooleanCfg(Configs.WholeWord));
         jcbWholeWord.setMnemonic(uin.mnemonic);
         jcbWholeWord.setToolTipText(uin.tip);
 
-        txtSearch = new JTextField(configs.getConfig(Configs.SearchString.name()));
+        txtSearch = new JTextField(getCfg(Configs.SearchString));
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         txtSearch.setColumns(TXT_COLS - 5);
@@ -199,7 +201,7 @@ public class SearchBigFile extends AppFrame {
         btnSearch = new AppButton(uin.name, uin.mnemonic);
         btnSearch.addActionListener(evt -> searchFile());
         cbLastN = new JComboBox<>(getLastNOptions());
-        cbLastN.setSelectedItem(Integer.parseInt(configs.getConfig(Configs.LastN.name())));
+        cbLastN.setSelectedItem(getIntCfg(Configs.LastN));
         uin = UIName.LBL_LASTN;
         AppLabel lblLastN = new AppLabel(uin.name, cbLastN, uin.mnemonic);
         uin = UIName.BTN_LASTN;
@@ -279,7 +281,7 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
-    private String getResourcePath (String path) {
+    private String getResourcePath(String path) {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         System.out.println("pt = " + classloader.getResource(path).toString());
         return classloader.getResource(path).toString();
@@ -573,11 +575,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String[] getFiles() {
-        return configs.getConfig(Configs.RecentFiles.name()).split(";");
+        return getCfg(Configs.RecentFiles).split(";");
     }
 
     private String[] getSearches() {
-        return configs.getConfig(Configs.RecentSearches.name()).split(";");
+        return getCfg(Configs.RecentSearches).split(";");
     }
 
     private void resetShowWarning() {
@@ -723,19 +725,22 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             logger.log("Reading last few lines...");
             resetForNewSearch();
+
             if (isValidate()) {
+                final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+                int readLines = 0;
+                int occr = 0;
                 boolean hasError = false;
                 String searchPattern = processPattern();
+                String fn = getFilePath();
+                StringBuilder sb = new StringBuilder();
+                File file = new File(fn);
+
                 readNFlag = true;
                 startThread(new TimerCallable(sbf));
-                final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
                 updateTitle("Reading last " + LIMIT + " lines");
-                String fn = getFilePath();
                 logger.log("Loading last " + LIMIT + " lines from: " + fn);
-                int readLines = 0;
-                StringBuilder sb = new StringBuilder();
-                int occr = 0;
-                File file = new File(fn);
+
                 try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
                     long fileLength = file.length() - 1;
                     // Set the pointer at the last of the file
@@ -771,7 +776,7 @@ public class SearchBigFile extends AppFrame {
                             occr += len > 0 ? len - 1 : 0;
                             occrTillNow = occr;
                             linesTillNow = readLines;
-                            if (!showWarning && occr > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
+                            if (!showWarning && occr > WARN_LIMIT_OCCR) {
                                 showWarning = true;
                             }
                             sb = new StringBuilder();
@@ -815,7 +820,7 @@ public class SearchBigFile extends AppFrame {
                 if (!hasError) {
                     String result = getSearchResult(
                             fn,
-                            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime),
+                            getSecondsElapsedStr(startTime),
                             readLines,
                             occr);
                     String statusStr = status == Status.CANCELLED ? "Read cancelled - " : "Read complete - ";
@@ -824,8 +829,17 @@ public class SearchBigFile extends AppFrame {
                 status = Status.DONE;
             }
 
-            printCounters();
+            sbf.finishAction();
             return true;
+        }
+    }
+
+    class StartWarnIndicator extends SwingWorker<Integer, String> {
+
+        @Override
+        public Integer doInBackground() {
+            btnWarning.setBackground(btnWarning.getBackground() == Color.RED ? Color.PINK : Color.RED);
+            return 1;
         }
     }
 
@@ -869,7 +883,7 @@ public class SearchBigFile extends AppFrame {
 
             occrTillNow = stats.getOccurrences();
             linesTillNow = stats.getLineNum();
-            if (!showWarning && stats.getOccurrences() > OCCUR_LIMIT_FOR_WARN_IN_SEC) {
+            if (!showWarning && stats.getOccurrences() > WARN_LIMIT_OCCR) {
                 showWarning = true;
             }
         }
@@ -887,8 +901,6 @@ public class SearchBigFile extends AppFrame {
                 } else {
                     kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
                 }
-                // Go to end
-                tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
             } catch (BadLocationException | IOException e) {
                 logger.error("Unable to append data: " + data);
             }
@@ -1018,7 +1030,7 @@ public class SearchBigFile extends AppFrame {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
 
-    static class TimerCallable implements Callable<Boolean> {
+    class TimerCallable implements Callable<Boolean> {
 
         private final SearchBigFile sbf;
 
@@ -1031,20 +1043,18 @@ public class SearchBigFile extends AppFrame {
             do {
                 // Due to multi threading, separate if is imposed
                 if (status == Status.READING) {
-                    long timeElapse = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
+                    long timeElapse = sbf.getSecondsElapsed(startTime);
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
-                    if (showWarning || timeElapse > TIME_LIMIT_FOR_WARN_IN_SEC) {
+                    if (showWarning || timeElapse > WARN_LIMIT_TIME) {
                         msg += sbf.getWarning();
-                        if (sbf.btnWarning.getBackground() == Color.RED) {
-                            sbf.btnWarning.setBackground(Color.PINK);
-                        } else {
-                            sbf.btnWarning.setBackground(Color.RED);
-                        }
+                        SwingUtilities.invokeLater(new StartWarnIndicator());
                     }
                     sbf.updateTitle(msg);
                     Utils.sleep(1000, sbf.logger);
                 }
             } while (status == Status.READING);
+
+            sbf.logger.log("Timer stopped after ");
             return true;
         }
     }
@@ -1107,7 +1117,7 @@ public class SearchBigFile extends AppFrame {
             try (InputStream stream = new FileInputStream(path);
                  BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
             ) {
-                long lineNum = 1, occurrences = 0;
+                long lineNum = 1, occurrences = 0, time = System.currentTimeMillis();
                 SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
                 SearchData searchData = new SearchData(stats);
 
@@ -1131,14 +1141,16 @@ public class SearchBigFile extends AppFrame {
                     }
                 }
 
-                while (qMsgsToAppend.size() > 0) {
-                    Utils.sleep(200, sbf.logger);
-                    startThread(msgCallable);
+                logger.log("File read in " + getSecondsElapsedStr(time));
+
+                time = System.currentTimeMillis();
+                startThread(msgCallable);
+                while (readCounter != insertCounter) {
                     Utils.sleep(200, sbf.logger);
                 }
+                logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
 
-                long seconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime);
-                String result = getSearchResult(path, seconds, stats.getLineNum(), stats.occurrences);
+                String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.occurrences);
                 if (stats.getOccurrences() == 0) {
                     sbf.appendResultNoFormat("No match found. ");
                 }
@@ -1157,7 +1169,7 @@ public class SearchBigFile extends AppFrame {
                 sbf.enableControls();
             }
 
-            sbf.printCounters();
+            finishAction();
             return true;
         }
 
@@ -1183,10 +1195,10 @@ public class SearchBigFile extends AppFrame {
                 + "]");
     }
 
-    private String getSearchResult(String path, long seconds, long lineNum, long occurrences) {
+    private String getSearchResult(String path, String seconds, long lineNum, long occurrences) {
         String result =
                 String.format("File size: %s, " +
-                                "time taken: [%s sec], lines read: [%s], occurrences: [%s]",
+                                "time taken: %s, lines read: [%s], occurrences: [%s]",
                         Utils.getFileSizeString(new File(path).length()),
                         seconds,
                         lineNum,
@@ -1194,6 +1206,36 @@ public class SearchBigFile extends AppFrame {
 
         logger.log(result);
         return result;
+    }
+
+    public String getSecondsElapsedStr(long time) {
+        return "[" + getSecondsElapsed(time) + "sec]";
+    }
+
+    public long getSecondsElapsed(long time) {
+        return TimeUnit.MILLISECONDS.toSeconds(time);
+    }
+
+    /*public void log(String s) {
+        logger.log(s);
+    }*/
+
+    public void finishAction() {
+        printCounters();
+        // Go to end
+        tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
+    }
+
+    public boolean getBooleanCfg(Configs c) {
+        return Boolean.parseBoolean(getCfg(c));
+    }
+
+    public int getIntCfg(Configs c) {
+        return Integer.parseInt(getCfg(c));
+    }
+
+    public String getCfg(Configs c) {
+        return configs.getConfig(c.name());
     }
 }
 
