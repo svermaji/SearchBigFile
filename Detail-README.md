@@ -17,7 +17,7 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 ## Recent Changes<br>
 #### On 29-Sep-2020<br>
 * In case of hang, program tries to stop forcefully after 50 sec. 
-
+* The warning indicator is now revamped and made more prominent. 
 
 #### On 26-Sep-2020<br>
 * ESC key to hide inner-frame for recent searches.

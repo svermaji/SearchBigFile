@@ -7,7 +7,6 @@ public enum UIName {
     BTN_PLUSFONT("+", '=', "Increase font size for file contents."),
     BTN_MINUSFONT("—", '-', "Decrease font size for file contents."),
     BTN_RESETFONT("✔", '0', "Reset font size for file contents."),
-    BTN_WARNING(" ! ", '`', "Warning indicator. When blinks indicate -> Either search taking long or too many results."),
     JCB_MATCHCASE("case", 'e', "Match case"),
     JCB_WHOLEWORD("word", 'w', "Whole word"),
     LBL_SEARCH("Search", 'H'),

@@ -57,7 +57,9 @@ public class SearchBigFile extends AppFrame {
     private MyLogger logger;
     private DefaultConfigs configs;
 
-    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning;
+    private JPanel warnPanel;
+    private JLabel lblWarning;
+    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
     private JButton btnSearch;
     private JButton btnLastN;
     private JTextField txtFilePath;
@@ -77,9 +79,11 @@ public class SearchBigFile extends AppFrame {
     private static final int MIN_FONT_SIZE = 8;
     private static final int MAX_FONT_SIZE = 24;
     private static final int RECENT_LIMIT = 20;
+    private static final int SEARCH_STR_LEN_LIMIT = 2;
     private static final int WARN_LIMIT_SEC = 20;
     private static final int FORCE_STOP_LIMIT_SEC = 50;
     private static final int WARN_LIMIT_OCCR = 200;
+    private static final int FORCE_STOP_LIMIT_OCCR = 500;
     private static final int APPEND_MSG_CHUNK = 100;
     private static final int eb = 5;
     private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
@@ -95,8 +99,9 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
 
     private boolean debugAllowed;
-    private String searchStr, searchStrReplace;
+    private String searchStr, searchStrReplace, operation;
     private String recentFilesStr, recentSearchesStr;
+    private long timeTillNow;
     private long occrTillNow;
     private long linesTillNow;
 
@@ -107,7 +112,7 @@ public class SearchBigFile extends AppFrame {
     // LIFO
     private static Queue<String> qMsgsToAppend;
     private static AppendMsgCallable msgCallable;
-    private static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(5);
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
@@ -121,6 +126,7 @@ public class SearchBigFile extends AppFrame {
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         debugAllowed = getBooleanCfg(Configs.DebugEnabled);
         logger.setDebug(debugAllowed);
+        log("Debug enabled " + logger.isDebug());
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         recentFilesStr = getCfg(Configs.RecentFiles);
@@ -183,7 +189,7 @@ public class SearchBigFile extends AppFrame {
         AppLabel lblLastN = new AppLabel(uin.name, cbLastN, uin.mnemonic);
         uin = UIName.BTN_LASTN;
         btnLastN = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnLastN.addActionListener(evt -> threadPool.submit(new LastNRead(this)));
+        btnLastN.addActionListener(evt -> readFile());
         cbSearches = new JComboBox<>(getSearches());
         cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
@@ -213,19 +219,10 @@ public class SearchBigFile extends AppFrame {
         btnResetFont.addActionListener(e -> resetFontSize());
         btnFontInfo = new JButton();
         btnFontInfo.setToolTipText("Present font size.");
-        uin = UIName.BTN_WARNING;
-        btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnWarning.setToolTipText("Warning indicator. If blinks then Either search taking more than [" + WARN_LIMIT_SEC
-                + "sec] or search occurrences are more than [" + WARN_LIMIT_OCCR
-                + "]. Will CANCEL forcefully after [" + FORCE_STOP_LIMIT_SEC
-                + "sec]");
 
-        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
-        btnWarning.setBackground(Color.PINK);
-        btnWarning.setBorder(BorderFactory.createEmptyBorder());
+        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo});
 
         searchPanel.setLayout(new FlowLayout());
-        searchPanel.add(btnWarning);
         searchPanel.add(lblSearch);
         searchPanel.add(txtSearch);
         searchPanel.add(lblRSearches);
@@ -255,11 +252,20 @@ public class SearchBigFile extends AppFrame {
         inputPanel.add(searchPanel);
         inputPanel.add(exitPanel);
 
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        topPanel.add(inputPanel, BorderLayout.NORTH);
+        warnPanel = new JPanel();
+        lblWarning = new JLabel(getWarnInitialMsg());
+        lblWarning.setFont(getNewFont(lblWarning.getFont(), 10));
+        warnPanel.add(lblWarning);
+        topPanel.add(warnPanel, BorderLayout.SOUTH);
+        resetShowWarning();
+
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
-        //tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
-        tpResults.setFont(getNewFont(tpResults.getFont(), getIntCfg(Configs.FontSize)));
+        tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
@@ -268,7 +274,7 @@ public class SearchBigFile extends AppFrame {
         jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jspResults.setBorder(emptyBorder);
 
-        parentContainer.add(inputPanel, BorderLayout.NORTH);
+        parentContainer.add(topPanel, BorderLayout.NORTH);
         parentContainer.add(jspResults, BorderLayout.CENTER);
 
         btnExit.addActionListener(evt -> exitForm());
@@ -282,9 +288,17 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
+    private String getWarnInitialMsg() {
+        return "Warning indicates search taking more than [" + WARN_LIMIT_SEC
+                + " sec] and/or occurrences found are more than [" + WARN_LIMIT_OCCR
+                + "]. Force stop limit for time  [" + FORCE_STOP_LIMIT_SEC
+                + " sec] and occurrences [" + FORCE_STOP_LIMIT_OCCR + "]";
+
+    }
+
+    //TODO: read from resource path and override icons
     private String getResourcePath(String path) {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        System.out.println("pt = " + classloader.getResource(path).toString());
         return classloader.getResource(path).toString();
     }
 
@@ -509,6 +523,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void resetForNewSearch() {
+        printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
         disableControls();
@@ -522,6 +537,16 @@ public class SearchBigFile extends AppFrame {
         startTime = System.currentTimeMillis();
         status = Status.READING;
         readNFlag = false;
+    }
+
+    private void printMemoryDetails() {
+        long total = Runtime.getRuntime().totalMemory();
+        long free = Runtime.getRuntime().freeMemory();
+        debug(String.format("Total: %s, Free: %s, Occupied: %s",
+                Utils.getFileSizeString(total),
+                Utils.getFileSizeString(free),
+                Utils.getFileSizeString(total - free)
+        ));
     }
 
     private String getLineNumStr(long line) {
@@ -566,13 +591,18 @@ public class SearchBigFile extends AppFrame {
 
     private void resetShowWarning() {
         showWarning = false;
+        timeTillNow = 0;
         occrTillNow = 0;
         linesTillNow = 0;
-        btnWarning.setBackground(Color.PINK);
+        lblWarning.setText(getWarnInitialMsg());
+        lblWarning.setForeground(Color.WHITE);
+        warnPanel.setBackground(Color.GRAY);
     }
 
     private void cancelSearch() {
         resetShowWarning();
+        // To ensure background is red
+        updateWarning("Search cancelled", isErrorState());
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -580,6 +610,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void searchFile() {
+        operation = "search";
         resetForNewSearch();
         if (isValidate()) {
             status = Status.READING;
@@ -590,16 +621,36 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    //TODO: remove star tagging and fav concept
+    private void readFile() {
+        operation = "read";
+        resetForNewSearch();
+        if (isValidate()) {
+            status = Status.READING;
+            threadPool.submit(new LastNRead(this));
+            threadPool.submit(new TimerCallable(this));
+        } else {
+            enableControls();
+        }
+    }
+
+    private void updateTitleAndWarn(String s) {
+        updateTitle(s);
+        updateWarning(s, false);
+    }
+
     private boolean isValidate() {
         updateTitle("");
         boolean result = true;
         if (!Utils.hasValue(getFilePath())) {
-            updateTitle("REQUIRED: file to search");
+            updateTitleAndWarn("Validation error - REQUIRED: file to search");
             result = false;
         }
         if (result && !Utils.hasValue(getSearchString())) {
-            updateTitle("REQUIRED: text to search");
+            updateTitleAndWarn("Validation error - REQUIRED: text to search");
+            result = false;
+        }
+        if (result && getSearchString().length() < SEARCH_STR_LEN_LIMIT) {
+            updateTitleAndWarn("Validation error - LENGTH: text to search should be " + SEARCH_STR_LEN_LIMIT + " or more characters");
             result = false;
         }
 
@@ -649,9 +700,10 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getSearchDetails() {
-        return String.format("Starting search in file [%s] for pattern [%s] " +
+        return String.format("Starting [%s] in file [%s] for pattern [%s] " +
                         "with criteria MatchCase [%s], WholeWord[%s], read-lines[%s] " +
                         "at time [%s]",
+                operation,
                 getFilePath(),
                 getSearchString(),
                 getMatchCase(),
@@ -661,6 +713,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateControls(boolean enable) {
+        debug("Updating controls: " + enable);
         Component[] components = {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 cbFiles, cbSearches, cbLastN, jcbMatchCase,
@@ -840,8 +893,36 @@ public class SearchBigFile extends AppFrame {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
 
+    public void updateWarning(String msg, boolean isError) {
+        warnPanel.setBackground(isError ? Color.RED : Color.ORANGE);
+        lblWarning.setForeground(isError ? Color.WHITE : Color.BLACK);
+        if (Utils.hasValue(msg)) {
+            lblWarning.setText(msg);
+        }
+    }
+
     private String getWarning() {
-        return " - Either search taking long or too many results [" + occrTillNow + "] !!  Cancel and try to narrow";
+        StringBuilder sb = new StringBuilder();
+        if (timeTillNow > WARN_LIMIT_SEC) {
+            sb.append("Warning: Time [").append(timeTillNow).append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
+        }
+        if (occrTillNow > WARN_LIMIT_OCCR) {
+            sb.append("Warning: Occurrences [").append(occrTillNow).append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
+        }
+        StringBuilder sbErr = new StringBuilder();
+        if (timeTillNow > FORCE_STOP_LIMIT_SEC) {
+            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_SEC).append("]. ");
+        }
+        if (occrTillNow > FORCE_STOP_LIMIT_OCCR) {
+            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_OCCR).append("], try to narrow your search.");
+        }
+
+        if (sbErr.toString().length() > 0) {
+            sb = sbErr;
+        }
+
+        debug("Returning warning as " + sb.toString());
+        return sb.toString();
     }
 
     private String processPattern() {
@@ -895,6 +976,9 @@ public class SearchBigFile extends AppFrame {
 
     public void finishAction() {
         printCounters();
+        if (showWarning) {
+            SwingUtilities.invokeLater(new StartWarnIndicator());
+        }
         // Go to end
         tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
     }
@@ -913,6 +997,15 @@ public class SearchBigFile extends AppFrame {
 
     public boolean isCancelled() {
         return status == Status.CANCELLED;
+    }
+
+    //TODO: escape lines draw for html chars as that might affect the editor
+    public boolean isWarningState() {
+        return timeTillNow > WARN_LIMIT_SEC || occrTillNow > WARN_LIMIT_OCCR;
+    }
+
+    public boolean isErrorState() {
+        return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
     }
 
     static class CopyCommandAction extends AbstractAction {
@@ -944,112 +1037,109 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            logger.log("Reading last few lines...");
-            resetForNewSearch();
+            final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+            int readLines = 0;
+            int occr = 0;
+            boolean hasError = false;
+            String searchPattern = processPattern();
+            String fn = getFilePath();
+            StringBuilder sb = new StringBuilder();
+            File file = new File(fn);
 
-            if (isValidate()) {
-                final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
-                int readLines = 0;
-                int occr = 0;
-                boolean hasError = false;
-                String searchPattern = processPattern();
-                String fn = getFilePath();
-                StringBuilder sb = new StringBuilder();
-                File file = new File(fn);
+            readNFlag = true;
+            startThread(new TimerCallable(sbf));
+            updateTitle("Reading last " + LIMIT + " lines");
+            logger.log("Loading last " + LIMIT + " lines from: " + fn);
 
-                readNFlag = true;
-                startThread(new TimerCallable(sbf));
-                updateTitle("Reading last " + LIMIT + " lines");
-                logger.log("Loading last " + LIMIT + " lines from: " + fn);
+            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+                long fileLength = file.length() - 1;
+                // Set the pointer at the last of the file
+                randomAccessFile.seek(fileLength);
+                // FIFO
+                Stack<String> stack = new Stack<>();
 
-                try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                    long fileLength = file.length() - 1;
-                    // Set the pointer at the last of the file
-                    randomAccessFile.seek(fileLength);
-                    // FIFO
-                    Stack<String> stack = new Stack<>();
+                for (long pointer = fileLength; pointer >= 0; pointer--) {
+                    randomAccessFile.seek(pointer);
+                    char c;
+                    // read from the last, one char at the time
+                    c = (char) randomAccessFile.read();
+                    // break when end of the line
+                    if (c == '\n') {
 
-                    for (long pointer = fileLength; pointer >= 0; pointer--) {
-                        randomAccessFile.seek(pointer);
-                        char c;
-                        // read from the last, one char at the time
-                        c = (char) randomAccessFile.read();
-                        // break when end of the line
-                        if (c == '\n') {
+                        if (Utils.hasValue(sb.toString())) {
+                            sb.reverse();
+                        }
 
-                            if (Utils.hasValue(sb.toString())) {
-                                sb.reverse();
-                            }
-
-                            String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
-                            synchronized (SearchBigFile.class) {
-                                // emptying stack to Q
-                                stack.push(strToAppend);
-                                if (stack.size() > APPEND_MSG_CHUNK) {
-                                    while (!stack.empty()) {
-                                        qMsgsToAppend.add(stack.pop());
-                                    }
-                                    startThread(msgCallable);
+                        String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
+                        synchronized (SearchBigFile.class) {
+                            // emptying stack to Q
+                            stack.push(strToAppend);
+                            if (stack.size() > APPEND_MSG_CHUNK) {
+                                while (!stack.empty()) {
+                                    qMsgsToAppend.add(stack.pop());
                                 }
+                                debug("Read: Starting msg callable and Q size is " + qMsgsToAppend.size());
+                                startThread(msgCallable);
                             }
-
-                            int len = sb.toString().toLowerCase().split(searchPattern).length;
-                            occr += len > 0 ? len - 1 : 0;
-                            occrTillNow = occr;
-                            linesTillNow = readLines;
-                            if (!showWarning && occr > WARN_LIMIT_OCCR) {
-                                showWarning = true;
-                            }
-                            sb = new StringBuilder();
-                            readLines++;
-                            // Last line will be printed after loop
-                            if (readLines == LIMIT - 1) {
-                                break;
-                            }
-                            if (isCancelled()) {
-                                appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
-                                break;
-                            }
-
-                        } else {
-                            sb.append(c);
                         }
-                        fileLength = fileLength - pointer;
-                    }
-                    if (Utils.hasValue(sb.toString())) {
-                        sb.reverse();
-                    }
-                    String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
-                    synchronized (SearchBigFile.class) {
-                        stack.push(strToAppend);
-                        while (!stack.empty()) {
-                            qMsgsToAppend.add(stack.pop());
-                        }
-                        startThread(msgCallable);
-                    }
-                    readLines++;
-                } catch (IOException e) {
-                    updateTitle("Error in reading file");
-                    hasError = true;
-                    logger.error(e);
-                } finally {
-                    enableControls();
-                }
 
-                int len = lowerCaseSplit(sb.toString(), searchStr);
-                occr += len > 0 ? len - 1 : 0;
-                if (!hasError) {
-                    String result = getSearchResult(
-                            fn,
-                            getSecondsElapsedStr(startTime),
-                            readLines,
-                            occr);
-                    String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
-                    updateTitle(statusStr + result);
+                        int len = sb.toString().toLowerCase().split(searchPattern).length;
+                        occr += len > 0 ? len - 1 : 0;
+                        occrTillNow = occr;
+                        linesTillNow = readLines;
+                        if (!showWarning && occr > WARN_LIMIT_OCCR) {
+                            showWarning = true;
+                        }
+                        sb = new StringBuilder();
+                        readLines++;
+                        // Last line will be printed after loop
+                        if (readLines == LIMIT - 1) {
+                            break;
+                        }
+                        if (isCancelled()) {
+                            appendResultNoFormat("---------------------Read cancelled----------------------------" + System.lineSeparator());
+                            break;
+                        }
+                    } else {
+                        sb.append(c);
+                    }
+                    fileLength = fileLength - pointer;
                 }
-                status = Status.DONE;
+                if (Utils.hasValue(sb.toString())) {
+                    sb.reverse();
+                }
+                String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
+                synchronized (SearchBigFile.class) {
+                    stack.push(strToAppend);
+                    while (!stack.empty()) {
+                        qMsgsToAppend.add(stack.pop());
+                    }
+                    debug("Read: After loop, starting msg callable and Q size is " + qMsgsToAppend.size());
+                    startThread(msgCallable);
+                }
+                readLines++;
+            } catch (IOException e) {
+                updateTitle("Error in reading file");
+                hasError = true;
+                logger.error(e);
+            } finally {
+                enableControls();
             }
 
+            int len = lowerCaseSplit(sb.toString(), searchStr);
+            occr += len > 0 ? len - 1 : 0;
+            if (!hasError) {
+                String result = getSearchResult(
+                        fn,
+                        getSecondsElapsedStr(startTime),
+                        readLines,
+                        occr);
+                String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
+                updateTitle(statusStr + result);
+            }
+            status = Status.DONE;
+
+            // No need to wait as data can be async added at top
             sbf.finishAction();
             return true;
         }
@@ -1059,7 +1149,8 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Integer doInBackground() {
-            btnWarning.setBackground(btnWarning.getBackground() == Color.RED ? Color.PINK : Color.RED);
+            updateWarning(getWarning(), isErrorState());
+            updateWarning(getWarning(), isErrorState());
             return 1;
         }
     }
@@ -1125,25 +1216,32 @@ public class SearchBigFile extends AppFrame {
                 // Due to multi threading, separate if is imposed
                 if (status == Status.READING) {
                     timeElapse = sbf.getSecondsElapsed(startTime);
-                    String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
+                    timeTillNow = timeElapse;
+                    String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
                     if (showWarning || timeElapse > WARN_LIMIT_SEC) {
                         msg += sbf.getWarning();
                         sbf.log("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator());
                     }
-                    if (timeElapse > FORCE_STOP_LIMIT_SEC) {
-                        sbf.log("Stopping forcefully.");
+                    if (forceStop()) {
+                        sbf.logger.warn("Stopping forcefully.");
                         cancelSearch();
                     }
                     sbf.updateTitle(msg);
                     logger.debug("Timer callable sleeping now for a second");
+                    printMemoryDetails();
                     Utils.sleep(1000, sbf.logger);
                 }
             } while (status == Status.READING);
 
-            sbf.logger.log("Timer stopped after " + timeElapse + " sec");
+            logger.debug("Timer: thread pool status " + threadPool.toString());
+            logger.log("Timer stopped after " + timeElapse + " sec");
             return true;
         }
+    }
+
+    private boolean forceStop() {
+        return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
     }
 
     class AppendMsgCallable implements Callable<Boolean> {
@@ -1158,22 +1256,21 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             StringBuilder sb = new StringBuilder();
 
-            logger.debug("Size of qMsgsToAppend is" + qMsgsToAppend.size());
-            while (!qMsgsToAppend.isEmpty()) {
-                String m;
-                synchronized (SearchBigFile.class) {
-                    m = qMsgsToAppend.poll();
-                }
-                if (readNFlag || Utils.hasValue(m)) {
-                    sb.append(m);
-                }
-            }
-            // TODO: check if it reads something from qmsg before insert
-            if (readNFlag || sb.length() > 0) {
-                synchronized (SearchBigFile.class) {
-                    insertCounter++;
-                    idxMsgsToAppend.put(insertCounter, sb.toString());
-                    SwingUtilities.invokeLater(new AppendData());
+            synchronized (this) {
+                logger.debug("Size of qMsgsToAppend is " + qMsgsToAppend.size());
+                if (!qMsgsToAppend.isEmpty()) {
+                    while (!qMsgsToAppend.isEmpty()) {
+                        String m = qMsgsToAppend.poll();
+                        if (readNFlag || Utils.hasValue(m)) {
+                            sb.append(m);
+                        }
+                    }
+                    if (readNFlag || sb.length() > 0) {
+                        insertCounter++;
+                        idxMsgsToAppend.put(insertCounter, sb.toString());
+                        SwingUtilities.invokeLater(new AppendData());
+                    }
+                    logger.debug("All messages processed.  Now size is " + qMsgsToAppend.size());
                 }
             }
 
@@ -1216,35 +1313,47 @@ public class SearchBigFile extends AppFrame {
                             || (isWholeWord() && line.matches(searchPattern))
                     );
 
-                    searchData.process();
-                    if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
-                        startThread(msgCallable);
+                    if (!isCancelled() && occrTillNow <= FORCE_STOP_LIMIT_OCCR) {
+                        searchData.process();
+                        if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                            debug("Search: Starting msg callable and Q size is " + qMsgsToAppend.size());
+                            startThread(msgCallable);
+                        }
                     }
                     if (isCancelled()) {
-                        sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
+                        debug("---------------------Search cancelled----------------------------");
+                        qMsgsToAppend.add("---------------------Search cancelled----------------------------" + System.lineSeparator());
+                        startThread(msgCallable);
                         break;
                     }
                 }
 
                 logger.log("File read in " + getSecondsElapsedStr(time));
 
-                time = System.currentTimeMillis();
-                startThread(msgCallable);
-                while (readCounter != insertCounter) {
-                    logger.debug("Waiting for readCounter to be equal insertCounter");
-                    Utils.sleep(200, sbf.logger);
+                if (!isCancelled()) {
+                    time = System.currentTimeMillis();
+                    startThread(msgCallable);
+                    while (readCounter != insertCounter) {
+                        if (!isCancelled()) {
+                            debug("Status is cancelled.  Exiting wait condition.");
+                            break;
+                        }
+                        logger.debug("Waiting for readCounter to be equal insertCounter");
+                        Utils.sleep(200, sbf.logger);
+                    }
+                    logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
                 }
-                logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
-
                 String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.occurrences);
                 if (stats.getOccurrences() == 0) {
-                    sbf.appendResultNoFormat("No match found. ");
+                    qMsgsToAppend.add("No match found. ");
+                    startThread(msgCallable);
                 }
 
                 if (isCancelled()) {
                     sbf.updateTitle("Search cancelled - " + result);
                 } else {
-                    sbf.appendResultNoFormat("---------------------Search complete----------------------------" + System.lineSeparator());
+                    qMsgsToAppend.add("---------------------Search complete----------------------------" + System.lineSeparator());
+                    startThread(msgCallable);
                     sbf.updateTitle("Search complete - " + result);
                 }
                 status = Status.DONE;
@@ -1252,6 +1361,7 @@ public class SearchBigFile extends AppFrame {
                 sbf.logger.error(e.getMessage());
                 sbf.tpResults.setText("Unable to search file");
             } finally {
+                logger.debug("Search: Enabling controls.");
                 sbf.enableControls();
             }
 
