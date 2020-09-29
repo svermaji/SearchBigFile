@@ -43,7 +43,7 @@ public class SearchBigFile extends AppFrame {
      */
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches,
-        LastN, FontSize, MatchCase, WholeWord
+        LastN, FontSize, MatchCase, WholeWord, DebugEnabled
     }
 
     enum Status {
@@ -94,6 +94,7 @@ public class SearchBigFile extends AppFrame {
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
 
+    private boolean debugAllowed;
     private String searchStr, searchStrReplace;
     private String recentFilesStr, recentSearchesStr;
     private long occrTillNow;
@@ -116,9 +117,10 @@ public class SearchBigFile extends AppFrame {
      * This method initializes the form.
      */
     private void initComponents() {
-        logger = MyLogger.createLogger(getClass());
-
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
+        debugAllowed = getBooleanCfg(Configs.DebugEnabled);
+        logger = MyLogger.createLogger(getClass(), debugAllowed);
+
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         recentFilesStr = getCfg(Configs.RecentFiles);
@@ -830,6 +832,10 @@ public class SearchBigFile extends AppFrame {
         return recentFilesStr;
     }
 
+    public String getDebugEnabled() {
+        return debugAllowed + "";
+    }
+
     public void updateTitle(String info) {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
@@ -879,6 +885,10 @@ public class SearchBigFile extends AppFrame {
         return TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - time);
     }
 
+    public void debug(String s) {
+        logger.debug(s);
+    }
+
     public void log(String s) {
         logger.log(s);
     }
@@ -899,6 +909,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getCfg(Configs c) {
         return configs.getConfig(c.name());
+    }
+
+    public boolean isCancelled() {
+        return status == Status.CANCELLED;
     }
 
     static class CopyCommandAction extends AbstractAction {
@@ -992,7 +1006,7 @@ public class SearchBigFile extends AppFrame {
                             if (readLines == LIMIT - 1) {
                                 break;
                             }
-                            if (status == Status.CANCELLED) {
+                            if (isCancelled()) {
                                 appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
                                 break;
                             }
@@ -1030,7 +1044,7 @@ public class SearchBigFile extends AppFrame {
                             getSecondsElapsedStr(startTime),
                             readLines,
                             occr);
-                    String statusStr = status == Status.CANCELLED ? "Read cancelled - " : "Read complete - ";
+                    String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
                     updateTitle(statusStr + result);
                 }
                 status = Status.DONE;
@@ -1114,13 +1128,15 @@ public class SearchBigFile extends AppFrame {
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
                     if (showWarning || timeElapse > WARN_LIMIT_SEC) {
                         msg += sbf.getWarning();
+                        sbf.log("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator());
                     }
                     if (timeElapse > FORCE_STOP_LIMIT_SEC) {
                         sbf.log("Stopping forcefully.");
-                        status = Status.CANCELLED;
+                        cancelSearch();
                     }
                     sbf.updateTitle(msg);
+                    logger.debug("Timer callable sleeping now for a second");
                     Utils.sleep(1000, sbf.logger);
                 }
             } while (status == Status.READING);
@@ -1142,6 +1158,7 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             StringBuilder sb = new StringBuilder();
 
+            logger.debug("Size of qMsgsToAppend is" + qMsgsToAppend.size());
             while (!qMsgsToAppend.isEmpty()) {
                 String m;
                 synchronized (SearchBigFile.class) {
@@ -1151,6 +1168,7 @@ public class SearchBigFile extends AppFrame {
                     sb.append(m);
                 }
             }
+            // TODO: check if it reads something from qmsg before insert
             if (readNFlag || sb.length() > 0) {
                 synchronized (SearchBigFile.class) {
                     insertCounter++;
@@ -1202,7 +1220,7 @@ public class SearchBigFile extends AppFrame {
                     if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                         startThread(msgCallable);
                     }
-                    if (status == Status.CANCELLED) {
+                    if (isCancelled()) {
                         sbf.appendResultNoFormat("---------------------Search cancelled----------------------------" + System.lineSeparator());
                         break;
                     }
@@ -1213,6 +1231,7 @@ public class SearchBigFile extends AppFrame {
                 time = System.currentTimeMillis();
                 startThread(msgCallable);
                 while (readCounter != insertCounter) {
+                    logger.debug("Waiting for readCounter to be equal insertCounter");
                     Utils.sleep(200, sbf.logger);
                 }
                 logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
@@ -1222,7 +1241,7 @@ public class SearchBigFile extends AppFrame {
                     sbf.appendResultNoFormat("No match found. ");
                 }
 
-                if (status == Status.CANCELLED) {
+                if (isCancelled()) {
                     sbf.updateTitle("Search cancelled - " + result);
                 } else {
                     sbf.appendResultNoFormat("---------------------Search complete----------------------------" + System.lineSeparator());
