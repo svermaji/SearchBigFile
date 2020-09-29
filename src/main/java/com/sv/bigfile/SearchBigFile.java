@@ -77,7 +77,8 @@ public class SearchBigFile extends AppFrame {
     private static final int MIN_FONT_SIZE = 8;
     private static final int MAX_FONT_SIZE = 24;
     private static final int RECENT_LIMIT = 20;
-    private static final int WARN_LIMIT_TIME = 20;
+    private static final int WARN_LIMIT_SEC = 20;
+    private static final int FORCE_STOP_LIMIT_SEC = 50;
     private static final int WARN_LIMIT_OCCR = 200;
     private static final int APPEND_MSG_CHUNK = 100;
     private static final int eb = 5;
@@ -212,8 +213,10 @@ public class SearchBigFile extends AppFrame {
         btnFontInfo.setToolTipText("Present font size.");
         uin = UIName.BTN_WARNING;
         btnWarning = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnWarning.setToolTipText("Warning indicator. If blinks then Either search taking more than [" + WARN_LIMIT_TIME
-                + "sec] or search occurrences are more than [" + WARN_LIMIT_OCCR + "].");
+        btnWarning.setToolTipText("Warning indicator. If blinks then Either search taking more than [" + WARN_LIMIT_SEC
+                + "sec] or search occurrences are more than [" + WARN_LIMIT_OCCR
+                + "]. Will CANCEL forcefully after [" + FORCE_STOP_LIMIT_SEC
+                + "sec]");
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnWarning});
         btnWarning.setBackground(Color.PINK);
@@ -1109,9 +1112,13 @@ public class SearchBigFile extends AppFrame {
                 if (status == Status.READING) {
                     timeElapse = sbf.getSecondsElapsed(startTime);
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "]";
-                    if (showWarning || timeElapse > WARN_LIMIT_TIME) {
+                    if (showWarning || timeElapse > WARN_LIMIT_SEC) {
                         msg += sbf.getWarning();
                         SwingUtilities.invokeLater(new StartWarnIndicator());
+                    }
+                    if (timeElapse > FORCE_STOP_LIMIT_SEC) {
+                        sbf.log("Stopping forcefully.");
+                        status = Status.CANCELLED;
                     }
                     sbf.updateTitle(msg);
                     Utils.sleep(1000, sbf.logger);
