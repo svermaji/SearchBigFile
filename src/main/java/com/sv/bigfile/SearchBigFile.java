@@ -117,10 +117,10 @@ public class SearchBigFile extends AppFrame {
      * This method initializes the form.
      */
     private void initComponents() {
+        logger = MyLogger.createLogger(getClass());
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         debugAllowed = getBooleanCfg(Configs.DebugEnabled);
-        logger = MyLogger.createLogger(getClass(), debugAllowed);
-
+        logger.setDebug(debugAllowed);
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         recentFilesStr = getCfg(Configs.RecentFiles);
