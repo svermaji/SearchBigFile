@@ -1,7 +1,10 @@
 package com.sv.bigfile;
 
+import com.sv.core.Utils;
+
 public enum UIName {
     LBL_FILE("File", 'F'),
+    BTN_FILE("...", 'O', "Select file from browser"),
     LBL_RFILES("Recent", 'R', "Recent used files list"),
     BTN_LISTRF("", 'L', "Search recently used file list"),
     BTN_PLUSFONT("+", '=', "Increase font size for file contents"),

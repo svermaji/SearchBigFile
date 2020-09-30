@@ -17,6 +17,7 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 ## Recent Changes<br>
 #### On 30-Sep-2020<br>
 * Added controls to go on first or last line of results. 
+* Open file dialog added with `...` 
 
 #### On 29-Sep-2020<br>
 * In case of hang, program tries to stop forcefully after 50 sec. 

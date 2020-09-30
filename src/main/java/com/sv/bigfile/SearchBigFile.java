@@ -145,6 +145,9 @@ public class SearchBigFile extends AppFrame {
         txtFilePath = new JTextField(getCfg(Configs.FilePath));
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         txtFilePath.setColumns(TXT_COLS);
+        uin = UIName.BTN_FILE;
+        JButton btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        btnFileOpen.addActionListener(e -> openFile());
         cbFiles = new JComboBox<>(getFiles());
         cbFiles.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         cbFiles.setRenderer(new JComboToolTipRenderer());
@@ -166,7 +169,12 @@ public class SearchBigFile extends AppFrame {
 
         filePanel.setLayout(new FlowLayout());
         filePanel.add(lblFilePath);
-        filePanel.add(txtFilePath);
+        JToolBar jtbFile = new JToolBar();
+        jtbFile.setFloatable(false);
+        jtbFile.setRollover(false);
+        jtbFile.add(txtFilePath);
+        jtbFile.add(btnFileOpen);
+        filePanel.add(jtbFile);
         filePanel.add(lblRFiles);
         filePanel.add(btnListRF);
         filePanel.add(cbFiles);
@@ -202,7 +210,7 @@ public class SearchBigFile extends AppFrame {
         JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
         uin = UIName.BTN_CANCEL;
-        btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", false);
+        btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
         btnCancel.setDisabledIcon(new ImageIcon("./icons/cancel-icon-disabled.png"));
         btnCancel.addActionListener(evt -> cancelSearch());
 
@@ -299,6 +307,28 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
+    private void openFile() {
+        File file = new File (".");
+        if (Utils.hasValue(getFilePath())) {
+            File tmpFile = new File(getFilePath());
+            tmpFile = tmpFile.getParentFile();
+            if (tmpFile.isDirectory()) {
+                file = tmpFile;
+            }
+        }
+        JFileChooser jfc = new JFileChooser(file);
+        int returnVal = jfc.showOpenDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = jfc.getSelectedFile();
+            setFileToSearch(selectedFile.getAbsolutePath());
+            //This is where a real application would open the file.
+            debug("Selected file: " + file.getAbsolutePath());
+        } else {
+            debug("Open command cancelled by user.");
+        }
+    }
+
     private String getWarnInitialMsg() {
         return "This bar turns 'Yellow' for showing warning and 'Red' for error/force-stop. " +
                 "Warning limit for time [" + WARN_LIMIT_SEC
@@ -309,7 +339,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     //TODO: read from resource path and override icons
-    //TODO: open folder for file
     private String getResourcePath(String path) {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         return classloader.getResource(path).toString();
@@ -823,6 +852,8 @@ public class SearchBigFile extends AppFrame {
     private String convertForHtml(String data) {
         String NEW_LINE_REGEX = "\r?\n";
         String HTML_LINE_END = "<br>";
+        //TODO: In case of escaping highlighting of search words goes off
+        //data = data.replaceAll(Utils.HtmlEsc.LT.getCh(), Utils.HtmlEsc.LT.getEscStr());
         return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
     }
 
@@ -1017,7 +1048,7 @@ public class SearchBigFile extends AppFrame {
         if (showWarning) {
             SwingUtilities.invokeLater(new StartWarnIndicator());
         }
-        goToEnd ();
+        goToEnd();
     }
 
     public boolean getBooleanCfg(Configs c) {

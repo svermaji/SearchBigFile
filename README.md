@@ -24,6 +24,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Shows number of lines processed till time while searching or reading. 
 * A warning indicator is shown and show the occurrences so far in case if there are too many matches. 
 * An indicator showing present font size of file contents pane.
+* File can be chosen by file chooser.
 * Controls to go first or last line.
 * ESC key can be used to hide inner-frame.
 * Match case and whole word search options are available. 
