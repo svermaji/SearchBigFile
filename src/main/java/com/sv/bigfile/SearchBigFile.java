@@ -334,7 +334,6 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    //TODO: use warning area for info like which file is being searched
     private String getInitialMsg() {
         return "This bar turns 'Orange' for showing warning and 'Red' for error/force-stop. " +
                 "Warning limit for time [" + WARN_LIMIT_SEC
@@ -1119,8 +1118,6 @@ public class SearchBigFile extends AppFrame {
     public boolean isCancelled() {
         return status == Status.CANCELLED;
     }
-
-    //TODO: escape lines draw for html chars as that might affect the editor
 
     public MsgType getMsgType() {
         if (isWarningState()) {
