@@ -300,14 +300,16 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getWarnInitialMsg() {
-        return "Warning indicates search taking more than [" + WARN_LIMIT_SEC
-                + " sec] and/or occurrences found are more than [" + WARN_LIMIT_OCCR
-                + "]. Force stop limit for time [" + FORCE_STOP_LIMIT_SEC
+        return "This bar turns 'Yellow' for showing warning and 'Red' for error/force-stop. " +
+                "Warning limit for time [" + WARN_LIMIT_SEC
+                + " sec] and/or occurrences [" + WARN_LIMIT_OCCR
+                + "]. Error/force-stop limit for time [" + FORCE_STOP_LIMIT_SEC
                 + " sec] and occurrences [" + FORCE_STOP_LIMIT_OCCR + "]";
 
     }
 
     //TODO: read from resource path and override icons
+    //TODO: open folder for file
     private String getResourcePath(String path) {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         return classloader.getResource(path).toString();
