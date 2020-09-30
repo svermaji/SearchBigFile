@@ -54,11 +54,15 @@ public class SearchBigFile extends AppFrame {
         INCREASE, DECREASE, RESET
     }
 
+    enum MsgType {
+        INFO, WARN, ERROR
+    }
+
     private MyLogger logger;
     private DefaultConfigs configs;
 
-    private JPanel warnPanel;
-    private JLabel lblWarning;
+    private JPanel msgPanel;
+    private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
     private JButton btnGoTop, btnGoBottom;
     private JButton btnSearch, btnLastN, btnCancel;
@@ -89,8 +93,9 @@ public class SearchBigFile extends AppFrame {
     private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
 
     private final String TITLE = "Search File";
-    private final String REPLACER_PREFIX = "<font style=\"background-color:yellow\">";
-    private final String REPLACER_SUFFIX = "</font>";
+    private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
+    private final String R_FONT_PREFIX = "<font style=\"color:red\">";
+    private final String FONT_SUFFIX = "</font>";
 
     private static boolean showWarning = false;
     private static boolean readNFlag = false;
@@ -99,7 +104,7 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
 
     private boolean debugAllowed;
-    private String searchStr, searchStrReplace, operation;
+    private String searchStr, searchStrEsc, searchStrReplace, operation;
     private String recentFilesStr, recentSearchesStr;
     private long timeTillNow;
     private long occrTillNow;
@@ -273,11 +278,11 @@ public class SearchBigFile extends AppFrame {
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
-        warnPanel = new JPanel();
-        lblWarning = new JLabel(getWarnInitialMsg());
-        lblWarning.setFont(getNewFont(lblWarning.getFont(), 10));
-        warnPanel.add(lblWarning);
-        topPanel.add(warnPanel, BorderLayout.SOUTH);
+        msgPanel = new JPanel();
+        lblMsg = new JLabel(getInitialMsg());
+        lblMsg.setFont(getNewFont(lblMsg.getFont(), 10));
+        msgPanel.add(lblMsg);
+        topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
 
         tpResults = new JEditorPane();
@@ -308,7 +313,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void openFile() {
-        File file = new File (".");
+        File file = new File(".");
         if (Utils.hasValue(getFilePath())) {
             File tmpFile = new File(getFilePath());
             tmpFile = tmpFile.getParentFile();
@@ -329,11 +334,13 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private String getWarnInitialMsg() {
-        return "This bar turns 'Yellow' for showing warning and 'Red' for error/force-stop. " +
+    //TODO: use warning area for info like which file is being searched
+    private String getInitialMsg() {
+        return "This bar turns 'Orange' for showing warning and 'Red' for error/force-stop. " +
                 "Warning limit for time [" + WARN_LIMIT_SEC
-                + " sec] and/or occurrences [" + WARN_LIMIT_OCCR
-                + "]. Error/force-stop limit for time [" + FORCE_STOP_LIMIT_SEC
+                + " sec] and occurrences [" + WARN_LIMIT_OCCR
+                + "]. Error" +
+                " limit for time [" + FORCE_STOP_LIMIT_SEC
                 + " sec] and occurrences [" + FORCE_STOP_LIMIT_OCCR + "]";
 
     }
@@ -409,9 +416,11 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (changed) {
-            logger.log("Applying new font as " + printFontDetail(font));
+            String m = "Applying new font as " + printFontDetail(font);
+            logger.log(m);
             tpResults.setFont(font);
             btnFontInfo.setText(getFontSize());
+            updateMsgAsInfo(m);
         } else {
             logger.log("Ignoring request for " + opr + "font. Present " + printFontDetail(font));
         }
@@ -593,7 +602,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getLineNumStr(long line) {
-        return "<b>" + line + "</b> ";
+        // Due to html escaping removing bold tags
+        //return "<b>" + line + "</b> ";
+        return line + "&nbsp;&nbsp;";
     }
 
     private int lowerCaseSplit(String line, String pattern) {
@@ -610,10 +621,12 @@ public class SearchBigFile extends AppFrame {
 
     private void setSearchPattern(String s) {
         txtSearch.setText(s);
+        updateMsgAsInfo("Search pattern set as [" + s + "]");
     }
 
     private void setFileToSearch(String s) {
         txtFilePath.setText(s);
+        updateMsgAsInfo("File set as [" + s + "]");
     }
 
     private void removeCBFilesAL() {
@@ -638,14 +651,12 @@ public class SearchBigFile extends AppFrame {
         timeTillNow = 0;
         occrTillNow = 0;
         linesTillNow = 0;
-        lblWarning.setText(getWarnInitialMsg());
-        lblWarning.setForeground(Color.WHITE);
-        warnPanel.setBackground(Color.GRAY);
+        updateMsgAsInfo(getInitialMsg());
     }
 
     private void cancelSearch() {
         // To ensure background is red
-        updateWarning("Search cancelled.", isErrorState());
+        updateMsg("Search cancelled.", getMsgType());
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -656,6 +667,7 @@ public class SearchBigFile extends AppFrame {
         if (isValidate()) {
             operation = "search";
             resetForNewSearch();
+            updateMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
             status = Status.READING;
             threadPool.submit(new SearchFileCallable(this));
             threadPool.submit(new TimerCallable(this));
@@ -668,6 +680,7 @@ public class SearchBigFile extends AppFrame {
         if (isValidate()) {
             operation = "read";
             resetForNewSearch();
+            updateMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
             status = Status.READING;
             threadPool.submit(new LastNRead(this));
             threadPool.submit(new TimerCallable(this));
@@ -676,24 +689,28 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private void updateTitleAndWarn(String s) {
+    private void updateTitleAndMsg(String s) {
+        updateTitleAndMsg(s, MsgType.WARN);
+    }
+
+    private void updateTitleAndMsg(String s, MsgType type) {
         updateTitle(s);
-        updateWarning(s, false);
+        updateMsg(s, type);
     }
 
     private boolean isValidate() {
         updateTitle("");
         boolean result = true;
         if (!Utils.hasValue(getFilePath())) {
-            updateTitleAndWarn("Validation error - REQUIRED: file to search");
+            updateTitleAndMsg("Validation error - REQUIRED: file to search");
             result = false;
         }
         if (result && !Utils.hasValue(getSearchString())) {
-            updateTitleAndWarn("Validation error - REQUIRED: text to search");
+            updateTitleAndMsg("Validation error - REQUIRED: text to search");
             result = false;
         }
         if (result && getSearchString().length() < SEARCH_STR_LEN_LIMIT) {
-            updateTitleAndWarn("Validation error - LENGTH: text to search should be " + SEARCH_STR_LEN_LIMIT + " or more characters");
+            updateTitleAndMsg("Validation error - LENGTH: text to search should be " + SEARCH_STR_LEN_LIMIT + " or more characters");
             result = false;
         }
 
@@ -794,9 +811,14 @@ public class SearchBigFile extends AppFrame {
         return jcbWholeWord.isSelected();
     }
 
+    private String htmlEsc(String str) {
+        return str.replaceAll(Utils.HtmlEsc.LT.getCh(), Utils.HtmlEsc.LT.getEscStr());
+    }
+
     private void setSearchStrings() {
         searchStr = getSearchString();
-        searchStrReplace = REPLACER_PREFIX + searchStr + REPLACER_SUFFIX;
+        searchStrEsc = htmlEsc(searchStr);
+        searchStrReplace = Y_BG_FONT_PREFIX + searchStr + FONT_SUFFIX;
     }
 
     private void startThread(Callable<Boolean> callable) {
@@ -852,12 +874,13 @@ public class SearchBigFile extends AppFrame {
     private String convertForHtml(String data) {
         String NEW_LINE_REGEX = "\r?\n";
         String HTML_LINE_END = "<br>";
-        //TODO: In case of escaping highlighting of search words goes off
-        //data = data.replaceAll(Utils.HtmlEsc.LT.getCh(), Utils.HtmlEsc.LT.getEscStr());
         return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
     }
 
     public void appendResult(String data) {
+
+        // Html escaping here, so html '<' character processed and searched properly
+        data = htmlEsc(data);
 
         if (Utils.hasValue(searchStr)) {
             if (!isMatchCase()) {
@@ -876,14 +899,15 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String replaceWithSameCase(String data) {
+        String s = searchStrEsc.toLowerCase();
         StringBuilder sb = new StringBuilder();
-        while (data.toLowerCase().contains(searchStr.toLowerCase())) {
-            int idx = data.toLowerCase().indexOf(searchStr.toLowerCase());
+        while (data.toLowerCase().contains(s)) {
+            int idx = data.toLowerCase().indexOf(s);
             sb.append(data, 0, idx)
-                    .append(REPLACER_PREFIX)
-                    .append(data, idx, idx + searchStr.length())
-                    .append(REPLACER_SUFFIX);
-            data = data.substring(idx + searchStr.length());
+                    .append(Y_BG_FONT_PREFIX)
+                    .append(data, idx, idx + s.length())
+                    .append(FONT_SUFFIX);
+            data = data.substring(idx + s.length());
         }
         sb.append(data);
         return sb.toString();
@@ -950,11 +974,25 @@ public class SearchBigFile extends AppFrame {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
 
-    public void updateWarning(String msg, boolean isError) {
-        warnPanel.setBackground(isError ? Color.RED : Color.ORANGE);
-        lblWarning.setForeground(isError ? Color.WHITE : Color.BLACK);
+    public void updateMsgAsInfo(String msg) {
+        updateMsg(msg, MsgType.INFO);
+    }
+
+    public void updateMsg(String msg, MsgType type) {
+        Color b = Color.GRAY;
+        Color f = Color.WHITE;
+        if (type == MsgType.ERROR) {
+            b = Color.RED;
+            f = Color.WHITE;
+        } else if (type == MsgType.WARN) {
+            b = Color.ORANGE;
+            f = Color.BLACK;
+        }
+        msgPanel.setBackground(b);
+        lblMsg.setForeground(f);
+
         if (Utils.hasValue(msg)) {
-            lblWarning.setText(msg);
+            lblMsg.setText(msg);
         }
     }
 
@@ -1034,11 +1072,26 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void goToFirst() {
+        goToFirst(true);
+    }
+
+    public void goToFirst(boolean showMsg) {
+        // If this param removed then after search/read ends this msg displayed
+        if (showMsg) {
+            updateMsgAsInfo("Going to first line");
+        }
         // Go to first
         tpResults.select(0, 0);
     }
 
     public void goToEnd() {
+        goToEnd(true);
+    }
+
+    public void goToEnd(boolean showMsg) {
+        if (showMsg) {
+            updateMsgAsInfo("Going to last line");
+        }
         // Go to end
         tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
     }
@@ -1048,7 +1101,7 @@ public class SearchBigFile extends AppFrame {
         if (showWarning) {
             SwingUtilities.invokeLater(new StartWarnIndicator());
         }
-        goToEnd();
+        goToEnd(false);
     }
 
     public boolean getBooleanCfg(Configs c) {
@@ -1068,6 +1121,22 @@ public class SearchBigFile extends AppFrame {
     }
 
     //TODO: escape lines draw for html chars as that might affect the editor
+
+    public MsgType getMsgType() {
+        if (isWarningState()) {
+            return MsgType.WARN;
+        }
+        if (isErrorState()) {
+            return MsgType.ERROR;
+        }
+
+        return MsgType.INFO;
+    }
+
+    public boolean isInfoState() {
+        return isWarningState() || isErrorState();
+    }
+
     public boolean isWarningState() {
         return timeTillNow > WARN_LIMIT_SEC || occrTillNow > WARN_LIMIT_OCCR;
     }
@@ -1187,7 +1256,8 @@ public class SearchBigFile extends AppFrame {
                 }
                 readLines++;
             } catch (IOException e) {
-                updateTitle("Error in reading file");
+                sbf.tpResults.setText(R_FONT_PREFIX + "----------Unable to read file-------------" + FONT_SUFFIX);
+                sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
                 hasError = true;
                 logger.error(e);
             } finally {
@@ -1217,8 +1287,7 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Integer doInBackground() {
-            updateWarning(getWarning(), isErrorState());
-            updateWarning(getWarning(), isErrorState());
+            updateMsg(getWarning(), getMsgType());
             return 1;
         }
     }
@@ -1413,8 +1482,9 @@ public class SearchBigFile extends AppFrame {
                 }
                 String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.occurrences);
                 if (stats.getOccurrences() == 0) {
-                    qMsgsToAppend.add("No match found. ");
-                    startThread(msgCallable);
+                    String s = "No match found";
+                    sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
+                    sbf.updateMsg(s, MsgType.WARN);
                 }
 
                 if (isCancelled()) {
@@ -1427,7 +1497,9 @@ public class SearchBigFile extends AppFrame {
                 status = Status.DONE;
             } catch (IOException e) {
                 sbf.logger.error(e.getMessage());
-                sbf.tpResults.setText("Unable to search file");
+                sbf.tpResults.setText(R_FONT_PREFIX + "----------Unable to search file-------------" + FONT_SUFFIX);
+                sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
+                status = Status.DONE;
             } finally {
                 logger.debug("Search: Enabling controls.");
                 sbf.enableControls();
