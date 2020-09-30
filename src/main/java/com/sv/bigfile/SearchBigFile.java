@@ -60,8 +60,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel warnPanel;
     private JLabel lblWarning;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
-    private JButton btnSearch;
-    private JButton btnLastN;
+    private JButton btnSearch, btnLastN, btnCancel;
     private JTextField txtFilePath;
     private JTextField txtSearch;
     private JEditorPane tpResults;
@@ -202,7 +201,8 @@ public class SearchBigFile extends AppFrame {
         JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
         uin = UIName.BTN_CANCEL;
-        JButton btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", false);
+        btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", false);
+        btnCancel.setDisabledIcon(new ImageIcon("./icons/cancel-icon-disabled.png"));
         btnCancel.addActionListener(evt -> cancelSearch());
 
         JToolBar jtbActions = new JToolBar();
@@ -285,6 +285,7 @@ public class SearchBigFile extends AppFrame {
         });
 
         btnFontInfo.setText(getFontSize());
+        enableControls();
         setToCenter();
     }
 
@@ -610,9 +611,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void searchFile() {
-        operation = "search";
-        resetForNewSearch();
         if (isValidate()) {
+            operation = "search";
+            resetForNewSearch();
             status = Status.READING;
             threadPool.submit(new SearchFileCallable(this));
             threadPool.submit(new TimerCallable(this));
@@ -622,9 +623,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void readFile() {
-        operation = "read";
-        resetForNewSearch();
         if (isValidate()) {
+            operation = "read";
+            resetForNewSearch();
             status = Status.READING;
             threadPool.submit(new LastNRead(this));
             threadPool.submit(new TimerCallable(this));
@@ -662,6 +663,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateRecentSearchVals() {
+        debug("in updateRecentSearchVals");
         recentFilesStr = checkItems(getFilePath(), recentFilesStr, cbFiles.getSelectedItem().toString());
         recentSearchesStr = checkItems(getSearchString(), recentSearchesStr, cbSearches.getSelectedItem().toString());
         removeCBFilesAL();
@@ -718,6 +720,16 @@ public class SearchBigFile extends AppFrame {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 cbFiles, cbSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont
+        };
+
+        Arrays.stream(components).forEach(c -> c.setEnabled(enable));
+        updateContrastControls(!enable);
+    }
+
+    private void updateContrastControls(boolean enable) {
+        debug("Updating contrast controls: " + enable);
+        Component[] components = {
+                btnCancel
         };
 
         Arrays.stream(components).forEach(c -> c.setEnabled(enable));
