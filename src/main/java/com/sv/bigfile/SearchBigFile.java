@@ -60,6 +60,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel warnPanel;
     private JLabel lblWarning;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
+    private JButton btnGoTop, btnGoBottom;
     private JButton btnSearch, btnLastN, btnCancel;
     private JTextField txtFilePath;
     private JTextField txtSearch;
@@ -219,8 +220,15 @@ public class SearchBigFile extends AppFrame {
         btnResetFont.addActionListener(e -> resetFontSize());
         btnFontInfo = new JButton();
         btnFontInfo.setToolTipText("Present font size.");
+        uin = UIName.BTN_GOTOP;
+        btnGoTop = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnGoTop.addActionListener(e -> goToFirst());
+        uin = UIName.BTN_GOBOTTOM;
+        btnGoBottom = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnGoBottom.addActionListener(e -> goToEnd());
 
-        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo});
+        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
+                btnFontInfo, btnGoTop, btnGoBottom});
 
         searchPanel.setLayout(new FlowLayout());
         searchPanel.add(lblSearch);
@@ -238,6 +246,8 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
         jtbActions.add(btnFontInfo);
+        jtbActions.add(btnGoTop);
+        jtbActions.add(btnGoBottom);
         searchPanel.setBorder(new TitledBorder("Pattern to search"));
 
         JPanel exitPanel = new JPanel();
@@ -720,7 +730,8 @@ public class SearchBigFile extends AppFrame {
         Component[] components = {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 cbFiles, cbSearches, cbLastN, jcbMatchCase,
-                jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont
+                jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
+                btnGoTop, btnGoBottom
         };
 
         Arrays.stream(components).forEach(c -> c.setEnabled(enable));
@@ -989,13 +1000,22 @@ public class SearchBigFile extends AppFrame {
         logger.log(s);
     }
 
+    public void goToFirst() {
+        // Go to first
+        tpResults.select(0, 0);
+    }
+
+    public void goToEnd() {
+        // Go to end
+        tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
+    }
+
     public void finishAction() {
         printCounters();
         if (showWarning) {
             SwingUtilities.invokeLater(new StartWarnIndicator());
         }
-        // Go to end
-        tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
+        goToEnd ();
     }
 
     public boolean getBooleanCfg(Configs c) {

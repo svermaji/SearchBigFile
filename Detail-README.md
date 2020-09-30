@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 30-Sep-2020<br>
+* Added controls to go on first or last line of results. 
+
 #### On 29-Sep-2020<br>
 * In case of hang, program tries to stop forcefully after 50 sec. 
 * The warning indicator is now revamped and made more prominent. 
