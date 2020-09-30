@@ -524,6 +524,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void resetForNewSearch() {
+        debug("reset for new search");
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
@@ -591,6 +592,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void resetShowWarning() {
+        debug("reset show warning");
         showWarning = false;
         timeTillNow = 0;
         occrTillNow = 0;
@@ -601,9 +603,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void cancelSearch() {
-        resetShowWarning();
         // To ensure background is red
-        updateWarning("Search cancelled. " + getWarning(), isErrorState());
+        updateWarning("Search cancelled.", isErrorState());
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -914,6 +915,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getWarning() {
+        debug("getWarning: timeTillNow = " + timeTillNow + ", occrTillNow = " + occrTillNow);
+
         StringBuilder sb = new StringBuilder();
         if (timeTillNow > WARN_LIMIT_SEC) {
             sb.append("Warning: Time [").append(timeTillNow).append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
@@ -929,7 +932,7 @@ public class SearchBigFile extends AppFrame {
             sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_OCCR).append("], try to narrow your search.");
         }
 
-        if (sbErr.toString().length() > 0) {
+        if (Utils.hasValue(sbErr.toString())) {
             sb = sbErr;
         }
 
