@@ -292,7 +292,7 @@ public class SearchBigFile extends AppFrame {
     private String getWarnInitialMsg() {
         return "Warning indicates search taking more than [" + WARN_LIMIT_SEC
                 + " sec] and/or occurrences found are more than [" + WARN_LIMIT_OCCR
-                + "]. Force stop limit for time  [" + FORCE_STOP_LIMIT_SEC
+                + "]. Force stop limit for time [" + FORCE_STOP_LIMIT_SEC
                 + " sec] and occurrences [" + FORCE_STOP_LIMIT_OCCR + "]";
 
     }
