@@ -603,7 +603,7 @@ public class SearchBigFile extends AppFrame {
     private void cancelSearch() {
         resetShowWarning();
         // To ensure background is red
-        updateWarning("Search cancelled", isErrorState());
+        updateWarning("Search cancelled. " + getWarning(), isErrorState());
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -1232,7 +1232,7 @@ public class SearchBigFile extends AppFrame {
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
                     if (showWarning || timeElapse > WARN_LIMIT_SEC) {
                         msg += sbf.getWarning();
-                        sbf.log("Invoking warning indicator.");
+                        sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator());
                     }
                     if (forceStop()) {
