@@ -219,6 +219,19 @@ public class SearchBigFile extends AppFrame {
         btnCancel.setDisabledIcon(new ImageIcon("./icons/cancel-icon-disabled.png"));
         btnCancel.addActionListener(evt -> cancelSearch());
 
+        searchPanel.setLayout(new FlowLayout());
+        searchPanel.add(lblSearch);
+        searchPanel.add(txtSearch);
+        searchPanel.add(lblRSearches);
+        searchPanel.add(btnListRS);
+        searchPanel.add(cbSearches);
+        searchPanel.add(btnSearch);
+        searchPanel.add(lblLastN);
+        searchPanel.add(cbLastN);
+        searchPanel.add(btnLastN);
+        searchPanel.add(btnCancel);
+        searchPanel.setBorder(new TitledBorder("Pattern to search"));
+
         JToolBar jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
         jtbActions.setRollover(false);
@@ -243,37 +256,24 @@ public class SearchBigFile extends AppFrame {
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
                 btnFontInfo, btnGoTop, btnGoBottom});
 
-        searchPanel.setLayout(new FlowLayout());
-        searchPanel.add(lblSearch);
-        searchPanel.add(txtSearch);
-        searchPanel.add(lblRSearches);
-        searchPanel.add(btnListRS);
-        searchPanel.add(cbSearches);
-        searchPanel.add(btnSearch);
-        searchPanel.add(lblLastN);
-        searchPanel.add(cbLastN);
-        searchPanel.add(btnLastN);
-        searchPanel.add(btnCancel);
-        searchPanel.add(jtbActions);
+        JPanel controlPanel = new JPanel();
+        JButton btnExit = new AppExitButton();
+        TitledBorder titledEP = new TitledBorder("Controls");
+        controlPanel.setBorder(titledEP);
+        controlPanel.add(jtbActions);
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
         jtbActions.add(btnFontInfo);
         jtbActions.add(btnGoTop);
         jtbActions.add(btnGoBottom);
-        searchPanel.setBorder(new TitledBorder("Pattern to search"));
-
-        JPanel exitPanel = new JPanel();
-        JButton btnExit = new AppExitButton();
-        TitledBorder titledEP = new TitledBorder("Exit");
-        exitPanel.setBorder(titledEP);
-        exitPanel.add(btnExit);
+        controlPanel.add(btnExit);
 
         JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new GridBagLayout());
         inputPanel.add(filePanel);
         inputPanel.add(searchPanel);
-        inputPanel.add(exitPanel);
+        inputPanel.add(controlPanel);
 
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
