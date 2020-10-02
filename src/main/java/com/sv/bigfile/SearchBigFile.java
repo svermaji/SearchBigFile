@@ -1270,7 +1270,7 @@ public class SearchBigFile extends AppFrame {
                         readLines,
                         occr);
                 String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
-                updateTitle(statusStr + result);
+                updateTitleAndMsg(statusStr + result, MsgType.INFO);
             }
             status = Status.DONE;
 
@@ -1489,7 +1489,7 @@ public class SearchBigFile extends AppFrame {
                 } else {
                     qMsgsToAppend.add("---------------------Search complete----------------------------" + System.lineSeparator());
                     startThread(msgCallable);
-                    sbf.updateTitle("Search complete - " + result);
+                    sbf.updateTitleAndMsg("Search complete - " + result, MsgType.INFO);
                 }
                 status = Status.DONE;
             } catch (IOException e) {
