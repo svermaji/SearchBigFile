@@ -12,6 +12,8 @@ public enum UIName {
     BTN_RESETFONT("✔", '0', "Reset font size for file contents"),
     BTN_GOTOP("<", '1', "Go to first line"),
     BTN_GOBOTTOM(">", '2', "Go to last line"),
+    BTN_NEXTOCCR("n", '3', "Next occurrence"),
+    BTN_PREOCCR("p", '4', "Previous occurrence"),
     JCB_MATCHCASE("case", 'e', "Match case"),
     JCB_WHOLEWORD("word", 'w', "Whole word"),
     LBL_SEARCH("Search", 'H'),

@@ -24,6 +24,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Queue;
 import java.util.*;
 import java.util.concurrent.*;
@@ -64,7 +65,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
-    private JButton btnGoTop, btnGoBottom;
+    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr;
     private JButton btnSearch, btnLastN, btnCancel;
     private JTextField txtFilePath;
     private JTextField txtSearch;
@@ -114,6 +115,9 @@ public class SearchBigFile extends AppFrame {
 
     // indexed structure to maintain line indexing
     private static Map<Long, String> idxMsgsToAppend;
+    private static List<Integer> lineOffsets;
+    private static int lineOffsetsIdx;
+    private static int lineIdx;
     // LIFO
     private static Queue<String> qMsgsToAppend;
     private static AppendMsgCallable msgCallable;
@@ -134,6 +138,8 @@ public class SearchBigFile extends AppFrame {
         log("Debug enabled " + logger.isDebug());
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
+        lineOffsets = new ArrayList<>();
+        lineOffsetsIdx = -1;
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -252,9 +258,15 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_GOBOTTOM;
         btnGoBottom = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnGoBottom.addActionListener(e -> goToEnd());
+        uin = UIName.BTN_NEXTOCCR;
+        btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnNextOccr.addActionListener(e -> nextOccr());
+        uin = UIName.BTN_PREOCCR;
+        btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnPreOccr.addActionListener(e -> preOccr());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
-                btnFontInfo, btnGoTop, btnGoBottom});
+                btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr});
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
@@ -267,6 +279,8 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnFontInfo);
         jtbActions.add(btnGoTop);
         jtbActions.add(btnGoBottom);
+        jtbActions.add(btnNextOccr);
+        jtbActions.add(btnPreOccr);
         controlPanel.add(btnExit);
 
         JPanel inputPanel = new JPanel();
@@ -286,7 +300,7 @@ public class SearchBigFile extends AppFrame {
         resetShowWarning();
 
         tpResults = new JEditorPane();
-        tpResults.setEditable(false);
+        //tpResults.setEditable(false);
         tpResults.setContentType("text/html");
         tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -310,6 +324,39 @@ public class SearchBigFile extends AppFrame {
         btnFontInfo.setText(getFontSize());
         enableControls();
         setToCenter();
+    }
+
+    private void nextOccr() {
+        lineOffsetsIdx++;
+        if (lineOffsetsIdx > lineOffsets.size() - 1) {
+            lineOffsetsIdx = 0;
+        }
+        gotoOccr(lineOffsetsIdx);
+    }
+
+    private void preOccr() {
+        lineOffsetsIdx--;
+        if (lineOffsetsIdx < 0) {
+            lineOffsetsIdx = lineOffsets.size() - 1;
+        }
+        gotoOccr(lineOffsetsIdx);
+    }
+
+    private void gotoOccr(int idx) {
+        if (lineOffsets.size() > idx) {
+            System.out.println("idx = " + idx);
+            System.out.println("lineOffsets.get(idx) = " + lineOffsets.get(idx));
+            tpResults.setCaretPosition(lineOffsets.get(idx));
+            try {
+                System.out.println("----------- " + searchStrEsc);
+                System.out.println(tpResults.getText(tpResults.getCaretPosition(), searchStrEsc.length()+50));
+            } catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+            tpResults.select(lineOffsets.get(idx), lineOffsets.get(idx));
+        } else {
+            updateMsg("No occurrences to show", MsgType.WARN);
+        }
     }
 
     private void openFile() {
@@ -583,6 +630,9 @@ public class SearchBigFile extends AppFrame {
         updateRecentSearchVals();
         qMsgsToAppend.clear();
         idxMsgsToAppend.clear();
+        lineOffsets.clear();
+        lineOffsetsIdx = -1;
+        lineIdx = 0;
         setSearchStrings();
         logger.log(getSearchDetails());
         startTime = System.currentTimeMillis();
@@ -902,6 +952,8 @@ public class SearchBigFile extends AppFrame {
         StringBuilder sb = new StringBuilder();
         while (data.toLowerCase().contains(s)) {
             int idx = data.toLowerCase().indexOf(s);
+            lineOffsets.add(htmlDoc.getLength() + idx);
+
             sb.append(data, 0, idx)
                     .append(Y_BG_FONT_PREFIX)
                     .append(data, idx, idx + s.length())
@@ -917,7 +969,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setToCenter() {
-        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+        setExtendedState(Frame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
         setVisible(true);
     }
@@ -1038,6 +1090,7 @@ public class SearchBigFile extends AppFrame {
                 + "], readCounter [" + readCounter
                 + "], qMsgsToAppend size [" + qMsgsToAppend.size()
                 + "], idxMsgsToAppend size [" + idxMsgsToAppend.size()
+                + "], lineOffsets size [" + lineOffsets.size()
                 + "]");
     }
 
@@ -1101,6 +1154,16 @@ public class SearchBigFile extends AppFrame {
             SwingUtilities.invokeLater(new StartWarnIndicator());
         }
         goToEnd(false);
+        //updateOffsets ();
+    }
+
+    private void updateOffsets() {
+        System.out.println("bef lineOffsets = " + lineOffsets);
+        int len = htmlDoc.getLength();
+        for (int i = 0; i < lineOffsets.size(); i++) {
+            lineOffsets.set(i, len - lineOffsets.get(i));
+        }
+        System.out.println("af lineOffsets = " + lineOffsets);
     }
 
     public boolean getBooleanCfg(Configs c) {
@@ -1221,6 +1284,7 @@ public class SearchBigFile extends AppFrame {
                         occr += len > 0 ? len - 1 : 0;
                         occrTillNow = occr;
                         linesTillNow = readLines;
+
                         if (!showWarning && occr > WARN_LIMIT_OCCR) {
                             showWarning = true;
                         }
@@ -1276,6 +1340,7 @@ public class SearchBigFile extends AppFrame {
 
             // No need to wait as data can be async added at top
             sbf.finishAction();
+            updateOffsets();
             return true;
         }
     }
