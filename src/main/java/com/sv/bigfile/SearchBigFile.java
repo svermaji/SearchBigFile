@@ -117,7 +117,8 @@ public class SearchBigFile extends AppFrame {
     private static Map<Long, String> idxMsgsToAppend;
     private static List<Integer> lineOffsets;
     private static int lineOffsetsIdx;
-    private static int lineIdx;
+    private static int globalCharIdx;
+    private static final int CHAR_IDX_BUMP = 200;
     // LIFO
     private static Queue<String> qMsgsToAppend;
     private static AppendMsgCallable msgCallable;
@@ -300,7 +301,7 @@ public class SearchBigFile extends AppFrame {
         resetShowWarning();
 
         tpResults = new JEditorPane();
-        //tpResults.setEditable(false);
+        tpResults.setEditable(false);
         tpResults.setContentType("text/html");
         tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
@@ -327,36 +328,25 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void nextOccr() {
-        lineOffsetsIdx++;
-        if (lineOffsetsIdx > lineOffsets.size() - 1) {
-            lineOffsetsIdx = 0;
-        }
-        gotoOccr(lineOffsetsIdx);
+        gotoOccr(true);
     }
 
     private void preOccr() {
-        lineOffsetsIdx--;
-        if (lineOffsetsIdx < 0) {
-            lineOffsetsIdx = lineOffsets.size() - 1;
-        }
-        gotoOccr(lineOffsetsIdx);
+        gotoOccr(false);
     }
 
-    private void gotoOccr(int idx) {
-        if (lineOffsets.size() > idx) {
-            System.out.println("idx = " + idx);
-            System.out.println("lineOffsets.get(idx) = " + lineOffsets.get(idx));
-            tpResults.setCaretPosition(lineOffsets.get(idx));
-            try {
-                System.out.println("----------- " + searchStrEsc);
-                System.out.println(tpResults.getText(tpResults.getCaretPosition(), searchStrEsc.length()+50));
-            } catch (BadLocationException e) {
-                e.printStackTrace();
-            }
-            tpResults.select(lineOffsets.get(idx), lineOffsets.get(idx));
-        } else {
-            updateMsg("No occurrences to show", MsgType.WARN);
+    private void gotoOccr(boolean next) {
+        String s = ""+(int)(Math.random()*1500);
+        System.out.println("search --- " + s);
+        int idx = tpResults.getText().indexOf(s);
+        System.out.println("idx = " + idx);
+        try {
+            System.out.println(
+                    tpResults.getText(idx, 50));
+        } catch (BadLocationException e) {
+            System.out.println("err");
         }
+        tpResults.select(idx, 50);
     }
 
     private void openFile() {
@@ -621,6 +611,7 @@ public class SearchBigFile extends AppFrame {
 
     private void resetForNewSearch() {
         debug("reset for new search");
+        globalCharIdx = 0;
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
@@ -632,7 +623,7 @@ public class SearchBigFile extends AppFrame {
         idxMsgsToAppend.clear();
         lineOffsets.clear();
         lineOffsetsIdx = -1;
-        lineIdx = 0;
+        globalCharIdx = 0;
         setSearchStrings();
         logger.log(getSearchDetails());
         startTime = System.currentTimeMillis();
