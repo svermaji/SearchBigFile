@@ -65,7 +65,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
-    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr;
+    private JButton btnGoTop, btnGoBottom;
     private JButton btnSearch, btnLastN, btnCancel;
     private JTextField txtFilePath;
     private JTextField txtSearch;
@@ -262,10 +262,10 @@ public class SearchBigFile extends AppFrame {
         btnGoBottom = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnGoBottom.addActionListener(e -> goToEnd());
         uin = UIName.BTN_NEXTOCCR;
-        btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        JButton btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnNextOccr.addActionListener(e -> nextOccr());
         uin = UIName.BTN_PREOCCR;
-        btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        JButton btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPreOccr.addActionListener(e -> preOccr());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
@@ -416,16 +416,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private Font getFontForEditor(String sizeStr) {
-        Font retVal = new Font(DEFAULT_FONT, Font.PLAIN, DEFAULT_FONT_SIZE);
-        GraphicsEnvironment g = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        for (Font font : g.getAllFonts()) {
-            if (font.getName().equals(PREFERRED_FONT)) {
-                retVal = font;
-                break;
-            }
-        }
-        int fs = Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE;
-        retVal = new Font(retVal.getName(), retVal.getStyle(), fs);
+        Font retVal = SwingUtils.getPlainCalibriFont(Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE);
         logger.log("Returning " + printFontDetail(retVal));
         return retVal;
     }
