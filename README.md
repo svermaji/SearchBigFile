@@ -22,6 +22,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * In case of hang, program tries to stop forcefully after 50 sec. 
 * Controls to increase/decrease font size. 
 * Shows number of lines processed till time while searching or reading. 
+* Controls to next/previous occurrences. 
 * A warning indicator is shown and show the occurrences so far in case if there are too many matches. 
 * An indicator showing present font size of file contents pane.
 * File can be chosen by file chooser.
@@ -81,3 +82,6 @@ Added on 29-Sep-2020. Attaching screen shot of application. With new info, warni
 
 Added on 30-Sep-2020. Attaching screen shot of application. Added controls goto first line and last line:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-goto.png) 
+
+Added on 3-Oct-2020. Attaching screen shot of application. Added controls goto next and previous occurrences:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-occr.png) 
