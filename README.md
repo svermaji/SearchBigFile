@@ -19,6 +19,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 ## Description<br>
 * Program stores the last searched file and search string. 
+* Warning and Info indicator will change font every 10 min.  Font details will be in tooptip. 
 * In case of hang, program tries to stop forcefully after 50 sec. 
 * Controls to increase/decrease font size. 
 * Shows number of lines processed till time while searching or reading. 

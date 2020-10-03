@@ -17,6 +17,7 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 ## Recent Changes<br>
 #### On 3-Oct-2020<br>
 * Added controls to go on next or previous occurrences of search result. 
+* Warning and Info indicator will change font every 10 min.  Font details will be in tooptip. 
 
 #### On 30-Sep-2020<br>
 * Added controls to go on first or last line of results. 

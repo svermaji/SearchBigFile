@@ -27,6 +27,7 @@ import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
 import java.util.*;
+import java.util.Timer;
 import java.util.concurrent.*;
 import java.util.regex.PatternSyntaxException;
 
@@ -55,6 +56,32 @@ public class SearchBigFile extends AppFrame {
         INCREASE, DECREASE, RESET
     }
 
+    public enum AppFonts {
+        CALIBRI("Calibri"),
+        ALGERIAN("Algerian"),
+        ELEPHANT("Elephant"),
+        LUCIDA("Lucida Bright"),
+        LUCIDA_ITALIC("Lucida Calligraphy Italic"),
+        SEGOE_UI("Segoe UI"),
+        TAHOMA("Tahoma"),
+        TNR("Times New Roman"),
+        VARDANA("Vardana"),
+        ARIAL("Arial Black"),
+        COMIC("Comic Sans MS"),
+        CONSOLAS("Consolas");
+
+        String font;
+
+        AppFonts(String font) {
+            this.font = font;
+        }
+
+        public String getFont() {
+            return font;
+        }
+    }
+
+
     enum MsgType {
         INFO, WARN, ERROR
     }
@@ -78,7 +105,7 @@ public class SearchBigFile extends AppFrame {
 
     private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
     private static final String PREFERRED_FONT = "Calibri";
-    private static final String DEFAULT_FONT = "Dialog.plain";
+    private static final long FONT_CHANGE_TIME = TimeUnit.MINUTES.toMillis(10);
     private static final int PREFERRED_FONT_SIZE = 12;
     private static final int DEFAULT_FONT_SIZE = 12;
     private static final int MIN_FONT_SIZE = 8;
@@ -103,6 +130,7 @@ public class SearchBigFile extends AppFrame {
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
+    private static int fontIdx = 0;
 
     private boolean debugAllowed;
     private String searchStr, searchStrEsc, searchStrReplace, operation;
@@ -120,7 +148,6 @@ public class SearchBigFile extends AppFrame {
     private static int globalCharIdx;
     private static String htmlDocText;
 
-    private static final int CHAR_IDX_BUMP = 200;
     // LIFO
     private static Queue<String> qMsgsToAppend;
     private static AppendMsgCallable msgCallable;
@@ -327,6 +354,7 @@ public class SearchBigFile extends AppFrame {
         btnFontInfo.setText(getFontSize());
         resetForNewSearch();
         enableControls();
+        new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
         setToCenter();
     }
 
@@ -1232,6 +1260,36 @@ public class SearchBigFile extends AppFrame {
 
     public boolean isErrorState() {
         return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
+    }
+
+    private String getNextFont() {
+        if (fontIdx == AppFonts.values().length) {
+            fontIdx = 0;
+        }
+        return AppFonts.values()[fontIdx++].getFont();
+    }
+
+    private void changeMsgFont() {
+        Font f = lblMsg.getFont();
+        lblMsg.setFont(new Font(getNextFont(), f.getStyle(), f.getSize()));
+        lblMsg.setToolTipText("Font changes every 10 minutes. Current Font: "
+                + f.getName() + "/" + (f.isBold() ? "bold" : "plain") + "/" + f.getSize());
+    }
+
+    /*   Inner classes    */
+    static class FontChangerTask extends TimerTask {
+
+        private final SearchBigFile sbf;
+
+        //public ThemeChangerCallable(RunCommandUI rc) {
+        public FontChangerTask(SearchBigFile sbf) {
+            this.sbf = sbf;
+        }
+
+        @Override
+        public void run() {
+            sbf.changeMsgFont();
+        }
     }
 
     static class CopyCommandAction extends AbstractAction {
