@@ -118,6 +118,8 @@ public class SearchBigFile extends AppFrame {
     private static List<Integer> lineOffsets;
     private static int lineOffsetsIdx;
     private static int globalCharIdx;
+    private static String htmlDocText;
+
     private static final int CHAR_IDX_BUMP = 200;
     // LIFO
     private static Queue<String> qMsgsToAppend;
@@ -336,17 +338,23 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void gotoOccr(boolean next) {
-        String s = ""+(int)(Math.random()*1500);
-        System.out.println("search --- " + s);
-        int idx = tpResults.getText().indexOf(s);
-        System.out.println("idx = " + idx);
-        try {
-            System.out.println(
-                    tpResults.getText(idx, 50));
-        } catch (BadLocationException e) {
-            System.out.println("err");
+        if (!Utils.hasValue(htmlDocText)) {
+            try {
+                htmlDocText = htmlDoc.getText(0, htmlDoc.getLength()).toLowerCase();
+                log("Document length = " + htmlDocText.length() + ", document is " + htmlDocText);
+            } catch (BadLocationException e) {
+                logger.error("Unable to get document text");
+            }
         }
-        tpResults.select(idx, 50);
+
+        debug("Before searching globalCharIdx = " + globalCharIdx + " for string = " + searchStr);
+        int idx = htmlDocText.indexOf(searchStr, globalCharIdx);
+        debug("idx = " + idx);
+        globalCharIdx = idx + searchStr.length();
+        debug("After searching globalCharIdx = " + globalCharIdx);
+        debug("String at index is [" + htmlDocText.substring(globalCharIdx, globalCharIdx + searchStr.length()) + "]");
+
+        tpResults.select(globalCharIdx, globalCharIdx);
     }
 
     private void openFile() {
@@ -612,6 +620,7 @@ public class SearchBigFile extends AppFrame {
     private void resetForNewSearch() {
         debug("reset for new search");
         globalCharIdx = 0;
+        htmlDocText = "";
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
@@ -1149,12 +1158,12 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateOffsets() {
-        System.out.println("bef lineOffsets = " + lineOffsets);
+        /*System.out.println("bef lineOffsets = " + lineOffsets);
         int len = htmlDoc.getLength();
         for (int i = 0; i < lineOffsets.size(); i++) {
             lineOffsets.set(i, len - lineOffsets.get(i));
         }
-        System.out.println("af lineOffsets = " + lineOffsets);
+        System.out.println("af lineOffsets = " + lineOffsets);*/
     }
 
     public boolean getBooleanCfg(Configs c) {
