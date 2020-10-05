@@ -326,7 +326,7 @@ public class SearchBigFile extends AppFrame {
         msgPanel = new JPanel();
         msgPanel.setBorder(new LineBorder(Color.BLUE, 1, true));
         lblMsg = new JLabel(getInitialMsg());
-        lblMsg.setFont(getNewFont(lblMsg.getFont(), 12));
+        lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
         msgPanel.add(lblMsg);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
@@ -447,12 +447,16 @@ public class SearchBigFile extends AppFrame {
 
     private Font getFontForEditor(String sizeStr) {
         Font retVal = SwingUtils.getPlainCalibriFont(Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE);
-        logger.log("Returning " + printFontDetail(retVal));
+        logger.log("Returning " + getFontDetail(retVal));
         return retVal;
     }
 
-    private String printFontDetail(Font font) {
-        return String.format("Font %s of size %s", font.getName(), font.getSize());
+    private void printFontDetail(Font font) {
+        log(getFontDetail(font));
+    }
+
+    private String getFontDetail(Font f) {
+        return String.format("Font: %s/%s/%s", f.getName(), (f.isBold() ? "bold" : "plain"), f.getSize());
     }
 
     private void increaseFontSize() {
@@ -494,19 +498,23 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (changed) {
-            String m = "Applying new font as " + printFontDetail(font);
+            String m = "Applying new font as " + getFontDetail(font);
             logger.log(m);
             tpResults.setFont(font);
             btnFontInfo.setText(getFontSize());
             updateMsgAsInfo(m);
         } else {
-            logger.log("Ignoring request for " + opr + "font. Present " + printFontDetail(font));
+            logger.log("Ignoring request for " + opr + "font. Present " + getFontDetail(font));
         }
     }
 
     private Font getNewFont(Font font, int size) {
-        log("Returning font as " + font.getName() + ", of size " + size);
-        return new Font(font.getName(), font.getStyle(), size);
+        return getNewFont(font, font.getStyle(), size);
+    }
+
+    private Font getNewFont(Font font, int style, int size) {
+        log("Returning font as " + font.getName() + ", style " + (font.isBold() ? "bold" : "plain") + ", of size " + size);
+        return new Font(font.getName(), style, size);
     }
 
     private void showListRF() {
@@ -1273,9 +1281,12 @@ public class SearchBigFile extends AppFrame {
 
     private void changeMsgFont() {
         Font f = lblMsg.getFont();
-        lblMsg.setFont(new Font(getNextFont(), f.getStyle(), f.getSize()));
-        lblMsg.setToolTipText("Font changes every 10 minutes. Current Font: "
-                + f.getName() + "/" + (f.isBold() ? "bold" : "plain") + "/" + f.getSize());
+        f = new Font(getNextFont(), f.getStyle(), f.getSize());
+        lblMsg.setFont(f);
+        String msg = getFontDetail(f);
+        lblMsg.setToolTipText("Font changes every 10 minutes. " + msg);
+        updateMsgAsInfo(msg);
+        debug(msg);
     }
 
     /*   Inner classes    */
