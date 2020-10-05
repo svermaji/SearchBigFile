@@ -8,6 +8,7 @@ import com.sv.swingui.*;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -323,8 +324,9 @@ public class SearchBigFile extends AppFrame {
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
         msgPanel = new JPanel();
+        msgPanel.setBorder(new LineBorder(Color.BLUE, 1, true));
         lblMsg = new JLabel(getInitialMsg());
-        lblMsg.setFont(getNewFont(lblMsg.getFont(), 10));
+        lblMsg.setFont(getNewFont(lblMsg.getFont(), 12));
         msgPanel.add(lblMsg);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
@@ -1059,8 +1061,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void updateMsg(String msg, MsgType type) {
-        Color b = Color.GRAY;
-        Color f = Color.WHITE;
+        Color b = Color.WHITE;
+        Color f = Color.BLUE;
         if (type == MsgType.ERROR) {
             b = Color.RED;
             f = Color.WHITE;
@@ -1240,11 +1242,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     public MsgType getMsgType() {
-        if (isWarningState()) {
-            return MsgType.WARN;
-        }
         if (isErrorState()) {
             return MsgType.ERROR;
+        }
+        if (isWarningState()) {
+            return MsgType.WARN;
         }
 
         return MsgType.INFO;
