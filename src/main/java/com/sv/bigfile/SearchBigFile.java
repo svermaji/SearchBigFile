@@ -697,8 +697,16 @@ public class SearchBigFile extends AppFrame {
         return line + "&nbsp;&nbsp;";
     }
 
-    private int lowerCaseSplit(String line, String pattern) {
-        return line.toLowerCase().split(pattern.toLowerCase()).length;
+    private int calculateOccr(String line, String pattern) {
+        int occr = 0;
+        if (Utils.hasValue(line) && Utils.hasValue(pattern)) {
+            occr = line.toLowerCase().split(pattern.toLowerCase()).length;
+            if (!line.endsWith(pattern)) {
+                occr--;
+            }
+        }
+        debug("calculateOccr: line [" + line + "], pattern [" + pattern + "], occr [" + occr + "]");
+        return occr;
     }
 
     private void removeCBSearchAL() {
@@ -1424,8 +1432,7 @@ public class SearchBigFile extends AppFrame {
                 enableControls();
             }
 
-            int len = lowerCaseSplit(sb.toString(), searchStr);
-            occr += len > 0 ? len - 1 : 0;
+            occr += calculateOccr(sb.toString(), searchStr);
             if (!hasError) {
                 String result = getSearchResult(
                         fn,
@@ -1479,8 +1486,8 @@ public class SearchBigFile extends AppFrame {
             StringBuilder sb = new StringBuilder();
 
             if (stats.isMatch()) {
-                int occr = lowerCaseSplit(stats.getLine(), stats.getSearchPattern());
-                stats.setOccurrences(stats.getOccurrences() + occr - 1);
+                int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
+                stats.setOccurrences(stats.getOccurrences() + occr);
                 sb.append(getLineNumStr(lineNum)).append(stats.getLine()).append(System.lineSeparator());
                 qMsgsToAppend.add(convertStartingSpacesForHtml(sb.toString()));
             }
