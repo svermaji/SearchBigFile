@@ -705,7 +705,11 @@ public class SearchBigFile extends AppFrame {
                 occr--;
             }
         }
-        debug("calculateOccr: line [" + line + "], pattern [" + pattern + "], occr [" + occr + "]");
+        String lineStr = "";
+        if (occr > 0) {
+            lineStr = "line [" + line + "],";
+        }
+        debug("calculateOccr: " + lineStr + " pattern [" + pattern + "], occr [" + occr + "]");
         return occr;
     }
 
@@ -1611,10 +1615,7 @@ public class SearchBigFile extends AppFrame {
                 /*while (sc.hasNextLine()) {
                     String line = sc.nextLine();*/
                     stats.setLine(line);
-                    stats.setMatch((!isMatchCase() && line.toLowerCase().contains(searchPattern))
-                            || (isMatchCase() && line.contains(searchPattern))
-                            || (isWholeWord() && line.matches(searchPattern))
-                    );
+                    stats.setMatch(sbf.hasOccr(line, searchPattern));
 
                     if (!isCancelled() && occrTillNow <= FORCE_STOP_LIMIT_OCCR) {
                         searchData.process();
@@ -1646,7 +1647,7 @@ public class SearchBigFile extends AppFrame {
                     }
                     logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
                 }
-                String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.occurrences);
+                String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.getOccurrences());
                 if (stats.getOccurrences() == 0) {
                     String s = "No match found";
                     sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
@@ -1675,6 +1676,20 @@ public class SearchBigFile extends AppFrame {
             return true;
         }
 
+    }
+
+    private boolean hasOccr(String line, String searchPattern) {
+        boolean result = (!isMatchCase() && line.toLowerCase().contains(searchPattern))
+                || (isMatchCase() && line.contains(searchPattern))
+                || (isWholeWord() && line.matches(searchPattern));
+
+        String lineStr = "";
+        if (result) {
+            lineStr = "line [" + line + "],";
+        }
+        debug("hasOccr: " + lineStr + " pattern [" + searchPattern + "], result [" + result + "]");
+
+        return result;
     }
 
 }

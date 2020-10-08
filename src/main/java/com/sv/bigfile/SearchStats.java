@@ -2,10 +2,10 @@ package com.sv.bigfile;
 
 public class SearchStats {
 
-    long lineNum = 1, occurrences = 0;
-    String line;
-    boolean match;
-    private String searchPattern;
+    private long lineNum, occurrences;
+    private String line;
+    private boolean match;
+    private final String searchPattern;
 
     public SearchStats(long lineNum, long occurrences, String line, String searchPattern) {
         this.lineNum = lineNum;
