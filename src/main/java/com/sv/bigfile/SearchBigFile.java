@@ -1,5 +1,8 @@
 package com.sv.bigfile;
 
+import com.sv.bigfile.helpers.CopyCommandAction;
+import com.sv.bigfile.helpers.FontChangerTask;
+import com.sv.bigfile.helpers.StartWarnIndicator;
 import com.sv.core.DefaultConfigs;
 import com.sv.core.MyLogger;
 import com.sv.core.Utils;
@@ -361,18 +364,18 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void nextOccr() {
-        increasetOffsetIdx();
+        increaseOffsetIdx();
         gotoOccr(lineOffsetsIdx);
     }
 
-    private void increasetOffsetIdx() {
+    private void increaseOffsetIdx() {
         lineOffsetsIdx++;
         if (lineOffsetsIdx > lineOffsets.size() - 1) {
             lineOffsetsIdx = 0;
         }
     }
 
-    private void decreasetOffsetIdx() {
+    private void decreaseOffsetIdx() {
         lineOffsetsIdx--;
         if (lineOffsetsIdx < 0) {
             lineOffsetsIdx = lineOffsets.size() - 1;
@@ -383,14 +386,16 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void preOccr() {
-        decreasetOffsetIdx();
+        decreaseOffsetIdx();
         gotoOccr(lineOffsetsIdx);
     }
 
     private void gotoOccr(int idx) {
 
         debug("Going to occurrence with index " + idx);
-        updateOffsets();
+        if (lineOffsets.size() == 0) {
+            updateOffsets();
+        }
 
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
             tpResults.select(lineOffsets.get(idx), lineOffsets.get(idx) + searchStr.length());
@@ -707,11 +712,11 @@ public class SearchBigFile extends AppFrame {
                 occr--;
             }
         }
-        String lineStr = "";
+        /*String lineStr = "";
         if (occr > 0) {
             lineStr = "line [" + line + "],";
         }
-        debug("calculateOccr: " + lineStr + " pattern [" + pattern + "], occr [" + occr + "]");
+        debug("calculateOccr: " + lineStr + " pattern [" + pattern + "], occr [" + occr + "]");*/
         return occr;
     }
 
@@ -826,7 +831,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateRecentSearchVals() {
-        debug("in updateRecentSearchVals");
+        debug("update recent search values");
         recentFilesStr = checkItems(getFilePath(), recentFilesStr, cbFiles.getSelectedItem().toString());
         recentSearchesStr = checkItems(getSearchString(), recentSearchesStr, cbSearches.getSelectedItem().toString());
         removeCBFilesAL();
@@ -1100,7 +1105,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private String getWarning() {
+    public String getWarning() {
         debug("getWarning: timeTillNow = " + timeTillNow + ", occrTillNow = " + occrTillNow);
 
         StringBuilder sb = new StringBuilder();
@@ -1204,7 +1209,7 @@ public class SearchBigFile extends AppFrame {
     public void finishAction() {
         printCounters();
         if (showWarning) {
-            SwingUtilities.invokeLater(new StartWarnIndicator());
+            SwingUtilities.invokeLater(new StartWarnIndicator(this));
         }
         goToEnd(false);
     }
@@ -1275,6 +1280,11 @@ public class SearchBigFile extends AppFrame {
         return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
     }
 
+    public void incRCtrNAppendIdxData() {
+        readCounter++;
+        appendResult(idxMsgsToAppend.get(readCounter));
+    }
+
     private String getNextFont() {
         if (fontIdx == AppFonts.values().length) {
             fontIdx = 0;
@@ -1282,7 +1292,7 @@ public class SearchBigFile extends AppFrame {
         return AppFonts.values()[fontIdx++].getFont();
     }
 
-    private void changeMsgFont() {
+    public void changeMsgFont() {
         Font f = lblMsg.getFont();
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
         lblMsg.setFont(f);
@@ -1293,40 +1303,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     /*   Inner classes    */
-    static class FontChangerTask extends TimerTask {
-
-        private final SearchBigFile sbf;
-
-        //public ThemeChangerCallable(RunCommandUI rc) {
-        public FontChangerTask(SearchBigFile sbf) {
-            this.sbf = sbf;
-        }
-
-        @Override
-        public void run() {
-            sbf.changeMsgFont();
-        }
-    }
-
-    static class CopyCommandAction extends AbstractAction {
-
-        private final JTable table;
-        private final JFrame frame;
-        private final JComboBox<String> src;
-
-        public CopyCommandAction(JTable table, JFrame frame, JComboBox<String> src) {
-            this.table = table;
-            this.frame = frame;
-            this.src = src;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
-            frame.setVisible(false);
-        }
-    }
-
     class LastNRead implements Callable<Boolean> {
 
         SearchBigFile sbf;
@@ -1444,15 +1420,6 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    class StartWarnIndicator extends SwingWorker<Integer, String> {
-
-        @Override
-        public Integer doInBackground() {
-            updateMsg(getWarning(), getMsgType());
-            return 1;
-        }
-    }
-
     class AppendData extends SwingWorker<Integer, String> {
 
         @Override
@@ -1519,7 +1486,7 @@ public class SearchBigFile extends AppFrame {
                     if (showWarning || timeElapse > WARN_LIMIT_SEC) {
                         msg += sbf.getWarning();
                         sbf.debug("Invoking warning indicator.");
-                        SwingUtilities.invokeLater(new StartWarnIndicator());
+                        SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
                     }
                     if (forceStop()) {
                         sbf.logger.warn("Stopping forcefully.");
