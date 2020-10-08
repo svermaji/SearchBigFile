@@ -93,7 +93,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
-    private JButton btnGoTop, btnGoBottom;
+    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr;
     private JButton btnSearch, btnLastN, btnCancel;
     private JTextField txtFilePath;
     private JTextField txtSearch;
@@ -290,10 +290,10 @@ public class SearchBigFile extends AppFrame {
         btnGoBottom = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnGoBottom.addActionListener(e -> goToEnd());
         uin = UIName.BTN_NEXTOCCR;
-        JButton btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnNextOccr.addActionListener(e -> nextOccr());
         uin = UIName.BTN_PREOCCR;
-        JButton btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPreOccr.addActionListener(e -> preOccr());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
@@ -883,7 +883,7 @@ public class SearchBigFile extends AppFrame {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 cbFiles, cbSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
-                btnGoTop, btnGoBottom
+                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr
         };
 
         Arrays.stream(components).forEach(c -> c.setEnabled(enable));
