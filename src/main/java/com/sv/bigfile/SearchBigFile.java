@@ -698,10 +698,12 @@ public class SearchBigFile extends AppFrame {
     }
 
     private int calculateOccr(String line, String pattern) {
+        String lineLC = line.toLowerCase();
+        String patternLC = pattern.toLowerCase();
         int occr = 0;
-        if (Utils.hasValue(line) && Utils.hasValue(pattern)) {
-            occr = line.toLowerCase().split(pattern.toLowerCase()).length;
-            if (!line.endsWith(pattern)) {
+        if (Utils.hasValue(lineLC) && Utils.hasValue(patternLC)) {
+            occr = lineLC.split(patternLC).length;
+            if (!lineLC.endsWith(patternLC)) {
                 occr--;
             }
         }
@@ -1208,14 +1210,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateOffsets() {
-
-//        if (htmlDocText)
-        int htmlDocTextLen = htmlDocText.length();
-        debug("htmlDocText size " + htmlDocTextLen + ", offsets size " + lineOffsets.size());
-        if (htmlDocTextLen == 0 && lineOffsets.size() == 0) {
+        debug("Offsets size " + lineOffsets.size());
+        if (lineOffsets.size() == 0) {
             try {
                 htmlDocText = htmlDoc.getText(0, htmlDoc.getLength()).toLowerCase();
-                log("For offsets document length calculated as " + htmlDocTextLen);
+                log("For offsets document length calculated as " + htmlDocText.length());
 
                 int idx = 0;
                 String strToSearch = searchStr.toLowerCase();
@@ -1235,14 +1234,6 @@ public class SearchBigFile extends AppFrame {
                 logger.error("Unable to get document text");
             }
         }
-
-
-        /*System.out.println("bef lineOffsets = " + lineOffsets);
-        int len = htmlDoc.getLength();
-        for (int i = 0; i < lineOffsets.size(); i++) {
-            lineOffsets.set(i, len - lineOffsets.get(i));
-        }
-        System.out.println("af lineOffsets = " + lineOffsets);*/
     }
 
     public boolean getBooleanCfg(Configs c) {
@@ -1551,6 +1542,20 @@ public class SearchBigFile extends AppFrame {
         return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
     }
 
+    private boolean hasOccr(String line, String searchPattern) {
+        boolean result = (!isMatchCase() && line.toLowerCase().contains(searchPattern))
+                || (isMatchCase() && line.contains(searchPattern))
+                || (isWholeWord() && line.matches(searchPattern));
+
+        String lineStr = "";
+        if (result) {
+            lineStr = "line [" + line + "],";
+        }
+        debug("hasOccr: " + lineStr + " pattern [" + searchPattern + "], result [" + result + "]");
+
+        return result;
+    }
+
     class AppendMsgCallable implements Callable<Boolean> {
 
         SearchBigFile sbf;
@@ -1677,20 +1682,5 @@ public class SearchBigFile extends AppFrame {
         }
 
     }
-
-    private boolean hasOccr(String line, String searchPattern) {
-        boolean result = (!isMatchCase() && line.toLowerCase().contains(searchPattern))
-                || (isMatchCase() && line.contains(searchPattern))
-                || (isWholeWord() && line.matches(searchPattern));
-
-        String lineStr = "";
-        if (result) {
-            lineStr = "line [" + line + "],";
-        }
-        debug("hasOccr: " + lineStr + " pattern [" + searchPattern + "], result [" + result + "]");
-
-        return result;
-    }
-
 }
 
