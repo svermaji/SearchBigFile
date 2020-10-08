@@ -1388,8 +1388,7 @@ public class SearchBigFile extends AppFrame {
                             }
                         }
 
-                        int len = sb.toString().toLowerCase().split(searchPattern).length;
-                        occr += len > 0 ? len - 1 : 0;
+                        occr += calculateOccr(sb.toString(), searchPattern);
                         occrTillNow = occr;
                         linesTillNow = readLines;
                         if (!showWarning && occr > WARN_LIMIT_OCCR) {
