@@ -398,7 +398,8 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
-            tpResults.select(lineOffsets.get(idx), lineOffsets.get(idx) + searchStr.length());
+            int ix = lineOffsets.get(idx);
+            selectAndGoToIndex(ix, ix + searchStr.length());
             updateMsgAsInfo("Going occurrences # " + (idx + 1) + "/" + lineOffsets.size());
         } else {
             updateMsg("No occurrences to show", MsgType.WARN);
@@ -1191,7 +1192,7 @@ public class SearchBigFile extends AppFrame {
             updateMsgAsInfo("Going to first line");
         }
         // Go to first
-        tpResults.select(0, 0);
+        selectAndGoToIndex(0);
     }
 
     public void goToEnd() {
@@ -1203,7 +1204,16 @@ public class SearchBigFile extends AppFrame {
             updateMsgAsInfo("Going to last line");
         }
         // Go to end
-        tpResults.select(htmlDoc.getLength(), htmlDoc.getLength());
+        selectAndGoToIndex(htmlDoc.getLength());
+    }
+
+    public void selectAndGoToIndex(int idx) {
+        selectAndGoToIndex(idx, idx);
+    }
+
+    public void selectAndGoToIndex(int sIdx, int eIdx) {
+        tpResults.grabFocus();
+        tpResults.select(sIdx, eIdx);
     }
 
     public void finishAction() {
