@@ -30,8 +30,8 @@ import java.io.*;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
-import java.util.*;
 import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.PatternSyntaxException;
 
@@ -98,8 +98,7 @@ public class SearchBigFile extends AppFrame {
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
     private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr;
     private JButton btnSearch, btnLastN, btnCancel;
-    private JTextField txtFilePath;
-    private JTextField txtSearch;
+    private AppTextField txtFilePath, txtSearch;
     private JEditorPane tpResults;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
@@ -173,7 +172,7 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new ArrayList<>();
-        lineOffsetsIdx = -1;
+        resetLineOffsetsIdx();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -187,9 +186,8 @@ public class SearchBigFile extends AppFrame {
 
         final int TXT_COLS = 12;
         UIName uin = UIName.LBL_FILE;
-        txtFilePath = new JTextField(getCfg(Configs.FilePath));
+        txtFilePath = new AppTextField(getCfg(Configs.FilePath), TXT_COLS, getFiles());
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
-        txtFilePath.setColumns(TXT_COLS);
         uin = UIName.BTN_FILE;
         JButton btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
         btnFileOpen.addActionListener(e -> openFile());
@@ -229,10 +227,9 @@ public class SearchBigFile extends AppFrame {
 
         JPanel searchPanel = new JPanel();
 
-        txtSearch = new JTextField(getCfg(Configs.SearchString));
+        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS-5, getSearches());
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
-        txtSearch.setColumns(TXT_COLS - 5);
         uin = UIName.BTN_SEARCH;
         btnSearch = new AppButton(uin.name, uin.mnemonic);
         btnSearch.addActionListener(evt -> searchFile());
@@ -360,7 +357,12 @@ public class SearchBigFile extends AppFrame {
         resetForNewSearch();
         enableControls();
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
+        //new Timer().schedule(new ChkMode(this), 0, 200);
         setToCenter();
+    }
+
+    private void resetLineOffsetsIdx() {
+        lineOffsetsIdx = -1;
     }
 
     private void nextOccr() {
@@ -679,7 +681,7 @@ public class SearchBigFile extends AppFrame {
         globalCharIdx = 0;
         htmlDocText = "";
         lineOffsets.clear();
-        lineOffsetsIdx = -1;
+        resetLineOffsetsIdx();
         setSearchStrings();
         logger.log(getSearchDetails());
         startTime = System.currentTimeMillis();
@@ -854,6 +856,9 @@ public class SearchBigFile extends AppFrame {
                     }
                 });
         addCBSearchAction();
+        // Updating auto-complete action
+        txtFilePath.setAutoCompleteArr(recentFilesStr.split(Utils.SEMI_COLON));
+        txtSearch.setAutoCompleteArr(recentSearchesStr.split(Utils.SEMI_COLON));
     }
 
     private String checkItems(String searchStr, String csv, String selectedItem) {
@@ -1193,6 +1198,7 @@ public class SearchBigFile extends AppFrame {
         }
         // Go to first
         selectAndGoToIndex(0);
+        resetLineOffsetsIdx();
     }
 
     public void goToEnd() {
@@ -1205,6 +1211,7 @@ public class SearchBigFile extends AppFrame {
         }
         // Go to end
         selectAndGoToIndex(htmlDoc.getLength());
+        lineOffsetsIdx = lineOffsets.size();
     }
 
     public void selectAndGoToIndex(int idx) {
@@ -1657,7 +1664,5 @@ public class SearchBigFile extends AppFrame {
             finishAction();
             return true;
         }
-
     }
 }
-

@@ -20,6 +20,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Description<br>
 * Program stores the last searched file and search string. 
 * Warning and Info indicator will change font every 10 min.  Font details will be in tooptip. 
+* In file path and search text box auto-complete feature is supported. 
 * In case of hang, program tries to stop forcefully after 50 sec. 
 * Controls to increase/decrease font size. 
 * Shows number of lines processed till time while searching or reading. 
@@ -86,3 +87,7 @@ Added on 30-Sep-2020. Attaching screen shot of application. Added controls goto 
 
 Added on 3-Oct-2020. Attaching screen shot of application. Added controls goto next and previous occurrences:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-occr.png) 
+
+Added on 12-Oct-2020. Attaching screen shot of application. Auto complete in text fields:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-ac.png) 
+
