@@ -99,7 +99,9 @@ public class SearchBigFile extends AppFrame {
     private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
-    private JEditorPane tpResults;
+    private JEditorPane tpResults, tpHelp;
+    private JScrollPane jspResults, jspHelp;
+    private Container parentContainer;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
@@ -123,6 +125,7 @@ public class SearchBigFile extends AppFrame {
     private static final int APPEND_MSG_CHUNK = 100;
     private static final int eb = 5;
     private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
+    private static final Border blueLineBorder = new LineBorder(Color.BLUE, 1, true);
 
     private final String TITLE = "Search File";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
@@ -178,7 +181,7 @@ public class SearchBigFile extends AppFrame {
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
 
-        Container parentContainer = getContentPane();
+        parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
 
         setTitle(TITLE);
@@ -296,9 +299,13 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_PREOCCR;
         btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPreOccr.addActionListener(e -> preOccr());
+        uin = UIName.BTN_HELP;
+        JButton btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnHelp.addActionListener(e -> showHelpPane());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
-                btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr});
+                btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnHelp});
+        btnHelp.setForeground(Color.YELLOW);
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
@@ -313,6 +320,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnGoBottom);
         jtbActions.add(btnPreOccr);
         jtbActions.add(btnNextOccr);
+        jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
 
         JPanel inputPanel = new JPanel();
@@ -325,29 +333,32 @@ public class SearchBigFile extends AppFrame {
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
         msgPanel = new JPanel();
-        msgPanel.setBorder(new LineBorder(Color.BLUE, 1, true));
+        msgPanel.setBorder(blueLineBorder);
         lblMsg = new JLabel(getInitialMsg());
         lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
         msgPanel.add(lblMsg);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
 
+        tpHelp = new JEditorPane();
+        tpHelp.setEditable(false);
+        tpHelp.setContentType("text/html");
+
         tpResults = new JEditorPane();
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
         tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
         tpResults.setForeground(Color.BLACK);
-        System.out.println(tpResults.getForeground());
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
         kit = new HTMLEditorKit();
-        JScrollPane jspResults = new JScrollPane(tpResults);
+        jspResults = new JScrollPane(tpResults);
+        jspHelp = new JScrollPane(tpHelp);
         jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jspResults.setBorder(emptyBorder);
 
         parentContainer.add(topPanel, BorderLayout.NORTH);
-        parentContainer.add(jspResults, BorderLayout.CENTER);
 
         btnExit.addActionListener(evt -> exitForm());
         addWindowListener(new WindowAdapter() {
@@ -357,11 +368,51 @@ public class SearchBigFile extends AppFrame {
         });
 
         btnFontInfo.setText(getFontSize());
+        setupHelp();
         resetForNewSearch();
         enableControls();
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
-        //new Timer().schedule(new ChkMode(this), 0, 200);
+        showHelpPane();
+
         setToCenter();
+    }
+
+    private void showHelpPane() {
+        helpVisibility(true);
+    }
+
+    private void hideHelpPane() {
+        helpVisibility(false);
+    }
+
+    private void helpVisibility(boolean show) {
+        parentContainer.remove(!show ? jspHelp : jspResults);
+        parentContainer.add(show ? jspHelp : jspResults, BorderLayout.CENTER);
+        parentContainer.repaint();
+    }
+
+    private void setupHelp() {
+        showHelpPane();
+        final int BUFFER_SIZE = 5 * 1024;
+        StringBuilder sb = new StringBuilder();
+        File file = new File("./help.html");
+        try (InputStream stream = new FileInputStream(file);
+             BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
+        ) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+        } catch (IOException e) {
+            updateMsg("Unable to show help", MsgType.ERROR);
+        }
+
+        try {
+            tpHelp.setPage(file.toURI().toURL());
+        } catch (IOException e) {
+            logger.error("Unable to dispaly help");
+            updateTitleAndMsg("Unable to dispaly help", MsgType.ERROR);
+        }
     }
 
     private void resetLineOffsetsIdx() {
@@ -626,7 +677,6 @@ public class SearchBigFile extends AppFrame {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        frame.setBackground(Color.CYAN);
         frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
         addEscKeyAction(frame);
@@ -672,6 +722,7 @@ public class SearchBigFile extends AppFrame {
 
     private void resetForNewSearch() {
         debug("reset for new search");
+        hideHelpPane();
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;

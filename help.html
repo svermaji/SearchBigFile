@@ -1,0 +1,111 @@
+<html>
+<body style="font-family: Calibri">
+<a id="top"></a>
+<i><font color="red"><b>Note:</b></font> For full feature working, please copy link of this file and paste in
+    browser</i>
+<center><u><h1>Welcome to Search Big File</h1></u></center>
+<h2>Help Contents</h2>
+<h2>Index</h2>
+<ul>
+    <li><a href="#author">Author</a></li>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#controls">Controls</a></li>
+</ul>
+<h3><a id="author">Author</a></h3>
+<ul>
+    <li><b>Name:</b> Shailendra Verma</li>
+    <li><b>Email:</b> shailendravermag@gmail.com</li>
+    <li><b>Blogs:</b> https://sv-technical.blogspot.com/</li>
+</ul>
+<h3><a id="introduction">Introduction</a></h3>
+<p>This application is Java8 based. UI is designed in Swing.<br>
+    No third party library is used. <br><br>This program is developed to search big size files
+    like 400MB or even higher like 1GB.</p>
+<h3><a id="features">Features</a></h3>
+<ul>
+    <li>Complete UI can be driven by keyboard. That means all actions has short cuts.</li>
+    <li>Every control has tooltip that describes more detail about it.</li>
+    <li>Application has proper validations.</li>
+    <li>Controls enable/disable as per actions.</li>
+    <li>Waring/Error bar will change color as per user actions.</li>
+    <li>Application stores values last entered by the user.</li>
+    <li>Components and controls are categorised by title and a border.</li>
+</ul>
+<h3><a id="controls">Controls</a></h3>
+<ul>
+    <li>File can be choose from:
+        <ul>
+            <li>Manually entered by user</li>
+            <ul>
+                <li>While manually typing file auto complete is available</li>
+            </ul>
+            <li>Select from "Ellipsis" (...) to browse folders</li>
+            <li>Select from Recent List</li>
+            <li>Select from Recent List Table (using small search icon near drop down)</li>
+        </ul>
+    </li>
+    <li>Checkbox "case" - This can be checked if search is case sensitive</li>
+    <li>Checkbox "word" - This can be checked if search is meant to look for whole word only</li>
+    <li>Search Pattern can be:
+        <ul>
+            <li>Manually entered by user</li>
+            <ul>
+                <li>While manually typing auto complete is available</li>
+            </ul>
+            <li>Select from Recent List</li>
+            <li>Select from Recent List Table (using small search icon near drop down)</li>
+        </ul>
+    </li>
+    <li>Search Button will perform search for pattern in file. This action will display only matching lines in the
+        file.
+    </li>
+    <li>Label and drop down for "Last N" gives option to display last N lines (200 to 5000) from the file.</li>
+    <li>Read button action display last N lines.</li>
+    <li>Search and Read button action also highlights with <span style="background-color: #FFFF00">yellow</span>
+        background to search pattern that matches.
+    </li>
+    <li>Cancel button icon (<img src="./icons/cancel-icon.png" width="12" height="12">) to stop operation while
+        Seach/Read going on
+    </li>
+    <ul>
+        <li>It will be disabled (<img src="./icons/cancel-icon-disabled.png" width="12" height="12">) when unavailable
+        </li>
+    </ul>
+    <li>Toolbar is available with different actions
+        <ul>
+            <li>+ this action will increase font size by 1</li>
+            <li>- this action will decrease font size by 1</li>
+            <li>✔ this action will reset font size to 12</li>
+            <li>N Number indicating current font size of results area</li>
+            <li>↑ this action will take result scrollbar to top</li>
+            <li>↓ this action will take result scrollbar to bottom</li>
+            <li>< this action will take to previous occurrence of search pattern</li>
+            <li>> this action will take to next occurrence of search pattern</li>
+            <li>? this action will shows</li>
+        </ul>
+    </li>
+    <li>Exit button icon (<img src="./icons/exit-icon.png" width="12" height="12">) will exit from application</li>
+    <li>Information bar that represent different actions.
+        <ul>
+            <li>Font of this bar change every 10 minutes.</li>
+            <li>White background to show information</li>
+            <li>Orange background to show warning</li>
+            <li>Red background to show error</li>
+            <li>Shows font or font size change action.</li>
+            <li>Shows results.</li>
+            <li>Shows validations etc.</li>
+        </ul>
+    </li>
+    <li>Results area
+        <ul>
+            <li>Shows help.</li>
+            <li>Shows search results</li>
+            <li>Shows read results</li>
+        </ul>
+    </li>
+</ul>
+<br>
+<a href="#top">Top</a>
+</body>
+</html>

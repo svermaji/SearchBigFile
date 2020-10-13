@@ -15,6 +15,10 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 13-Oct-2020<br>
+* Help will be displayed at start of application. 
+* Help button also added. 
+
 #### On 12-Oct-2020<br>
 * Now auto complete feature is available in search file and search pattern text fields. 
 
