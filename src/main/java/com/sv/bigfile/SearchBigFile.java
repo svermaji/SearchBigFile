@@ -770,7 +770,7 @@ public class SearchBigFile extends AppFrame {
     private void cancelSearch() {
         // To ensure background is red
         if (!isErrorState()) {
-            updateMsg("Search cancelled.", getMsgType());
+            updateMsg("Search cancelled.", MsgType.ERROR);
         }
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
@@ -1636,7 +1636,7 @@ public class SearchBigFile extends AppFrame {
                     logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
                 }
                 String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.getOccurrences());
-                if (stats.getOccurrences() == 0 && !isErrorState()) {
+                if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
                     String s = "No match found";
                     sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
                     sbf.updateMsg(s, MsgType.WARN);
