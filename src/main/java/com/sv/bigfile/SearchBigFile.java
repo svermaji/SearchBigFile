@@ -336,6 +336,8 @@ public class SearchBigFile extends AppFrame {
         tpResults.setEditable(false);
         tpResults.setContentType("text/html");
         tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
+        tpResults.setForeground(Color.BLACK);
+        System.out.println(tpResults.getForeground());
         tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         tpResults.setDocument(htmlDoc);
