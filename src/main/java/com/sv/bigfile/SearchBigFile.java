@@ -769,7 +769,9 @@ public class SearchBigFile extends AppFrame {
 
     private void cancelSearch() {
         // To ensure background is red
-        //updateMsg("Search cancelled.", getMsgType());
+        if (!isErrorState()) {
+            updateMsg("Search cancelled.", getMsgType());
+        }
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -1287,7 +1289,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public boolean isInfoState() {
-        return isWarningState() || isErrorState();
+        return !isWarningState() && !isErrorState();
     }
 
     public boolean isWarningState() {
