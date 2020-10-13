@@ -108,16 +108,17 @@ public class SearchBigFile extends AppFrame {
 
     private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
     private static final String PREFERRED_FONT = "Calibri";
-    private static final long FONT_CHANGE_TIME = TimeUnit.MINUTES.toMillis(10);
+    private static final long FONT_CHANGE_MIN = 10;
+    private static final long FONT_CHANGE_TIME = TimeUnit.MINUTES.toMillis(FONT_CHANGE_MIN);
     private static final int PREFERRED_FONT_SIZE = 12;
     private static final int DEFAULT_FONT_SIZE = 12;
     private static final int MIN_FONT_SIZE = 8;
     private static final int MAX_FONT_SIZE = 24;
     private static final int RECENT_LIMIT = 20;
     private static final int SEARCH_STR_LEN_LIMIT = 2;
-    private static final int WARN_LIMIT_SEC = 20;
-    private static final int FORCE_STOP_LIMIT_SEC = 50;
-    private static final int WARN_LIMIT_OCCR = 200;
+    private static final int WARN_LIMIT_SEC = 10;
+    private static final int FORCE_STOP_LIMIT_SEC = 40;
+    private static final int WARN_LIMIT_OCCR = 100;
     private static final int FORCE_STOP_LIMIT_OCCR = 500;
     private static final int APPEND_MSG_CHUNK = 100;
     private static final int eb = 5;
@@ -227,7 +228,7 @@ public class SearchBigFile extends AppFrame {
 
         JPanel searchPanel = new JPanel();
 
-        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS-5, getSearches());
+        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 5, getSearches());
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         uin = UIName.BTN_SEARCH;
@@ -1314,7 +1315,7 @@ public class SearchBigFile extends AppFrame {
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
-        lblMsg.setToolTipText("Font changes every 10 minutes. " + msg);
+        lblMsg.setToolTipText("Font changes every [" + FONT_CHANGE_MIN + " min]. " + msg + ". " + getInitialMsg());
         updateMsgAsInfo(msg);
         debug(msg);
     }
@@ -1371,7 +1372,7 @@ public class SearchBigFile extends AppFrame {
                                 while (!stack.empty()) {
                                     qMsgsToAppend.add(stack.pop());
                                 }
-                                debug("Read: Starting msg callable and Q size is " + qMsgsToAppend.size());
+                                //debug("Read: Starting msg callable and Q size is " + qMsgsToAppend.size());
                                 startThread(msgCallable);
                             }
                         }
@@ -1406,7 +1407,7 @@ public class SearchBigFile extends AppFrame {
                     while (!stack.empty()) {
                         qMsgsToAppend.add(stack.pop());
                     }
-                    debug("Read: After loop, starting msg callable and Q size is " + qMsgsToAppend.size());
+                    //debug("Read: After loop, starting msg callable and Q size is " + qMsgsToAppend.size());
                     startThread(msgCallable);
                 }
                 readLines++;
@@ -1609,7 +1610,7 @@ public class SearchBigFile extends AppFrame {
                     if (!isCancelled() && occrTillNow <= FORCE_STOP_LIMIT_OCCR) {
                         searchData.process();
                         if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
-                            debug("Search: Starting msg callable and Q size is " + qMsgsToAppend.size());
+                            //debug("Search: Starting msg callable and Q size is " + qMsgsToAppend.size());
                             startThread(msgCallable);
                         }
                     }
