@@ -769,7 +769,7 @@ public class SearchBigFile extends AppFrame {
 
     private void cancelSearch() {
         // To ensure background is red
-        updateMsg("Search cancelled.", getMsgType());
+        //updateMsg("Search cancelled.", getMsgType());
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
@@ -1095,25 +1095,25 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void updateMsg(String msg, MsgType type) {
-        Color b = Color.WHITE;
-        Color f = Color.BLUE;
-        if (type == MsgType.ERROR) {
-            b = Color.RED;
-            f = Color.WHITE;
-        } else if (type == MsgType.WARN) {
-            b = Color.ORANGE;
-            f = Color.BLACK;
-        }
-        msgPanel.setBackground(b);
-        lblMsg.setForeground(f);
-
         if (Utils.hasValue(msg)) {
+            Color b = Color.WHITE;
+            Color f = Color.BLUE;
+            if (type == MsgType.ERROR) {
+                b = Color.RED;
+                f = Color.WHITE;
+            } else if (type == MsgType.WARN) {
+                b = Color.ORANGE;
+                f = Color.BLACK;
+            }
+            msgPanel.setBackground(b);
+            lblMsg.setForeground(f);
+
             lblMsg.setText(msg);
         }
     }
 
-    public String getWarning() {
-        debug("getWarning: timeTillNow = " + timeTillNow + ", occrTillNow = " + occrTillNow);
+    public String getProblemMsg() {
+        debug("getProblem: timeTillNow = " + timeTillNow + ", occrTillNow = " + occrTillNow);
 
         StringBuilder sb = new StringBuilder();
         if (timeTillNow > WARN_LIMIT_SEC) {
@@ -1124,17 +1124,17 @@ public class SearchBigFile extends AppFrame {
         }
         StringBuilder sbErr = new StringBuilder();
         if (timeTillNow > FORCE_STOP_LIMIT_SEC) {
-            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_SEC).append("]. ");
+            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_SEC).append("]. Cancelling search...");
         }
         if (occrTillNow > FORCE_STOP_LIMIT_OCCR) {
-            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_OCCR).append("], try to narrow your search.");
+            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_OCCR).append("], try to narrow your search. Cancelling search...");
         }
 
         if (Utils.hasValue(sbErr.toString())) {
             sb = sbErr;
         }
 
-        debug("Returning warning as " + sb.toString());
+        debug("Returning problem as " + sb.toString());
         return sb.toString();
     }
 
@@ -1501,12 +1501,12 @@ public class SearchBigFile extends AppFrame {
                     timeElapse = sbf.getSecondsElapsed(startTime);
                     timeTillNow = timeElapse;
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
-                    if (showWarning || timeElapse > WARN_LIMIT_SEC) {
-                        msg += sbf.getWarning();
+                    if (showWarning || isWarningState()) {
+                        msg += sbf.getProblemMsg();
                         sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
                     }
-                    if (forceStop()) {
+                    if (isErrorState()) {
                         sbf.logger.warn("Stopping forcefully.");
                         cancelSearch();
                     }
@@ -1521,10 +1521,6 @@ public class SearchBigFile extends AppFrame {
             logger.log("Timer stopped after " + timeElapse + " sec");
             return true;
         }
-    }
-
-    private boolean forceStop() {
-        return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
     }
 
     private boolean hasOccr(String line, String searchPattern) {
@@ -1638,7 +1634,7 @@ public class SearchBigFile extends AppFrame {
                     logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
                 }
                 String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.getOccurrences());
-                if (stats.getOccurrences() == 0) {
+                if (stats.getOccurrences() == 0 && !isErrorState()) {
                     String s = "No match found";
                     sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
                     sbf.updateMsg(s, MsgType.WARN);

@@ -14,7 +14,7 @@ public class StartWarnIndicator extends SwingWorker<Integer, String> {
 
     @Override
     public Integer doInBackground() {
-        sbf.updateMsg(sbf.getWarning(), sbf.getMsgType());
+        sbf.updateMsg(sbf.getProblemMsg(), sbf.getMsgType());
         return 1;
     }
 }
