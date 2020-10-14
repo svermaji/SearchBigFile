@@ -9,6 +9,7 @@ import com.sv.core.Utils;
 import com.sv.swingui.*;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -92,6 +93,7 @@ public class SearchBigFile extends AppFrame {
     private DefaultConfigs configs;
 
     private JTabbedPane tabbedPane;
+    private JMenu menuRFiles, menuRSearches;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
@@ -100,14 +102,10 @@ public class SearchBigFile extends AppFrame {
     private AppTextField txtFilePath, txtSearch;
     private JEditorPane tpResults, tpHelp;
     private JScrollPane jspResults, jspHelp;
-    private Container parentContainer;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JComboBox<String> cbFiles, cbSearches;
     private JComboBox<Integer> cbLastN;
-
-    private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
 
     private final String TITLE = "Search File";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
@@ -163,27 +161,27 @@ public class SearchBigFile extends AppFrame {
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
 
-        parentContainer = getContentPane();
+        Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
 
         setTitle(TITLE);
 
         JPanel filePanel = new JPanel();
 
-        final int TXT_COLS = 12;
+        final int TXT_COLS = 18;
         UIName uin = UIName.LBL_FILE;
         txtFilePath = new AppTextField(getCfg(Configs.FilePath), TXT_COLS, getFiles());
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         uin = UIName.BTN_FILE;
         JButton btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
         btnFileOpen.addActionListener(e -> openFile());
-        cbFiles = new JComboBox<>(getFiles());
+        /*cbFiles = new JComboBox<>(getFiles());
         cbFiles.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
         cbFiles.setRenderer(new JComboToolTipRenderer());
         cbFiles.setPrototypeDisplayValue("Recent Files");
         addCBFilesAction();
         uin = UIName.LBL_RFILES;
-        AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);
+        AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);*/
         uin = UIName.BTN_LISTRF;
         JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRF.addActionListener(e -> showListRF());
@@ -203,16 +201,28 @@ public class SearchBigFile extends AppFrame {
         jtbFile.setRollover(false);
         jtbFile.add(txtFilePath);
         jtbFile.add(btnFileOpen);
+        /*jtbFile.addSeparator();
+        jtbFile.add(btnListRF);
+        jtbFile.addSeparator();*/
+        uin = UIName.LBL_RFILES;
+        JMenuBar mb = new JMenuBar();
+        menuRFiles = new JMenu(uin.name);
+        mb.setBackground(Color.LIGHT_GRAY);
+        menuRFiles.setMnemonic(uin.mnemonic);
+        menuRFiles.setToolTipText(uin.tip);
+        mb.add(menuRFiles);
+        updateRecentMenu(menuRFiles, getFiles(), txtFilePath);
+        //jtbFile.add(mb);
         filePanel.add(jtbFile);
-        filePanel.add(lblRFiles);
         filePanel.add(btnListRF);
-        filePanel.add(cbFiles);
+        filePanel.add(mb);
         filePanel.add(jcbMatchCase);
         filePanel.add(jcbWholeWord);
+        filePanel.setBorder(new TitledBorder("File to search"));
 
         JPanel searchPanel = new JPanel();
 
-        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 5, getSearches());
+        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 8, getSearches());
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         uin = UIName.BTN_SEARCH;
@@ -225,17 +235,27 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_LASTN;
         btnLastN = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLastN.addActionListener(evt -> readFile());
-        cbSearches = new JComboBox<>(getSearches());
-        cbSearches.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
-        JComboToolTipRenderer cbSearchRenderer = new JComboToolTipRenderer();
-        cbSearches.setRenderer(cbSearchRenderer);
-        cbSearches.setPrototypeDisplayValue("Pattern");
-        addCBSearchAction();
-        uin = UIName.LBL_RSEARCHES;
-        AppLabel lblRSearches = new AppLabel(uin.name, cbSearches, uin.mnemonic, uin.tip);
         uin = UIName.BTN_LISTRS;
         JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
         btnListRS.addActionListener(e -> showListRS());
+
+        JToolBar jtbSearch = new JToolBar();
+        jtbSearch.setFloatable(false);
+        jtbSearch.setRollover(false);
+        jtbSearch.add(txtSearch);
+//        jtbSearch.add(btnListRS);
+//        jtbSearch.addSeparator();
+
+        uin = UIName.LBL_RSEARCHES;
+        JMenuBar mbar = new JMenuBar();
+        menuRSearches = new JMenu(uin.name);
+        mbar.setBackground(Color.LIGHT_GRAY);
+        menuRSearches.setMnemonic(uin.mnemonic);
+        menuRSearches.setToolTipText(uin.tip);
+        mbar.add(menuRSearches);
+        updateRecentMenu(menuRSearches, getSearches(), txtSearch);
+        //jtbSearch.add(mbar);
+
         uin = UIName.BTN_CANCEL;
         btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
         btnCancel.setDisabledIcon(new ImageIcon("./icons/cancel-icon-disabled.png"));
@@ -243,15 +263,15 @@ public class SearchBigFile extends AppFrame {
 
         searchPanel.setLayout(new FlowLayout());
         searchPanel.add(lblSearch);
-        searchPanel.add(txtSearch);
-        searchPanel.add(lblRSearches);
+        searchPanel.add(jtbSearch);
         searchPanel.add(btnListRS);
-        searchPanel.add(cbSearches);
+        searchPanel.add(mbar);
         searchPanel.add(btnSearch);
         searchPanel.add(lblLastN);
         searchPanel.add(cbLastN);
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
+        searchPanel.setBorder(new TitledBorder("Pattern to search"));
 
         JToolBar jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
@@ -300,6 +320,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnNextOccr);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
+        controlPanel.setBorder(new TitledBorder("Controls"));
 
         JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new GridBagLayout());
@@ -342,7 +363,6 @@ public class SearchBigFile extends AppFrame {
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
         parentContainer.add(tabbedPane, BorderLayout.CENTER);
 
-
         btnExit.addActionListener(evt -> exitForm());
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent evt) {
@@ -360,6 +380,15 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
     }
 
+    private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF) {
+        m.removeAll();
+        for (String a : arr) {
+            JMenuItem mi = new JMenuItem(a);
+            mi.addActionListener(e -> txtF.setText(e.getActionCommand()));
+            m.add(mi);
+        }
+    }
+
     private void showHelp() {
         selectTab(true);
     }
@@ -374,20 +403,7 @@ public class SearchBigFile extends AppFrame {
 
     private void setupHelp() {
         showHelp();
-        final int BUFFER_SIZE = 5 * 1024;
-        StringBuilder sb = new StringBuilder();
         File file = new File("./help.html");
-        try (InputStream stream = new FileInputStream(file);
-             BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
-        ) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-            }
-        } catch (IOException e) {
-            updateMsg("Unable to show help", MsgType.ERROR);
-        }
-
         try {
             tpHelp.setPage(file.toURI().toURL());
         } catch (IOException e) {
@@ -458,7 +474,6 @@ public class SearchBigFile extends AppFrame {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File selectedFile = jfc.getSelectedFile();
             setFileToSearch(selectedFile.getAbsolutePath());
-            //This is where a real application would open the file.
             debug("Selected file: " + file.getAbsolutePath());
         } else {
             debug("Open command cancelled by user.");
@@ -561,14 +576,14 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showListRF() {
-        showRecentList(cbFiles, "Recent files");
+        showRecentList(menuRFiles, "Recent files", txtFilePath);
     }
 
     private void showListRS() {
-        showRecentList(cbSearches, "Recent searches");
+        showRecentList(menuRSearches, "Recent searches", txtSearch);
     }
 
-    private void showRecentList(JComboBox<String> src, String colName) {
+    private void showRecentList(JMenu src, String colName, JTextField dest) {
         DefaultTableModel model = new DefaultTableModel() {
 
             @Override
@@ -588,6 +603,7 @@ public class SearchBigFile extends AppFrame {
         JTextField txtFilter = new JTextField();
         txtFilter.setColumns(30);
         JTable table = new JTable(model);
+
         deleteAndCreateRows(src, table, model);
 
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
@@ -610,7 +626,7 @@ public class SearchBigFile extends AppFrame {
             public void mousePressed(MouseEvent mouseEvent) {
                 JTable table = (JTable) mouseEvent.getSource();
                 if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
-                    src.setSelectedItem(table.getValueAt(table.getSelectedRow(), 0).toString());
+                    src.setText(table.getValueAt(table.getSelectedRow(), 0).toString());
                     frame.setVisible(false);
                 }
             }
@@ -619,7 +635,7 @@ public class SearchBigFile extends AppFrame {
         InputMap im = table.getInputMap();
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "Action.RunCmdCell");
         ActionMap am = table.getActionMap();
-        am.put("Action.RunCmdCell", new CopyCommandAction(table, frame, src));
+        am.put("Action.RunCmdCell", new CopyCommandAction(table, frame, dest));
 
         txtFilter.getDocument().addDocumentListener(
                 new DocumentListener() {
@@ -666,12 +682,12 @@ public class SearchBigFile extends AppFrame {
     private void addEscKeyAction(JFrame frame) {
         frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel");
+
         frame.getRootPane().getActionMap().put("Cancel", new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 frame.setVisible(false);
             }
         });
-
     }
 
     private void addFilter(TableRowSorter<DefaultTableModel> sorter, JTextField txtFilter) {
@@ -684,15 +700,17 @@ public class SearchBigFile extends AppFrame {
         sorter.setRowFilter(rf);
     }
 
-    private void deleteAndCreateRows(JComboBox<String> src, JTable table, DefaultTableModel model) {
+    private void deleteAndCreateRows(JMenu src, JTable table, DefaultTableModel model) {
         int rows = table.getRowCount();
         for (int i = 0; i < rows; i++) {
             model.removeRow(i);
         }
 
         int items = src.getItemCount();
+        System.out.println("items = " + items);
         for (int i = 0; i < items; i++) {
-            String s = src.getItemAt(i);
+            System.out.println(src.getItem(i).getText());
+            String s = src.getItem(i).getText();
             model.addRow(new String[]{s});
         }
     }
@@ -710,7 +728,7 @@ public class SearchBigFile extends AppFrame {
         disableControls();
         resetShowWarning();
         emptyResults();
-        updateRecentSearchVals();
+        updateRecentValues();
         qMsgsToAppend.clear();
         idxMsgsToAppend.clear();
         globalCharIdx = 0;
@@ -735,7 +753,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getLineNumStr(long line) {
-        return "<span style=\"color: #A9A9A9\"><b>" + line + "  </b></span>";
+//        return "<span style=\"color: #A9A9A9\"><b>" + line + "  </b></span>";
+        return "<span style=\"color: #0000FF\">" + line + "  </span>";
     }
 
     private int calculateOccr(String line, String pattern) {
@@ -756,14 +775,6 @@ public class SearchBigFile extends AppFrame {
         return occr;
     }
 
-    private void removeCBSearchAL() {
-        Arrays.stream(cbSearches.getActionListeners()).forEach(a -> cbSearches.removeActionListener(a));
-    }
-
-    private void addCBSearchAction() {
-        cbSearches.addActionListener(e -> setSearchPattern(cbSearches.getSelectedItem().toString()));
-    }
-
     private void setSearchPattern(String s) {
         txtSearch.setText(s);
         updateMsgAsInfo("Search pattern set as [" + s + "]");
@@ -774,20 +785,12 @@ public class SearchBigFile extends AppFrame {
         updateMsgAsInfo("File set as [" + s + "]");
     }
 
-    private void removeCBFilesAL() {
-        Arrays.stream(cbFiles.getActionListeners()).forEach(a -> cbFiles.removeActionListener(a));
-    }
-
-    private void addCBFilesAction() {
-        cbFiles.addActionListener(e -> setFileToSearch(cbFiles.getSelectedItem().toString()));
-    }
-
     private String[] getFiles() {
-        return getCfg(Configs.RecentFiles).split(";");
+        return getCfg(Configs.RecentFiles).split(Utils.SEMI_COLON);
     }
 
     private String[] getSearches() {
-        return getCfg(Configs.RecentSearches).split(";");
+        return getCfg(Configs.RecentSearches).split(Utils.SEMI_COLON);
     }
 
     private void resetShowWarning() {
@@ -868,38 +871,30 @@ public class SearchBigFile extends AppFrame {
         return result;
     }
 
-    private void updateRecentSearchVals() {
+    private void updateRecentValues() {
         debug("update recent search values");
-        recentFilesStr = checkItems(getFilePath(), recentFilesStr, cbFiles.getSelectedItem().toString());
-        recentSearchesStr = checkItems(getSearchString(), recentSearchesStr, cbSearches.getSelectedItem().toString());
-        removeCBFilesAL();
-        cbFiles.removeAllItems();
-        Arrays.stream(recentFilesStr.split(Utils.SEMI_COLON)).
-                forEach(s -> {
-                    if (Utils.hasValue(s)) {
-                        cbFiles.addItem(s);
-                    }
-                });
-        addCBFilesAction();
 
-        removeCBSearchAL();
-        cbSearches.removeAllItems();
-        Arrays.stream(recentSearchesStr.split(Utils.SEMI_COLON)).
-                forEach(s -> {
-                    if (Utils.hasValue(s)) {
-                        cbSearches.addItem(s);
-                    }
-                });
-        addCBSearchAction();
+        recentFilesStr = checkItems(getFilePath(), recentFilesStr);
+        recentSearchesStr = checkItems(getSearchString(), recentSearchesStr);
+
+        String[] arrF = recentFilesStr.split(Utils.SEMI_COLON);
+        updateRecentMenu(menuRFiles, arrF, txtFilePath);
+        String[] arrS = recentSearchesStr.split(Utils.SEMI_COLON);
+        updateRecentMenu(menuRSearches, arrS, txtFilePath);
+
         // Updating auto-complete action
-        txtFilePath.setAutoCompleteArr(recentFilesStr.split(Utils.SEMI_COLON));
-        txtSearch.setAutoCompleteArr(recentSearchesStr.split(Utils.SEMI_COLON));
+        txtFilePath.setAutoCompleteArr(arrF);
+        txtSearch.setAutoCompleteArr(arrS);
     }
 
-    private String checkItems(String searchStr, String csv, String selectedItem) {
-        if (selectedItem.toLowerCase().equals(searchStr.toLowerCase())) {
+    private String checkItems(String searchStr, String csv) {
+        String csvLC = csv.toLowerCase();
+        String ssLC = searchStr.toLowerCase();
+        if (csvLC.contains(ssLC)) {
+            int idx = csvLC.indexOf(ssLC);
             // remove item and add it again to bring it on top
-            csv = csv.replace(selectedItem + Utils.SEMI_COLON, "");
+            csv = csv.substring(0, idx)
+                    + csv.substring(idx + searchStr.length() + Utils.SEMI_COLON.length());
         }
         csv = searchStr + Utils.SEMI_COLON + csv;
 
@@ -927,7 +922,7 @@ public class SearchBigFile extends AppFrame {
         debug("Updating controls: " + enable);
         Component[] components = {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
-                cbFiles, cbSearches, cbLastN, jcbMatchCase,
+                menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
                 btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr
         };
@@ -1526,7 +1521,7 @@ public class SearchBigFile extends AppFrame {
             if (stats.isMatch()) {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
                 stats.setOccurrences(stats.getOccurrences() + occr);
-                sb.append(addLineNumAndEsc(lineNum, sb.toString()));
+                sb.append(addLineNumAndEsc(lineNum, stats.getLine()));
                 qMsgsToAppend.add(sb.toString());
             }
             stats.setLineNum(lineNum + 1);

@@ -96,6 +96,6 @@ Added on 12-Oct-2020. Attaching screen shot of application. Auto complete in tex
 Added on 13-Oct-2020. Attaching screen shot of application. Help:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-help.png) 
 
-Added on 14-Oct-2020. Attaching screen shot of application. Tabs for help and result:<br>
+Added on 14-Oct-2020. Attaching screen shot of application. Tabs for help and result.  Recent dropdown is now menu:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-tabs.png) 
 
