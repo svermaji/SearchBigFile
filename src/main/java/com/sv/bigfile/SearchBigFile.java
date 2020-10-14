@@ -1162,7 +1162,6 @@ public class SearchBigFile extends AppFrame {
             }
             msgPanel.setBackground(b);
             lblMsg.setForeground(f);
-
             lblMsg.setText(msg);
         }
     }
