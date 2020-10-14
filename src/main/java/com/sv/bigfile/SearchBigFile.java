@@ -9,9 +9,6 @@ import com.sv.core.Utils;
 import com.sv.swingui.*;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -34,6 +31,8 @@ import java.util.Timer;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.PatternSyntaxException;
+
+import static com.sv.bigfile.Constants.*;
 
 /**
  * Java Utility to search big files.
@@ -109,23 +108,6 @@ public class SearchBigFile extends AppFrame {
     private JComboBox<Integer> cbLastN;
 
     private static final boolean CB_LIST_WIDER = true, CB_LIST_ABOVE = false;
-    private static final String PREFERRED_FONT = "Calibri";
-    private static final long FONT_CHANGE_MIN = 10;
-    private static final long FONT_CHANGE_TIME = TimeUnit.MINUTES.toMillis(FONT_CHANGE_MIN);
-    private static final int PREFERRED_FONT_SIZE = 12;
-    private static final int DEFAULT_FONT_SIZE = 12;
-    private static final int MIN_FONT_SIZE = 8;
-    private static final int MAX_FONT_SIZE = 24;
-    private static final int RECENT_LIMIT = 20;
-    private static final int SEARCH_STR_LEN_LIMIT = 2;
-    private static final int WARN_LIMIT_SEC = 10;
-    private static final int FORCE_STOP_LIMIT_SEC = 40;
-    private static final int WARN_LIMIT_OCCR = 100;
-    private static final int FORCE_STOP_LIMIT_OCCR = 500;
-    private static final int APPEND_MSG_CHUNK = 100;
-    private static final int eb = 5;
-    private static final Border emptyBorder = new EmptyBorder(new Insets(eb, eb, eb, eb));
-    private static final Border blueLineBorder = new LineBorder(Color.BLUE, 1, true);
 
     private final String TITLE = "Search File";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
@@ -333,7 +315,7 @@ public class SearchBigFile extends AppFrame {
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
         msgPanel = new JPanel();
-        msgPanel.setBorder(blueLineBorder);
+        msgPanel.setBorder(BLUE_BORDER);
         lblMsg = new JLabel(getInitialMsg());
         lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
         msgPanel.add(lblMsg);
@@ -356,7 +338,7 @@ public class SearchBigFile extends AppFrame {
         jspResults = new JScrollPane(tpResults);
         jspHelp = new JScrollPane(tpHelp);
         jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jspResults.setBorder(emptyBorder);
+        jspResults.setBorder(EMPTY_BORDER);
 
         parentContainer.add(topPanel, BorderLayout.NORTH);
 
@@ -534,6 +516,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setFontSize(FONT_OPR opr) {
+        hideHelpPane();
         Font font = tpResults.getFont();
         boolean changed = false;
         int fs = font.getName().equals(PREFERRED_FONT) ? PREFERRED_FONT_SIZE : DEFAULT_FONT_SIZE;
@@ -655,7 +638,7 @@ public class SearchBigFile extends AppFrame {
                     }
                 });
 
-        table.setBorder(emptyBorder);
+        table.setBorder(EMPTY_BORDER);
 
         JPanel filterPanel = new JPanel();
         filterPanel.add(new AppLabel("Filter", txtFilter, 'R'));
@@ -667,7 +650,7 @@ public class SearchBigFile extends AppFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
-        panel.setBorder(emptyBorder);
+        panel.setBorder(EMPTY_BORDER);
 
         Container pc = frame.getContentPane();
         pc.setLayout(new BorderLayout());
@@ -1274,6 +1257,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void selectAndGoToIndex(int sIdx, int eIdx) {
+        hideHelpPane();
         tpResults.grabFocus();
         tpResults.select(sIdx, eIdx);
     }
