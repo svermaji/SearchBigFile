@@ -281,7 +281,7 @@ public class SearchBigFile extends AppFrame {
         btnPreOccr.addActionListener(e -> preOccr());
         uin = UIName.BTN_HELP;
         JButton btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnHelp.addActionListener(e -> showHelpPane());
+        btnHelp.addActionListener(e -> showHelp());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
                 btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnHelp});
@@ -355,28 +355,25 @@ public class SearchBigFile extends AppFrame {
         resetForNewSearch();
         enableControls();
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
-        showHelpPane();
+        showHelp();
 
         setToCenter();
     }
 
-    private void showHelpPane() {
-        helpVisibility(true);
+    private void showHelp() {
+        selectTab(true);
     }
 
-    private void hideHelpPane() {
-        helpVisibility(false);
+    private void hideHelp() {
+        selectTab(false);
     }
 
-    private void helpVisibility(boolean show) {
+    private void selectTab(boolean show) {
         tabbedPane.setSelectedComponent(show ? jspHelp : jspResults);
-        /*parentContainer.remove(!show ? jspHelp : jspResults);
-        parentContainer.add(show ? jspHelp : jspResults, BorderLayout.CENTER);
-        parentContainer.repaint();*/
     }
 
     private void setupHelp() {
-        showHelpPane();
+        showHelp();
         final int BUFFER_SIZE = 5 * 1024;
         StringBuilder sb = new StringBuilder();
         File file = new File("./help.html");
@@ -517,7 +514,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setFontSize(FONT_OPR opr) {
-        hideHelpPane();
+        hideHelp();
         Font font = tpResults.getFont();
         boolean changed = false;
         int fs = font.getName().equals(PREFERRED_FONT) ? PREFERRED_FONT_SIZE : DEFAULT_FONT_SIZE;
@@ -706,7 +703,7 @@ public class SearchBigFile extends AppFrame {
 
     private void resetForNewSearch() {
         debug("reset for new search");
-        hideHelpPane();
+        hideHelp();
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
@@ -1271,7 +1268,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void selectAndGoToIndex(int sIdx, int eIdx) {
-        hideHelpPane();
+        hideHelp();
         tpResults.grabFocus();
         tpResults.select(sIdx, eIdx);
     }
