@@ -74,8 +74,8 @@
     </ul>
     <li>Toolbar is available with different actions
         <ul>
-            <li>+ this action will increase font size by 1</li>
-            <li>- this action will decrease font size by 1</li>
+            <li>+ this action will increase font size by 1, maximum allowed size 24</li>
+            <li>- this action will decrease font size by 1, minimum allowed size 8</li>
             <li>✔ this action will reset font size to 12</li>
             <li>N Number indicating current font size of results area</li>
             <li>↑ this action will take result scrollbar to top</li>
@@ -88,21 +88,34 @@
     <li>Exit button icon (<img src="./icons/exit-icon.png" width="12" height="12">) will exit from application</li>
     <li>Information bar that represent different actions.
         <ul>
-            <li>Font of this bar change every 10 minutes.</li>
-            <li><span style="background-color: #FFFFFF; color: #0000FF">White</span> background with blue color to show information</li>
-            <li><span style="background-color: #FFA500; color: #000000">Orange</span> background with black color to show warning</li>
-            <li><span style="background-color: #FF0000; color: #FFFFFF">Red</span> background with white color to show error</li>
+            <li>Font of this bar changes every 10 minutes.</li>
+            <li><span style="background-color: #FFFFFF; color: #0000FF">White</span> background with blue color to show
+                information
+            </li>
+            <li><span style="background-color: #FFA500; color: #000000">Orange</span> background with black color to
+                show warning
+                <ul>
+                    <li>Shows warning if time in search/read is more than 10 seconds</li>
+                    <li>Shows warning if number of occurrences of search-pattern are more than 100</li>
+                </ul>
+            </li>
+            <li><span style="background-color: #FF0000; color: #FFFFFF">Red</span> background with white color to show
+                error
+                <ul>
+                    <li>Shows error and cancels operation if time in search/read is more than 50 seconds</li>
+                    <li>Shows error and cancels operation if number of occurrences of search-pattern are more than 500</li>
+                </ul>
+            </li>
             <li>Shows font or font size change action.</li>
             <li>Shows results.</li>
             <li>Shows validations etc.</li>
         </ul>
     </li>
-    <li>Results area
-        <ul>
-            <li>Shows help.</li>
-            <li>Shows search results</li>
-            <li>Shows read results</li>
-        </ul>
+    <li>Two tabs are present in remaining area.
+        <ol>
+            <li>Tab 1 is "Result". It has default font "Calibri".  This is used to display search/read results</li>
+            <li>Tab 2 is "Help". This is used to display application help</li>
+        </ol>
     </li>
 </ul>
 <br>

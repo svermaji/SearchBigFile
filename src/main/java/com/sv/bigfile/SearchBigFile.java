@@ -9,7 +9,6 @@ import com.sv.core.Utils;
 import com.sv.swingui.*;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -92,6 +91,7 @@ public class SearchBigFile extends AppFrame {
     private MyLogger logger;
     private DefaultConfigs configs;
 
+    private JTabbedPane tabbedPane;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
@@ -209,7 +209,6 @@ public class SearchBigFile extends AppFrame {
         filePanel.add(cbFiles);
         filePanel.add(jcbMatchCase);
         filePanel.add(jcbWholeWord);
-        filePanel.setBorder(new TitledBorder("File to search"));
 
         JPanel searchPanel = new JPanel();
 
@@ -253,7 +252,6 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(cbLastN);
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
-        searchPanel.setBorder(new TitledBorder("Pattern to search"));
 
         JToolBar jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
@@ -291,8 +289,6 @@ public class SearchBigFile extends AppFrame {
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
-        TitledBorder titledEP = new TitledBorder("Controls");
-        controlPanel.setBorder(titledEP);
         controlPanel.add(jtbActions);
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
@@ -341,6 +337,11 @@ public class SearchBigFile extends AppFrame {
         jspResults.setBorder(EMPTY_BORDER);
 
         parentContainer.add(topPanel, BorderLayout.NORTH);
+        tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
+        tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
+        parentContainer.add(tabbedPane, BorderLayout.CENTER);
+
 
         btnExit.addActionListener(evt -> exitForm());
         addWindowListener(new WindowAdapter() {
@@ -368,9 +369,10 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void helpVisibility(boolean show) {
-        parentContainer.remove(!show ? jspHelp : jspResults);
+        tabbedPane.setSelectedComponent(show ? jspHelp : jspResults);
+        /*parentContainer.remove(!show ? jspHelp : jspResults);
         parentContainer.add(show ? jspHelp : jspResults, BorderLayout.CENTER);
-        parentContainer.repaint();
+        parentContainer.repaint();*/
     }
 
     private void setupHelp() {
@@ -467,12 +469,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getInitialMsg() {
-        return "This bar turns 'Orange' for showing warning and 'Red' for error/force-stop. " +
-                "Warning limit for time [" + WARN_LIMIT_SEC
-                + " sec] and occurrences [" + WARN_LIMIT_OCCR
-                + "]. Error" +
-                " limit for time [" + FORCE_STOP_LIMIT_SEC
-                + " sec] and occurrences [" + FORCE_STOP_LIMIT_OCCR + "]";
+        return "This bar turns 'Orange' to show warnings and 'Red' to show error/force-stop. " +
+                "Time/occurrences limit for warning [" + WARN_LIMIT_SEC
+                + "sec/" + WARN_LIMIT_OCCR
+                + "] and for error [" + FORCE_STOP_LIMIT_SEC
+                + "sec/" + FORCE_STOP_LIMIT_OCCR + "]";
 
     }
 
@@ -737,9 +738,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getLineNumStr(long line) {
-        // Due to html escaping removing bold tags
-        //return "<b>" + line + "</b> ";
-        return line + "&nbsp;&nbsp;";
+        return "<span style=\"color: #A9A9A9\"><b>" + line + "  </b></span>";
     }
 
     private int calculateOccr(String line, String pattern) {
@@ -981,7 +980,7 @@ public class SearchBigFile extends AppFrame {
 
     public void appendResultNoFormat(String data) {
         synchronized (SearchBigFile.class) {
-            data = convertForHtml(data);
+            data = lineEndToBR(data);
             // Needs to be sync else line numbers and data will be jumbled
             try {
                 if (readNFlag) {
@@ -1010,7 +1009,14 @@ public class SearchBigFile extends AppFrame {
         return body;
     }
 
-    private String convertStartingSpacesForHtml(String data) {
+    /**
+     * This method only converts spaces to &nbsp; till
+     * first char comes
+     *
+     * @param data String
+     * @return escaped string
+     */
+    private String escLSpaces(String data) {
         StringBuilder sb = new StringBuilder();
         int idx = 0;
         char[] arr = data.toCharArray();
@@ -1025,7 +1031,7 @@ public class SearchBigFile extends AppFrame {
         return sb.toString() + data.substring(idx);
     }
 
-    private String convertForHtml(String data) {
+    private String lineEndToBR(String data) {
         String NEW_LINE_REGEX = "\r?\n";
         String HTML_LINE_END = "<br>";
         return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
@@ -1034,7 +1040,7 @@ public class SearchBigFile extends AppFrame {
     public void appendResult(String data) {
 
         // Html escaping here, so html '<' character processed and searched properly
-        data = htmlEsc(data);
+        //data = htmlEsc(data);
 
         if (Utils.hasValue(searchStr)) {
             if (!isMatchCase()) {
@@ -1052,7 +1058,15 @@ public class SearchBigFile extends AppFrame {
         appendResultNoFormat(data);
     }
 
+    /**
+     * This method will check string occurrence as in-case-sensitive
+     * but highlights whatever original text is
+     *
+     * @param data String
+     * @return converted string
+     */
     private String replaceWithSameCase(String data) {
+        // Putting yellow background after escaping
         String s = searchStrEsc.toLowerCase();
         StringBuilder sb = new StringBuilder();
         while (data.toLowerCase().contains(s)) {
@@ -1353,9 +1367,19 @@ public class SearchBigFile extends AppFrame {
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
-        lblMsg.setToolTipText("Font changes every [" + FONT_CHANGE_MIN + " min]. " + msg + ". " + getInitialMsg());
+        String tip = "Font changes every [" + FONT_CHANGE_MIN + "min]. " + msg + ". " + getInitialMsg();
+        lblMsg.setToolTipText(tip);
+        msgPanel.setToolTipText(tip);
         updateMsgAsInfo(msg);
         debug(msg);
+    }
+
+    private String escString(String str) {
+        return htmlEsc(escLSpaces(str));
+    }
+
+    private String addLineNumAndEsc(long lineNum, String str) {
+        return getLineNumStr(lineNum) + escString(str) + System.lineSeparator();
     }
 
     /*   Inner classes    */
@@ -1402,7 +1426,7 @@ public class SearchBigFile extends AppFrame {
                             sb.reverse();
                         }
 
-                        String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
+                        String strToAppend = addLineNumAndEsc(readLines + 1, sb.toString());
                         synchronized (SearchBigFile.class) {
                             // emptying stack to Q
                             stack.push(strToAppend);
@@ -1439,7 +1463,7 @@ public class SearchBigFile extends AppFrame {
                 if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
                 }
-                String strToAppend = getLineNumStr(readLines + 1) + convertStartingSpacesForHtml(sb.toString()) + System.lineSeparator();
+                String strToAppend = addLineNumAndEsc(readLines + 1, sb.toString());
                 synchronized (SearchBigFile.class) {
                     stack.push(strToAppend);
                     while (!stack.empty()) {
@@ -1505,8 +1529,8 @@ public class SearchBigFile extends AppFrame {
             if (stats.isMatch()) {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
                 stats.setOccurrences(stats.getOccurrences() + occr);
-                sb.append(getLineNumStr(lineNum)).append(stats.getLine()).append(System.lineSeparator());
-                qMsgsToAppend.add(convertStartingSpacesForHtml(sb.toString()));
+                sb.append(addLineNumAndEsc(lineNum, sb.toString()));
+                qMsgsToAppend.add(sb.toString());
             }
             stats.setLineNum(lineNum + 1);
 
