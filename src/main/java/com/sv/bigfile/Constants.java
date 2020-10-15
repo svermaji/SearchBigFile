@@ -14,8 +14,8 @@ public final class Constants {
     public static final String PREFERRED_FONT = "Calibri";
     public static final long FONT_CHANGE_MIN = 10;
     public static final long FONT_CHANGE_TIME = TimeUnit.MINUTES.toMillis(FONT_CHANGE_MIN);
-    public static final long HELP_COLOR_CHANGE_MIN = 1;
-    public static final long HELP_COLOR_CHANGE_TIME = TimeUnit.MINUTES.toMillis(HELP_COLOR_CHANGE_MIN);
+    public static final long HELP_COLOR_CHANGE_SEC = 10;
+    public static final long HELP_COLOR_CHANGE_TIME = TimeUnit.SECONDS.toMillis(HELP_COLOR_CHANGE_SEC);
     public static final int PREFERRED_FONT_SIZE = 12;
     public static final int DEFAULT_FONT_SIZE = 12;
     public static final int MIN_FONT_SIZE = 8;

@@ -304,7 +304,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_HELP;
         btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnHelp.setToolTipText(btnHelp.getToolTipText()
-                + ". Color changes to [" + helpColors.length + "] different colors, every [" + HELP_COLOR_CHANGE_MIN + "min].");
+                + ". Color changes to [" + helpColors.length + "] different colors, every [" + HELP_COLOR_CHANGE_SEC + "sec].");
 
         btnHelp.addActionListener(e -> showHelp());
 
@@ -382,7 +382,7 @@ public class SearchBigFile extends AppFrame {
         resetForNewSearch();
         enableControls();
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
-        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_MIN);
+        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
         showHelp();
 
         setToCenter();
@@ -1363,8 +1363,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void changeHelpColor() {
-
         for (Color c : helpColors) {
+            debug("Applying color for help text as [" + c + "]");
             btnHelp.setForeground(c);
             Utils.sleep(500);
         }
