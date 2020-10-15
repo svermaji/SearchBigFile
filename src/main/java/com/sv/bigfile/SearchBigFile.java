@@ -382,7 +382,7 @@ public class SearchBigFile extends AppFrame {
         resetForNewSearch();
         enableControls();
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
-        new Timer().schedule(new HelpColorChangerTask(this), 0, 5000);
+        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_MIN);
         showHelp();
 
         setToCenter();
