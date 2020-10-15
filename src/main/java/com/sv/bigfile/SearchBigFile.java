@@ -716,9 +716,7 @@ public class SearchBigFile extends AppFrame {
         }
 
         int items = src.getItemCount();
-        System.out.println("items = " + items);
         for (int i = 0; i < items; i++) {
-            System.out.println(src.getItem(i).getText());
             String s = src.getItem(i).getText();
             model.addRow(new String[]{s});
         }
@@ -1283,6 +1281,8 @@ public class SearchBigFile extends AppFrame {
             SwingUtilities.invokeLater(new StartWarnIndicator(this));
         }
         goToEnd(false);
+        // requesting to free used memory
+        System.gc();
     }
 
     private void updateOffsets() {
