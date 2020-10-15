@@ -188,7 +188,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.LBL_RFILES;
         AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);*/
         uin = UIName.BTN_LISTRF;
-        JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
+        JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/recent-icon.png");
         btnListRF.addActionListener(e -> showListRF());
         uin = UIName.JCB_MATCHCASE;
         jcbMatchCase = new JCheckBox(uin.name, getBooleanCfg(Configs.MatchCase));
@@ -241,15 +241,13 @@ public class SearchBigFile extends AppFrame {
         btnLastN = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLastN.addActionListener(evt -> readFile());
         uin = UIName.BTN_LISTRS;
-        JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/search-icon.png");
+        JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/recent-icon.png");
         btnListRS.addActionListener(e -> showListRS());
 
         JToolBar jtbSearch = new JToolBar();
         jtbSearch.setFloatable(false);
         jtbSearch.setRollover(false);
         jtbSearch.add(txtSearch);
-//        jtbSearch.add(btnListRS);
-//        jtbSearch.addSeparator();
 
         uin = UIName.LBL_RSEARCHES;
         JMenuBar mbar = new JMenuBar();
@@ -259,7 +257,6 @@ public class SearchBigFile extends AppFrame {
         menuRSearches.setToolTipText(uin.tip);
         mbar.add(menuRSearches);
         updateRecentMenu(menuRSearches, getSearches(), txtSearch);
-        //jtbSearch.add(mbar);
 
         uin = UIName.BTN_CANCEL;
         btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
@@ -379,6 +376,8 @@ public class SearchBigFile extends AppFrame {
         });
 
         btnFontInfo.setText(getFontSize());
+        menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
+        menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
         setupHelp();
         resetForNewSearch();
         enableControls();
