@@ -286,7 +286,7 @@ public class SearchBigFile extends AppFrame {
         btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
         btnFontInfo = new JButton();
-        btnFontInfo.setToolTipText("Present font size.");
+        btnFontInfo.setToolTipText("Present font size for results area.");
         uin = UIName.BTN_GOTOP;
         btnGoTop = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnGoTop.addActionListener(e -> goToFirst());
@@ -1359,7 +1359,7 @@ public class SearchBigFile extends AppFrame {
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
-        String tip = "Font changes every [" + FONT_CHANGE_MIN + "min]. " + msg + ". " + getInitialMsg();
+        String tip = "Font for this bar [" + msg + "], changes every [" + FONT_CHANGE_MIN + "min]. " + getInitialMsg();
         lblMsg.setToolTipText(tip);
         msgPanel.setToolTipText(tip);
         updateMsgAsInfo(msg);
