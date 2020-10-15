@@ -20,7 +20,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Description<br>
 * Program stores the last searched file and search string. 
 * Tabs present for help and results. 
-* Help button text color changes to 6 different colors every 1 minute. 
+* Help button text color changes to 6 different colors every 30sec. 
 * At start of program detail help will be displayed. 
 * Warning and Info indicator will change font every 10 min.  Font details will be in tooptip. 
 * In file path and search text box auto-complete feature is supported. 

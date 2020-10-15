@@ -16,7 +16,7 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 
 ## Recent Changes<br>
 #### On 15-Oct-2020<br>
-* Help button text color changes to 6 different colors every 1 minute.  
+* Help button text color changes to 6 different colors every 30sec.  
 
 #### On 14-Oct-2020<br>
 * Tabs added for Help and Result. 
