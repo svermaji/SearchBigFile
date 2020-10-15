@@ -880,7 +880,7 @@ public class SearchBigFile extends AppFrame {
         String[] arrF = recentFilesStr.split(Utils.SEMI_COLON);
         updateRecentMenu(menuRFiles, arrF, txtFilePath);
         String[] arrS = recentSearchesStr.split(Utils.SEMI_COLON);
-        updateRecentMenu(menuRSearches, arrS, txtFilePath);
+        updateRecentMenu(menuRSearches, arrS, txtSearch);
 
         // Updating auto-complete action
         txtFilePath.setAutoCompleteArr(arrF);
@@ -1395,7 +1395,6 @@ public class SearchBigFile extends AppFrame {
             File file = new File(fn);
 
             readNFlag = true;
-            startThread(new TimerCallable(sbf));
             updateTitle("Reading last " + LIMIT + " lines");
             logger.log("Loading last " + LIMIT + " lines from: " + fn);
 
@@ -1586,7 +1585,7 @@ public class SearchBigFile extends AppFrame {
         if (result) {
             lineStr = "line [" + line + "],";
         }
-        debug("hasOccr: " + lineStr + " pattern [" + searchPattern + "], result [" + result + "]");
+        //debug("hasOccr: " + lineStr + " pattern [" + searchPattern + "], result [" + result + "]");
 
         return result;
     }
@@ -1635,7 +1634,7 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int BUFFER_SIZE = 5 * 1024;
+            final int BUFFER_SIZE = 200 * 1024;
             String searchPattern = sbf.processPattern();
 
             String path = sbf.getFilePath();
