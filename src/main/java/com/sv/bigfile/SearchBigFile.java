@@ -1364,7 +1364,6 @@ public class SearchBigFile extends AppFrame {
 
     public void changeHelpColor() {
         for (Color c : helpColors) {
-            debug("Applying color for help text as [" + c + "]");
             btnHelp.setForeground(c);
             Utils.sleep(500);
         }
