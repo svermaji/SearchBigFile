@@ -1,5 +1,6 @@
 package com.sv.bigfile;
 
+import com.sv.bigfile.helpers.HelpColorChangerTask;
 import com.sv.bigfile.helpers.CopyCommandAction;
 import com.sv.bigfile.helpers.FontChangerTask;
 import com.sv.bigfile.helpers.StartWarnIndicator;
@@ -97,7 +98,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
-    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr;
+    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JEditorPane tpResults, tpHelp;
@@ -107,6 +108,10 @@ public class SearchBigFile extends AppFrame {
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<Integer> cbLastN;
 
+    private Color[] helpColors = {
+            Color.WHITE, Color.PINK, Color.GREEN,
+            Color.YELLOW, Color.ORANGE, Color.CYAN
+    };
     private final String TITLE = "Search File";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
     private final String R_FONT_PREFIX = "<font style=\"color:red\">";
@@ -300,12 +305,15 @@ public class SearchBigFile extends AppFrame {
         btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPreOccr.addActionListener(e -> preOccr());
         uin = UIName.BTN_HELP;
-        JButton btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnHelp.setToolTipText(btnHelp.getToolTipText()
+                + ". Color changes to [" + helpColors.length + "] different colors, every [" + HELP_COLOR_CHANGE_MIN + "min].");
+
         btnHelp.addActionListener(e -> showHelp());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
                 btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnHelp});
-        btnHelp.setForeground(Color.YELLOW);
+        btnHelp.setForeground(Color.RED);
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
@@ -375,6 +383,7 @@ public class SearchBigFile extends AppFrame {
         resetForNewSearch();
         enableControls();
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
+        new Timer().schedule(new HelpColorChangerTask(this), 0, 5000);
         showHelp();
 
         setToCenter();
@@ -1354,6 +1363,14 @@ public class SearchBigFile extends AppFrame {
         return AppFonts.values()[fontIdx++].getFont();
     }
 
+    public void changeHelpColor() {
+
+        for (Color c : helpColors) {
+            btnHelp.setForeground(c);
+            Utils.sleep(500);
+        }
+    }
+
     public void changeMsgFont() {
         Font f = lblMsg.getFont();
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
@@ -1372,6 +1389,10 @@ public class SearchBigFile extends AppFrame {
 
     private String addLineNumAndEsc(long lineNum, String str) {
         return getLineNumStr(lineNum) + escString(str) + System.lineSeparator();
+    }
+
+    private String addLineEnd(String str) {
+        return str + System.lineSeparator();
     }
 
     /*   Inner classes    */
@@ -1443,7 +1464,7 @@ public class SearchBigFile extends AppFrame {
                             break;
                         }
                         if (isCancelled()) {
-                            appendResultNoFormat("---------------------Read cancelled----------------------------" + System.lineSeparator());
+                            appendResultNoFormat("<centre>---------------------Read cancelled----------------------------</centre>" + System.lineSeparator());
                             break;
                         }
                     } else {
@@ -1664,8 +1685,9 @@ public class SearchBigFile extends AppFrame {
                         }
                     }
                     if (isCancelled()) {
-                        debug("---------------------Search cancelled----------------------------");
-                        qMsgsToAppend.add("---------------------Search cancelled----------------------------" + System.lineSeparator());
+                        String msg = "---xxx--- Search cancelled ---xxx---";
+                        debug(msg);
+                        qMsgsToAppend.add(addLineEnd(msg));
                         startThread(msgCallable);
                         break;
                     }
@@ -1696,14 +1718,16 @@ public class SearchBigFile extends AppFrame {
                 if (isCancelled()) {
                     sbf.updateTitle("Search cancelled - " + result);
                 } else {
-                    qMsgsToAppend.add("---------------------Search complete----------------------------" + System.lineSeparator());
+                    String msg = "--- Search complete ---";
+                    qMsgsToAppend.add(addLineEnd(msg));
                     startThread(msgCallable);
                     sbf.updateTitleAndMsg("Search complete - " + result, MsgType.INFO);
                 }
                 status = Status.DONE;
             } catch (IOException e) {
+                String msg = "ERROR: " + e.getMessage();
                 sbf.logger.error(e.getMessage());
-                sbf.tpResults.setText(R_FONT_PREFIX + "----------Unable to search file-------------" + FONT_SUFFIX);
+                sbf.tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
                 sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
                 status = Status.DONE;
             } finally {

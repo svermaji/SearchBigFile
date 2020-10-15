@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 15-Oct-2020<br>
+* Help button text color changes to 6 different colors every 1 minute.  
+
 #### On 14-Oct-2020<br>
 * Tabs added for Help and Result. 
 * TitledBorder removed. 
