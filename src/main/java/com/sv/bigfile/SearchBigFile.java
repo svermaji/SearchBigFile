@@ -1398,7 +1398,7 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
             int readLines = 0, occr = 0;
-            boolean hasError = false, USE_BR = false;
+            boolean hasError = false;
             String searchPattern = processPattern(), fn = getFilePath();
             StringBuilder sb = new StringBuilder();
             File file = new File(fn);
@@ -1409,90 +1409,58 @@ public class SearchBigFile extends AppFrame {
             // FIFO
             stack.removeAllElements();
 
-            if (USE_BR) {
-                try {
-                    // open input stream test.txt for reading purpose.
-                    BufferedReader br = new BufferedReader(new FileReader(file));
-                    List<String> tempCollection = new LinkedList<>();
+            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+                long fileLength = file.length() - 1;
+                // Set the pointer at the last of the file
+                randomAccessFile.seek(fileLength);
 
-                    String line;
-                    long time = System.currentTimeMillis();
-                    while ((line = br.readLine()) != null) {
-                        tempCollection.add(line);
-                        if (tempCollection.size() > LIMIT) {
-                            tempCollection.remove(0);
+                long time = System.currentTimeMillis();
+                for (long pointer = fileLength; pointer >= 0; pointer--) {
+                    randomAccessFile.seek(pointer);
+                    char c;
+                    // read from the last, one char at the time
+                    c = (char) randomAccessFile.read();
+                    // break when end of the line
+                    if (c == '\n') {
+
+                        if (Utils.hasValue(sb.toString())) {
+                            sb.reverse();
                         }
-                    }
-                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
-                    int l = 0;
-                    while (!tempCollection.isEmpty()) {
-                        String s = tempCollection.remove(tempCollection.size() - 1);
-                        occr += calculateOccr(s, searchPattern);
-                        processForRead(l++, s, occr, tempCollection.isEmpty());
-                    }
-                } catch (Exception e) {
-                    String msg = "ERROR: " + e.getMessage();
-                    logger.error(e.getMessage());
-                    tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
-                    sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
-                    hasError = true;
-                } finally {
-                    enableControls();
-                }
-            } else {
-                try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                    long fileLength = file.length() - 1;
-                    // Set the pointer at the last of the file
-                    randomAccessFile.seek(fileLength);
 
-                    long time = System.currentTimeMillis();
-                    for (long pointer = fileLength; pointer >= 0; pointer--) {
-                        randomAccessFile.seek(pointer);
-                        char c;
-                        // read from the last, one char at the time
-                        c = (char) randomAccessFile.read();
-                        // break when end of the line
-                        if (c == '\n') {
+                        occr += calculateOccr(sb.toString(), searchPattern);
+                        processForRead(readLines, sb.toString(), occr);
 
-                            if (Utils.hasValue(sb.toString())) {
-                                sb.reverse();
-                            }
-
-                            occr += calculateOccr(sb.toString(), searchPattern);
-                            processForRead(readLines, sb.toString(), occr);
-
-                            sb = new StringBuilder();
-                            readLines++;
-                            // Last line will be printed after loop
-                            if (readLines == LIMIT - 1) {
-                                break;
-                            }
-                            if (isCancelled()) {
-                                logger.warn("---xxx--- Read cancelled ---xxx---");
-                                break;
-                            }
-                        } else {
-                            sb.append(c);
+                        sb = new StringBuilder();
+                        readLines++;
+                        // Last line will be printed after loop
+                        if (readLines == LIMIT - 1) {
+                            break;
                         }
-                        fileLength = fileLength - pointer;
+                        if (isCancelled()) {
+                            logger.warn("---xxx--- Read cancelled ---xxx---");
+                            break;
+                        }
+                    } else {
+                        sb.append(c);
                     }
-                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
-                    if (Utils.hasValue(sb.toString())) {
-                        sb.reverse();
-                    }
-                    processForRead(readLines, sb.toString(), occr, true);
-                    readLines++;
-                } catch (IOException e) {
-                    // TODO: if reading complete file and then store last lines is faster with BR -- chk
-                    String msg = "ERROR: " + e.getMessage();
-                    logger.error(e.getMessage());
-                    tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
-                    sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
-                    hasError = true;
-                } finally {
-                    enableControls();
+                    fileLength = fileLength - pointer;
                 }
+                log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                if (Utils.hasValue(sb.toString())) {
+                    sb.reverse();
+                }
+                processForRead(readLines, sb.toString(), occr, true);
+                readLines++;
+            } catch (IOException e) {
+                String msg = "ERROR: " + e.getMessage();
+                logger.error(e.getMessage());
+                tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+                sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
+                hasError = true;
+            } finally {
+                enableControls();
             }
+
 
             occr += calculateOccr(sb.toString(), searchStr);
             if (!hasError) {
