@@ -19,7 +19,7 @@ public final class Constants {
     public static final int PREFERRED_FONT_SIZE = 12;
     public static final int DEFAULT_FONT_SIZE = 12;
     public static final int MIN_FONT_SIZE = 8;
-    public static final int MAX_FONT_SIZE = 24;
+    public static final int MAX_FONT_SIZE = 28;
     public static final int RECENT_LIMIT = 20;
     public static final int SEARCH_STR_LEN_LIMIT = 2;
     public static final int WARN_LIMIT_SEC = 10;

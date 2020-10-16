@@ -108,7 +108,7 @@ public class SearchBigFile extends AppFrame {
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JComboBox<Integer> cbLastN;
 
-    private Color[] helpColors = {
+    private final Color[] HELP_COLORS = {
             Color.WHITE, Color.PINK, Color.GREEN,
             Color.YELLOW, Color.ORANGE, Color.CYAN
     };
@@ -304,7 +304,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_HELP;
         btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnHelp.setToolTipText(btnHelp.getToolTipText()
-                + ". Color changes to [" + helpColors.length + "] different colors, every [" + HELP_COLOR_CHANGE_SEC + "sec].");
+                + ". Color changes to [" + HELP_COLORS.length + "] different colors, every [" + HELP_COLOR_CHANGE_SEC + "sec].");
 
         btnHelp.addActionListener(e -> showHelp());
 
@@ -516,10 +516,6 @@ public class SearchBigFile extends AppFrame {
         return retVal;
     }
 
-    private void printFontDetail(Font font) {
-        log(getFontDetail(font));
-    }
-
     private String getFontDetail(Font f) {
         return String.format("Font: %s/%s/%s", f.getName(), (f.isBold() ? "bold" : "plain"), f.getSize());
     }
@@ -722,7 +718,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private Integer[] getLastNOptions() {
-        return new Integer[]{200, 500, 1000, 2000, 3000, 4000, 5000};
+        return new Integer[]{10, 50, 200, 500, 1000, 2000, 3000, 4000, 5000};
     }
 
     private void resetForNewSearch() {
@@ -925,7 +921,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateControls(boolean enable) {
-        debug("Updating controls: " + enable);
+        debug("Updating enable controls: " + enable);
         Component[] components = {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
@@ -938,7 +934,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateContrastControls(boolean enable) {
-        debug("Updating contrast controls: " + enable);
+        debug("Updating enable contrast controls: " + enable);
         Component[] components = {
                 btnCancel
         };
@@ -1221,14 +1217,6 @@ public class SearchBigFile extends AppFrame {
         return result;
     }
 
-    public String getSecondsElapsedStr(long time) {
-        return "[" + getSecondsElapsed(time) + " sec]";
-    }
-
-    public long getSecondsElapsed(long time) {
-        return TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - time);
-    }
-
     public void debug(String s) {
         logger.debug(s);
     }
@@ -1275,13 +1263,16 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void finishAction() {
+        log("Performing finish action");
         printCounters();
         if (showWarning) {
             SwingUtilities.invokeLater(new StartWarnIndicator(this));
         }
         goToEnd(false);
+        logger.debug("Timer: thread pool status " + threadPool.toString());
         // requesting to free used memory
         System.gc();
+        printMemoryDetails();
     }
 
     private void updateOffsets() {
@@ -1363,7 +1354,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void changeHelpColor() {
-        for (Color c : helpColors) {
+        for (Color c : HELP_COLORS) {
             btnHelp.setForeground(c);
             Utils.sleep(500);
         }
@@ -1396,7 +1387,8 @@ public class SearchBigFile extends AppFrame {
     /*   Inner classes    */
     class LastNRead implements Callable<Boolean> {
 
-        SearchBigFile sbf;
+        private final Stack<String> stack = new Stack<>();
+        private final SearchBigFile sbf;
 
         LastNRead(SearchBigFile sbf) {
             this.sbf = sbf;
@@ -1405,98 +1397,108 @@ public class SearchBigFile extends AppFrame {
         @Override
         public Boolean call() {
             final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
-            int readLines = 0;
-            int occr = 0;
-            boolean hasError = false;
-            String searchPattern = processPattern();
-            String fn = getFilePath();
+            int readLines = 0, occr = 0;
+            boolean hasError = false, USE_BR = false;
+            String searchPattern = processPattern(), fn = getFilePath();
             StringBuilder sb = new StringBuilder();
             File file = new File(fn);
 
             readNFlag = true;
             updateTitle("Reading last " + LIMIT + " lines");
             logger.log("Loading last " + LIMIT + " lines from: " + fn);
+            // FIFO
+            stack.removeAllElements();
 
-            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                long fileLength = file.length() - 1;
-                // Set the pointer at the last of the file
-                randomAccessFile.seek(fileLength);
-                // FIFO
-                Stack<String> stack = new Stack<>();
+            if (USE_BR) {
+                try {
+                    // open input stream test.txt for reading purpose.
+                    BufferedReader br = new BufferedReader(new FileReader(file));
+                    List<String> tempCollection = new LinkedList<>();
 
-                for (long pointer = fileLength; pointer >= 0; pointer--) {
-                    randomAccessFile.seek(pointer);
-                    char c;
-                    // read from the last, one char at the time
-                    c = (char) randomAccessFile.read();
-                    // break when end of the line
-                    if (c == '\n') {
-
-                        if (Utils.hasValue(sb.toString())) {
-                            sb.reverse();
+                    String line;
+                    long time = System.currentTimeMillis();
+                    while ((line = br.readLine()) != null) {
+                        tempCollection.add(line);
+                        if (tempCollection.size() > LIMIT) {
+                            tempCollection.remove(0);
                         }
+                    }
+                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                    int l = 0;
+                    while (!tempCollection.isEmpty()) {
+                        String s = tempCollection.remove(tempCollection.size() - 1);
+                        occr += calculateOccr(s, searchPattern);
+                        processForRead(l++, s, occr, tempCollection.isEmpty());
+                    }
+                } catch (Exception e) {
+                    String msg = "ERROR: " + e.getMessage();
+                    logger.error(e.getMessage());
+                    tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+                    sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
+                    hasError = true;
+                } finally {
+                    enableControls();
+                }
+            } else {
+                try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+                    long fileLength = file.length() - 1;
+                    // Set the pointer at the last of the file
+                    randomAccessFile.seek(fileLength);
 
-                        String strToAppend = addLineNumAndEsc(readLines + 1, sb.toString());
-                        synchronized (SearchBigFile.class) {
-                            // emptying stack to Q
-                            stack.push(strToAppend);
-                            if (stack.size() > APPEND_MSG_CHUNK) {
-                                while (!stack.empty()) {
-                                    qMsgsToAppend.add(stack.pop());
-                                }
-                                //debug("Read: Starting msg callable and Q size is " + qMsgsToAppend.size());
-                                startThread(msgCallable);
+                    long time = System.currentTimeMillis();
+                    for (long pointer = fileLength; pointer >= 0; pointer--) {
+                        randomAccessFile.seek(pointer);
+                        char c;
+                        // read from the last, one char at the time
+                        c = (char) randomAccessFile.read();
+                        // break when end of the line
+                        if (c == '\n') {
+
+                            if (Utils.hasValue(sb.toString())) {
+                                sb.reverse();
                             }
-                        }
 
-                        occr += calculateOccr(sb.toString(), searchPattern);
-                        occrTillNow = occr;
-                        linesTillNow = readLines;
-                        if (!showWarning && occr > WARN_LIMIT_OCCR) {
-                            showWarning = true;
+                            occr += calculateOccr(sb.toString(), searchPattern);
+                            processForRead(readLines, sb.toString(), occr);
+
+                            sb = new StringBuilder();
+                            readLines++;
+                            // Last line will be printed after loop
+                            if (readLines == LIMIT - 1) {
+                                break;
+                            }
+                            if (isCancelled()) {
+                                logger.warn("---xxx--- Read cancelled ---xxx---");
+                                break;
+                            }
+                        } else {
+                            sb.append(c);
                         }
-                        sb = new StringBuilder();
-                        readLines++;
-                        // Last line will be printed after loop
-                        if (readLines == LIMIT - 1) {
-                            break;
-                        }
-                        if (isCancelled()) {
-                            appendResultNoFormat("<centre>---------------------Read cancelled----------------------------</centre>" + System.lineSeparator());
-                            break;
-                        }
-                    } else {
-                        sb.append(c);
+                        fileLength = fileLength - pointer;
                     }
-                    fileLength = fileLength - pointer;
-                }
-                if (Utils.hasValue(sb.toString())) {
-                    sb.reverse();
-                }
-                String strToAppend = addLineNumAndEsc(readLines + 1, sb.toString());
-                synchronized (SearchBigFile.class) {
-                    stack.push(strToAppend);
-                    while (!stack.empty()) {
-                        qMsgsToAppend.add(stack.pop());
+                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                    if (Utils.hasValue(sb.toString())) {
+                        sb.reverse();
                     }
-                    //debug("Read: After loop, starting msg callable and Q size is " + qMsgsToAppend.size());
-                    startThread(msgCallable);
+                    processForRead(readLines, sb.toString(), occr, true);
+                    readLines++;
+                } catch (IOException e) {
+                    // TODO: if reading complete file and then store last lines is faster with BR -- chk
+                    String msg = "ERROR: " + e.getMessage();
+                    logger.error(e.getMessage());
+                    tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+                    sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
+                    hasError = true;
+                } finally {
+                    enableControls();
                 }
-                readLines++;
-            } catch (IOException e) {
-                sbf.tpResults.setText(R_FONT_PREFIX + "----------Unable to read file-------------" + FONT_SUFFIX);
-                sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
-                hasError = true;
-                logger.error(e);
-            } finally {
-                enableControls();
             }
 
             occr += calculateOccr(sb.toString(), searchStr);
             if (!hasError) {
                 String result = getSearchResult(
                         fn,
-                        getSecondsElapsedStr(startTime),
+                        Utils.getTimeDiffSecStr(startTime),
                         readLines,
                         occr);
                 String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
@@ -1507,6 +1509,31 @@ public class SearchBigFile extends AppFrame {
             // No need to wait as data can be async added at top
             sbf.finishAction();
             return true;
+        }
+
+        private void processForRead(int line, String str, int occr) {
+            processForRead(line, str, occr, false);
+        }
+
+        private void processForRead(int line, String str, int occr, boolean bypass) {
+            String strToAppend = addLineNumAndEsc(line + 1, str);
+            synchronized (SearchBigFile.class) {
+                // emptying stack to Q
+                stack.push(strToAppend);
+                if (bypass || stack.size() > APPEND_MSG_CHUNK) {
+                    while (!stack.empty()) {
+                        qMsgsToAppend.add(stack.pop());
+                    }
+                    //debug("Read: Starting msg callable and Q size is " + qMsgsToAppend.size());
+                    startThread(msgCallable);
+                }
+            }
+
+            occrTillNow = occr;
+            linesTillNow = line;
+            if (!showWarning && occr > WARN_LIMIT_OCCR) {
+                showWarning = true;
+            }
         }
     }
 
@@ -1570,7 +1597,7 @@ public class SearchBigFile extends AppFrame {
             do {
                 // Due to multi threading, separate if is imposed
                 if (status == Status.READING) {
-                    timeElapse = sbf.getSecondsElapsed(startTime);
+                    timeElapse = Utils.getTimeDiffSec(startTime);
                     timeTillNow = timeElapse;
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
                     if (showWarning || isWarningState()) {
@@ -1584,12 +1611,10 @@ public class SearchBigFile extends AppFrame {
                     }
                     sbf.updateTitle(msg);
                     logger.debug("Timer callable sleeping now for a second");
-                    printMemoryDetails();
                     Utils.sleep(1000, sbf.logger);
                 }
             } while (status == Status.READING);
 
-            logger.debug("Timer: thread pool status " + threadPool.toString());
             logger.log("Timer stopped after " + timeElapse + " sec");
             return true;
         }
@@ -1691,7 +1716,7 @@ public class SearchBigFile extends AppFrame {
                     }
                 }
 
-                logger.log("File read in " + getSecondsElapsedStr(time));
+                logger.log("File read in " + Utils.getTimeDiffSecStr(time));
 
                 if (!isCancelled()) {
                     time = System.currentTimeMillis();
@@ -1704,9 +1729,9 @@ public class SearchBigFile extends AppFrame {
                         logger.debug("Waiting for readCounter to be equal insertCounter");
                         Utils.sleep(200, sbf.logger);
                     }
-                    logger.log("Time in waiting all message to append is " + getSecondsElapsedStr(time));
+                    logger.log("Time in waiting all message to append is " + Utils.getTimeDiffSecStr(time));
                 }
-                String result = getSearchResult(path, getSecondsElapsedStr(startTime), stats.getLineNum(), stats.getOccurrences());
+                String result = getSearchResult(path, Utils.getTimeDiffSecStr(startTime), stats.getLineNum(), stats.getOccurrences());
                 if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
                     String s = "No match found";
                     sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
