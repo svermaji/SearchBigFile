@@ -97,7 +97,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
-    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnHelp;
+    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JEditorPane tpResults, tpHelp;
@@ -296,6 +296,9 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_PREOCCR;
         btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPreOccr.addActionListener(e -> preOccr());
+        uin = UIName.BTN_FIND;
+        btnFind = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnFind.addActionListener(e -> findWordInResult());
         uin = UIName.BTN_HELP;
         btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnHelp.setToolTipText(btnHelp.getToolTipText()
@@ -304,7 +307,7 @@ public class SearchBigFile extends AppFrame {
         btnHelp.addActionListener(e -> showHelp());
 
         setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
-                btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnHelp});
+                btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp});
         btnHelp.setForeground(Color.RED);
 
         JPanel controlPanel = new JPanel();
@@ -318,6 +321,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnGoBottom);
         jtbActions.add(btnPreOccr);
         jtbActions.add(btnNextOccr);
+        jtbActions.add(btnFind);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
         controlPanel.setBorder(new TitledBorder("Controls"));
@@ -424,6 +428,24 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    private void findWordInResult() {
+        if (!searchStr.equalsIgnoreCase(getSearchString())) {
+            resetLineOffsetsIdx();
+            lineOffsets.clear();
+            setSearchStrings();
+            updateRecentValues();
+            updateOffsets();
+            int size = lineOffsets.size();
+            if (size > 0) {
+                showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + size + "] found. Use next/pre occurrences controls.");
+            } else {
+                showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
+            }
+        } else {
+            showMsg("Search for same word [" + searchStr + "] already build.", MsgType.WARN);
+        }
+    }
+
     private void resetLineOffsetsIdx() {
         lineOffsetsIdx = -1;
     }
@@ -465,9 +487,9 @@ public class SearchBigFile extends AppFrame {
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
             int ix = lineOffsets.get(idx);
             selectAndGoToIndex(ix, ix + searchStr.length());
-            updateMsgAsInfo("Going occurrences # " + (idx + 1) + "/" + lineOffsets.size());
+            showMsgAsInfo("Going occurrences of [" + searchStr + "] # " + (idx + 1) + "/" + lineOffsets.size());
         } else {
-            updateMsg("No occurrences to show", MsgType.WARN);
+            showMsg("No occurrences of [" + searchStr + "] to show", MsgType.WARN);
         }
     }
 
@@ -568,7 +590,7 @@ public class SearchBigFile extends AppFrame {
             logger.log(m);
             tpResults.setFont(font);
             btnFontInfo.setText(getFontSize());
-            updateMsgAsInfo(m);
+            showMsgAsInfo(m);
         } else {
             logger.log("Ignoring request for " + opr + "font. Present " + getFontDetail(font));
         }
@@ -634,7 +656,7 @@ public class SearchBigFile extends AppFrame {
             public void mousePressed(MouseEvent mouseEvent) {
                 JTable table = (JTable) mouseEvent.getSource();
                 if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
-                    src.setText(table.getValueAt(table.getSelectedRow(), 0).toString());
+                    dest.setText(table.getValueAt(table.getSelectedRow(), 0).toString());
                     frame.setVisible(false);
                 }
             }
@@ -701,7 +723,7 @@ public class SearchBigFile extends AppFrame {
     private void addFilter(TableRowSorter<DefaultTableModel> sorter, JTextField txtFilter) {
         RowFilter<DefaultTableModel, Object> rf;
         try {
-            rf = RowFilter.regexFilter(txtFilter.getText(), 0);
+            rf = RowFilter.regexFilter("(?i)" + txtFilter.getText(), 0);
         } catch (PatternSyntaxException e) {
             return;
         }
@@ -783,12 +805,12 @@ public class SearchBigFile extends AppFrame {
 
     private void setSearchPattern(String s) {
         txtSearch.setText(s);
-        updateMsgAsInfo("Search pattern set as [" + s + "]");
+        showMsgAsInfo("Search pattern set as [" + s + "]");
     }
 
     private void setFileToSearch(String s) {
         txtFilePath.setText(s);
-        updateMsgAsInfo("File set as [" + s + "]");
+        showMsgAsInfo("File set as [" + s + "]");
     }
 
     private String[] getFiles() {
@@ -805,13 +827,13 @@ public class SearchBigFile extends AppFrame {
         timeTillNow = 0;
         occrTillNow = 0;
         linesTillNow = 0;
-        updateMsgAsInfo(getInitialMsg());
+        showMsgAsInfo(getInitialMsg());
     }
 
     private void cancelSearch() {
         // To ensure background is red
         if (!isErrorState()) {
-            updateMsg("Search cancelled.", MsgType.ERROR);
+            showMsg("Search cancelled.", MsgType.ERROR);
         }
         if (status == Status.READING) {
             logger.warn("Search cancelled by user.");
@@ -823,7 +845,7 @@ public class SearchBigFile extends AppFrame {
         if (isValidate()) {
             operation = "search";
             resetForNewSearch();
-            updateMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
+            showMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
             status = Status.READING;
             threadPool.submit(new SearchFileCallable(this));
             threadPool.submit(new TimerCallable(this));
@@ -836,7 +858,7 @@ public class SearchBigFile extends AppFrame {
         if (isValidate()) {
             operation = "read";
             resetForNewSearch();
-            updateMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
+            showMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
             status = Status.READING;
             threadPool.submit(new LastNRead(this));
             threadPool.submit(new TimerCallable(this));
@@ -851,7 +873,7 @@ public class SearchBigFile extends AppFrame {
 
     private void updateTitleAndMsg(String s, MsgType type) {
         updateTitle(s);
-        updateMsg(s, type);
+        showMsg(s, type);
     }
 
     private boolean isValidate() {
@@ -930,7 +952,7 @@ public class SearchBigFile extends AppFrame {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
-                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr
+                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind
         };
 
         Arrays.stream(components).forEach(c -> c.setEnabled(enable));
@@ -1144,11 +1166,11 @@ public class SearchBigFile extends AppFrame {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
 
-    public void updateMsgAsInfo(String msg) {
-        updateMsg(msg, MsgType.INFO);
+    public void showMsgAsInfo(String msg) {
+        showMsg(msg, MsgType.INFO);
     }
 
-    public void updateMsg(String msg, MsgType type) {
+    public void showMsg(String msg, MsgType type) {
         if (Utils.hasValue(msg)) {
             Color b = Color.WHITE;
             Color f = Color.BLUE;
@@ -1237,10 +1259,10 @@ public class SearchBigFile extends AppFrame {
         goToFirst(true);
     }
 
-    public void goToFirst(boolean showMsg) {
+    public void goToFirst(boolean show) {
         // If this param removed then after search/read ends this msg displayed
-        if (showMsg) {
-            updateMsgAsInfo("Going to first line");
+        if (show) {
+            showMsgAsInfo("Going to first line");
         }
         // Go to first
         selectAndGoToIndex(0);
@@ -1251,9 +1273,9 @@ public class SearchBigFile extends AppFrame {
         goToEnd(true);
     }
 
-    public void goToEnd(boolean showMsg) {
-        if (showMsg) {
-            updateMsgAsInfo("Going to last line");
+    public void goToEnd(boolean show) {
+        if (show) {
+            showMsgAsInfo("Going to last line");
         }
         // Go to end
         selectAndGoToIndex(htmlDoc.getLength());
@@ -1303,7 +1325,6 @@ public class SearchBigFile extends AppFrame {
                 }
                 log("Total occurrences offsets are " + lineOffsets.size());
                 debug("All offsets are " + lineOffsets);
-
             } catch (BadLocationException e) {
                 logger.error("Unable to get document text");
             }
@@ -1376,7 +1397,7 @@ public class SearchBigFile extends AppFrame {
         String tip = "Font for this bar [" + msg + "], changes every [" + FONT_CHANGE_MIN + "min]. " + getInitialMsg();
         lblMsg.setToolTipText(tip);
         msgPanel.setToolTipText(tip);
-        updateMsgAsInfo(msg);
+        showMsgAsInfo(msg);
         debug(msg);
     }
 
@@ -1738,7 +1759,7 @@ public class SearchBigFile extends AppFrame {
                 if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
                     String s = "No match found";
                     sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
-                    sbf.updateMsg(s, MsgType.WARN);
+                    sbf.showMsg(s, MsgType.WARN);
                 }
 
                 if (isCancelled()) {

@@ -15,6 +15,10 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 17-Oct-2020<br>
+* After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 
+
+
 #### On 15-Oct-2020<br>
 * Help button text color changes to 6 different colors every 30sec.  
 
