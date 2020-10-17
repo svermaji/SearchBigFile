@@ -381,12 +381,26 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
+        setControlsToEnable();
         setupHelp();
         resetForNewSearch();
         enableControls();
         showHelp();
 
         setToCenter();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+    }
+
+    private void setControlsToEnable() {
+        Component[] components = {
+                txtFilePath, txtSearch, btnSearch, btnLastN,
+                menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
+                jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
+                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind
+        };
+        setComponentToEnable(components);
+        setComponentContrastToEnable(new Component[]{btnCancel});
+        enableControls();
     }
 
     private void printConfigs() {
@@ -636,14 +650,13 @@ public class SearchBigFile extends AppFrame {
 
         deleteAndCreateRows(src, table, model);
 
-        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
-        table.setRowSorter(sorter);
-
         // ToolTip and alignment
         TableColumn firstCol = table.getColumnModel().getColumn(0);
         firstCol.setMinWidth(25);
         firstCol.setCellRenderer(new CellRendererLeftAlign());
 
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        table.setRowSorter(sorter);
         addFilter(sorter, txtFilter);
 
         // For making contents non editable
@@ -706,18 +719,7 @@ public class SearchBigFile extends AppFrame {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
-        addEscKeyAction(frame);
-    }
-
-    private void addEscKeyAction(JFrame frame) {
-        frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel");
-
-        frame.getRootPane().getActionMap().put("Cancel", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                frame.setVisible(false);
-            }
-        });
+        SwingUtils.addEscKeyAction(frame);
     }
 
     private void addFilter(TableRowSorter<DefaultTableModel> sorter, JTextField txtFilter) {
@@ -946,36 +948,6 @@ public class SearchBigFile extends AppFrame {
                 new Date(startTime));
     }
 
-    private void updateControls(boolean enable) {
-        debug("Updating enable controls: " + enable);
-        Component[] components = {
-                txtFilePath, txtSearch, btnSearch, btnLastN,
-                menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
-                jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
-                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind
-        };
-
-        Arrays.stream(components).forEach(c -> c.setEnabled(enable));
-        updateContrastControls(!enable);
-    }
-
-    private void updateContrastControls(boolean enable) {
-        debug("Updating enable contrast controls: " + enable);
-        Component[] components = {
-                btnCancel
-        };
-
-        Arrays.stream(components).forEach(c -> c.setEnabled(enable));
-    }
-
-    private void disableControls() {
-        updateControls(false);
-    }
-
-    private void enableControls() {
-        updateControls(true);
-    }
-
     private boolean isMatchCase() {
         return jcbMatchCase.isSelected();
     }
@@ -1103,12 +1075,6 @@ public class SearchBigFile extends AppFrame {
 
     private void emptyResults() {
         tpResults.setText("");
-    }
-
-    private void setToCenter() {
-        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
-        setLocationRelativeTo(null);
-        setVisible(true);
     }
 
     /**
