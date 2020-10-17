@@ -111,7 +111,6 @@ public class SearchBigFile extends AppFrame {
             Color.WHITE, Color.PINK, Color.GREEN,
             Color.YELLOW, Color.ORANGE, Color.CYAN
     };
-    private final String TITLE = "Search File";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
     private final String R_FONT_PREFIX = "<font style=\"color:red\">";
     private final String FONT_SUFFIX = "</font>";
@@ -150,6 +149,10 @@ public class SearchBigFile extends AppFrame {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
     }
 
+    public SearchBigFile() {
+        super("Search File");
+    }
+
     /**
      * This method initializes the form.
      */
@@ -173,7 +176,6 @@ public class SearchBigFile extends AppFrame {
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
 
-        setTitle(TITLE);
         JPanel filePanel = new JPanel();
 
         final int TXT_COLS = 18;
@@ -1126,10 +1128,6 @@ public class SearchBigFile extends AppFrame {
 
     public String getUseBRFileSizeInMB() {
         return useBRFileSizeInMB + "";
-    }
-
-    public void updateTitle(String info) {
-        setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
 
     public void showMsgAsInfo(String msg) {
