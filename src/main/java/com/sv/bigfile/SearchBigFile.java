@@ -49,7 +49,7 @@ public class SearchBigFile extends AppFrame {
      */
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches,
-        LastN, FontSize, MatchCase, WholeWord, DebugEnabled
+        LastN, FontSize, MatchCase, WholeWord, DebugEnabled, UseBRFileSizeInMB
     }
 
     enum Status {
@@ -84,7 +84,6 @@ public class SearchBigFile extends AppFrame {
             return font;
         }
     }
-
 
     enum MsgType {
         INFO, WARN, ERROR
@@ -124,6 +123,8 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
     private static int fontIdx = 0;
 
+    private final int USE_BR_INMB_DEFAULT = 100;
+    private int useBRFileSizeInMB;
     private boolean debugAllowed;
     private String searchStr, searchStrEsc, searchStrReplace, operation;
     private String recentFilesStr, recentSearchesStr;
@@ -156,12 +157,15 @@ public class SearchBigFile extends AppFrame {
         logger = MyLogger.createLogger(getClass());
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         debugAllowed = getBooleanCfg(Configs.DebugEnabled);
+        useBRFileSizeInMB = getIntCfg(Configs.UseBRFileSizeInMB);
+        if (useBRFileSizeInMB < 0) {
+            useBRFileSizeInMB = USE_BR_INMB_DEFAULT;
+        }
         logger.setDebug(debugAllowed);
-        log("Debug enabled " + logger.isDebug());
+        printConfigs();
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new ArrayList<>();
-        resetLineOffsetsIdx();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -170,7 +174,6 @@ public class SearchBigFile extends AppFrame {
         parentContainer.setLayout(new BorderLayout());
 
         setTitle(TITLE);
-
         JPanel filePanel = new JPanel();
 
         final int TXT_COLS = 18;
@@ -180,13 +183,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_FILE;
         JButton btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
         btnFileOpen.addActionListener(e -> openFile());
-        /*cbFiles = new JComboBox<>(getFiles());
-        cbFiles.addPopupMenuListener(new BoundsPopupMenuListener(CB_LIST_WIDER, CB_LIST_ABOVE));
-        cbFiles.setRenderer(new JComboToolTipRenderer());
-        cbFiles.setPrototypeDisplayValue("Recent Files");
-        addCBFilesAction();
-        uin = UIName.LBL_RFILES;
-        AppLabel lblRFiles = new AppLabel(uin.name, cbFiles, uin.mnemonic, uin.tip);*/
+
         uin = UIName.BTN_LISTRF;
         JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/recent-icon.png");
         btnListRF.addActionListener(e -> showListRF());
@@ -206,9 +203,7 @@ public class SearchBigFile extends AppFrame {
         jtbFile.setRollover(false);
         jtbFile.add(txtFilePath);
         jtbFile.add(btnFileOpen);
-        /*jtbFile.addSeparator();
-        jtbFile.add(btnListRF);
-        jtbFile.addSeparator();*/
+
         uin = UIName.LBL_RFILES;
         JMenuBar mb = new JMenuBar();
         menuRFiles = new JMenu(uin.name);
@@ -217,7 +212,7 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.setToolTipText(uin.tip);
         mb.add(menuRFiles);
         updateRecentMenu(menuRFiles, getFiles(), txtFilePath);
-        //jtbFile.add(mb);
+
         filePanel.add(jtbFile);
         filePanel.add(btnListRF);
         filePanel.add(mb);
@@ -378,14 +373,23 @@ public class SearchBigFile extends AppFrame {
         btnFontInfo.setText(getFontSize());
         menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
         menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
+
+        new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
+        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
+
         setupHelp();
         resetForNewSearch();
         enableControls();
-        new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
-        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
         showHelp();
 
         setToCenter();
+    }
+
+    private void printConfigs() {
+        log("Debug enabled [" + logger.isDebug()
+                + "], useBRFileSizeInMB [" + useBRFileSizeInMB
+                + "]"
+        );
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF) {
@@ -747,7 +751,7 @@ public class SearchBigFile extends AppFrame {
     private void printMemoryDetails() {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
-        debug(String.format("Total: %s, Free: %s, Occupied: %s",
+        debug(String.format("Memory - Total: %s, Free: %s, Occupied: %s",
                 Utils.getFileSizeString(total),
                 Utils.getFileSizeString(free),
                 Utils.getFileSizeString(total - free)
@@ -1132,6 +1136,10 @@ public class SearchBigFile extends AppFrame {
         return debugAllowed + "";
     }
 
+    public String getUseBRFileSizeInMB() {
+        return useBRFileSizeInMB + "";
+    }
+
     public void updateTitle(String info) {
         setTitle((Utils.hasValue(info) ? TITLE + Utils.SP_DASH_SP + info : TITLE));
     }
@@ -1396,7 +1404,7 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+            final int KB = 1024, LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
             int readLines = 0, occr = 0;
             boolean hasError = false;
             String searchPattern = processPattern(), fn = getFilePath();
@@ -1409,58 +1417,85 @@ public class SearchBigFile extends AppFrame {
             // FIFO
             stack.removeAllElements();
 
-            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                long fileLength = file.length() - 1;
-                // Set the pointer at the last of the file
-                randomAccessFile.seek(fileLength);
+            boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
+            log("File read with buffered reader [" + useBR + "].");
+            if (useBR) {
+                try {
+                    // open input stream test.txt for reading purpose.
+                    BufferedReader br = new BufferedReader(new FileReader(file));
+                    List<String> tempCollection = new LinkedList<>();
 
-                long time = System.currentTimeMillis();
-                for (long pointer = fileLength; pointer >= 0; pointer--) {
-                    randomAccessFile.seek(pointer);
-                    char c;
-                    // read from the last, one char at the time
-                    c = (char) randomAccessFile.read();
-                    // break when end of the line
-                    if (c == '\n') {
-
-                        if (Utils.hasValue(sb.toString())) {
-                            sb.reverse();
+                    String line;
+                    long time = System.currentTimeMillis();
+                    while ((line = br.readLine()) != null) {
+                        tempCollection.add(line);
+                        if (tempCollection.size() > LIMIT) {
+                            tempCollection.remove(0);
                         }
-
-                        occr += calculateOccr(sb.toString(), searchPattern);
-                        processForRead(readLines, sb.toString(), occr);
-
-                        sb = new StringBuilder();
-                        readLines++;
-                        // Last line will be printed after loop
-                        if (readLines == LIMIT - 1) {
-                            break;
-                        }
-                        if (isCancelled()) {
-                            logger.warn("---xxx--- Read cancelled ---xxx---");
-                            break;
-                        }
-                    } else {
-                        sb.append(c);
                     }
-                    fileLength = fileLength - pointer;
+                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                    int l = 0;
+                    while (!tempCollection.isEmpty()) {
+                        String s = tempCollection.remove(tempCollection.size() - 1);
+                        occr += calculateOccr(s, searchPattern);
+                        processForRead(l++, s, occr, tempCollection.isEmpty());
+                    }
+                } catch (Exception e) {
+                    catchForRead(e);
+                    hasError = true;
+                } finally {
+                    enableControls();
                 }
-                log("File read complete in " + Utils.getTimeDiffSecStr(time));
-                if (Utils.hasValue(sb.toString())) {
-                    sb.reverse();
-                }
-                processForRead(readLines, sb.toString(), occr, true);
-                readLines++;
-            } catch (IOException e) {
-                String msg = "ERROR: " + e.getMessage();
-                logger.error(e.getMessage());
-                tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
-                sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
-                hasError = true;
-            } finally {
-                enableControls();
-            }
+            } else {
+                try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+                    long fileLength = file.length() - 1;
+                    // Set the pointer at the last of the file
+                    randomAccessFile.seek(fileLength);
 
+                    long time = System.currentTimeMillis();
+                    for (long pointer = fileLength; pointer >= 0; pointer--) {
+                        randomAccessFile.seek(pointer);
+                        char c;
+                        // read from the last, one char at the time
+                        c = (char) randomAccessFile.read();
+                        // break when end of the line
+                        if (c == '\n') {
+
+                            if (Utils.hasValue(sb.toString())) {
+                                sb.reverse();
+                            }
+
+                            occr += calculateOccr(sb.toString(), searchPattern);
+                            processForRead(readLines, sb.toString(), occr);
+
+                            sb = new StringBuilder();
+                            readLines++;
+                            // Last line will be printed after loop
+                            if (readLines == LIMIT - 1) {
+                                break;
+                            }
+                            if (isCancelled()) {
+                                logger.warn("---xxx--- Read cancelled ---xxx---");
+                                break;
+                            }
+                        } else {
+                            sb.append(c);
+                        }
+                        fileLength = fileLength - pointer;
+                    }
+                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                    if (Utils.hasValue(sb.toString())) {
+                        sb.reverse();
+                    }
+                    processForRead(readLines, sb.toString(), occr, true);
+                    readLines++;
+                } catch (IOException e) {
+                    catchForRead(e);
+                    hasError = true;
+                } finally {
+                    enableControls();
+                }
+            }
 
             occr += calculateOccr(sb.toString(), searchStr);
             if (!hasError) {
@@ -1477,6 +1512,13 @@ public class SearchBigFile extends AppFrame {
             // No need to wait as data can be async added at top
             sbf.finishAction();
             return true;
+        }
+
+        private void catchForRead(Exception e) {
+            String msg = "ERROR: " + e.getMessage();
+            logger.error(e.getMessage());
+            tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+            sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
         }
 
         private void processForRead(int line, String str, int occr) {
@@ -1589,17 +1631,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     private boolean hasOccr(String line, String searchPattern) {
-        boolean result = (!isMatchCase() && line.toLowerCase().contains(searchPattern))
+        return (!isMatchCase() && line.toLowerCase().contains(searchPattern))
                 || (isMatchCase() && line.contains(searchPattern))
                 || (isWholeWord() && line.matches(searchPattern));
-
-        String lineStr = "";
-        if (result) {
-            lineStr = "line [" + line + "],";
-        }
-        //debug("hasOccr: " + lineStr + " pattern [" + searchPattern + "], result [" + result + "]");
-
-        return result;
     }
 
     class AppendMsgCallable implements Callable<Boolean> {
@@ -1614,8 +1648,8 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             StringBuilder sb = new StringBuilder();
 
+            int qSize = qMsgsToAppend.size();
             synchronized (this) {
-                logger.debug("Size of qMsgsToAppend is " + qMsgsToAppend.size());
                 if (!qMsgsToAppend.isEmpty()) {
                     while (!qMsgsToAppend.isEmpty()) {
                         String m = qMsgsToAppend.poll();
@@ -1628,7 +1662,8 @@ public class SearchBigFile extends AppFrame {
                         idxMsgsToAppend.put(insertCounter, sb.toString());
                         SwingUtilities.invokeLater(new AppendData());
                     }
-                    logger.debug("All messages processed.  Now size is " + qMsgsToAppend.size());
+                    /*logger.debug("Initial Q size [" + qSize + "], after message processing Q size ["
+                            + qMsgsToAppend.size() + "]");*/
                 }
             }
 
