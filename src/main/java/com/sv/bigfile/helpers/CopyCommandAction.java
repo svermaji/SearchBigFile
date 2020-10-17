@@ -1,15 +1,17 @@
 package com.sv.bigfile.helpers;
 
+import com.sv.swingui.AppTable;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
 public class CopyCommandAction extends AbstractAction {
 
-    private final JTable table;
+    private final AppTable table;
     private final JFrame frame;
     private final JTextField src;
 
-    public CopyCommandAction(JTable table, JFrame frame, JTextField src) {
+    public CopyCommandAction(AppTable table, JFrame frame, JTextField src) {
         this.table = table;
         this.frame = frame;
         this.src = src;

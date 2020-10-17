@@ -25,6 +25,7 @@ import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
@@ -629,7 +630,19 @@ public class SearchBigFile extends AppFrame {
         showRecentList(menuRSearches, "Recent searches", txtSearch);
     }
 
+    // This will be called by reflection from SwingUI jar
+    public void handleDblClickOnRow(AppTable table, Object[] params) {
+        ((JTextField) params[0]).setText(table.getValueAt(table.getSelectedRow(), 0).toString());
+        ((JFrame) params[1]).setVisible(false);
+    }
+
     private void showRecentList(JMenu src, String colName, JTextField dest) {
+        AppFrame frame = new AppFrame("ESC to Hide");
+
+        JTextField txtFilter = new JTextField();
+        txtFilter.setColumns(30);
+
+        //DefaultTableModel model = SwingUtils.getTableModel(new String[]{colName + " - Dbl-click or select & ENTER"});
         DefaultTableModel model = new DefaultTableModel() {
 
             @Override
@@ -641,15 +654,9 @@ public class SearchBigFile extends AppFrame {
             public String getColumnName(int index) {
                 return colName + " - Dbl-click or select & ENTER";
             }
-
         };
 
-        JFrame frame = new JFrame();
-
-        JTextField txtFilter = new JTextField();
-        txtFilter.setColumns(30);
-        JTable table = new JTable(model);
-
+        AppTable table = new AppTable(model);
         deleteAndCreateRows(src, table, model);
 
         // ToolTip and alignment
@@ -657,88 +664,44 @@ public class SearchBigFile extends AppFrame {
         firstCol.setMinWidth(25);
         firstCol.setCellRenderer(new CellRendererLeftAlign());
 
-        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
-        table.setRowSorter(sorter);
-        addFilter(sorter, txtFilter);
+        /**********************************************/
+        //TODO: Analyze why single method not working
+        table.addSorter(model);
+        table.addFilter(txtFilter);
+        table.addDblClickOnRow(this, new Object[]{dest, frame});
+        table.addEnterOnRow(new CopyCommandAction(table, frame, dest));
+        table.applyChangeListener(txtFilter);
 
-        // For making contents non editable
-        table.setDefaultEditor(Object.class, null);
-
-        table.setAutoscrolls(true);
-        table.setPreferredScrollableViewportSize(table.getPreferredSize());
-
-        table.addMouseListener(new MouseAdapter() {
-            public void mousePressed(MouseEvent mouseEvent) {
-                JTable table = (JTable) mouseEvent.getSource();
-                if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1) {
-                    dest.setText(table.getValueAt(table.getSelectedRow(), 0).toString());
-                    frame.setVisible(false);
-                }
-            }
-        });
-
-        InputMap im = table.getInputMap();
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "Action.RunCmdCell");
-        ActionMap am = table.getActionMap();
-        am.put("Action.RunCmdCell", new CopyCommandAction(table, frame, dest));
-
-        txtFilter.getDocument().addDocumentListener(
-                new DocumentListener() {
-                    public void changedUpdate(DocumentEvent e) {
-                        addFilter(sorter, txtFilter);
-                    }
-
-                    public void insertUpdate(DocumentEvent e) {
-                        addFilter(sorter, txtFilter);
-                    }
-
-                    public void removeUpdate(DocumentEvent e) {
-                        addFilter(sorter, txtFilter);
-                    }
-                });
-
+        //table.setUpSorterAndFilter(model, this, dest, new CopyCommandAction(table, frame, dest), new Object[]{dest, frame});
+        table.setScrollProps();
         table.setBorder(EMPTY_BORDER);
 
         JPanel filterPanel = new JPanel();
         filterPanel.add(new AppLabel("Filter", txtFilter, 'R'));
         filterPanel.add(txtFilter);
 
-        JPanel topPanel = new JPanel(new GridLayout(2, 1));
-        topPanel.add(filterPanel);
-
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         panel.setBorder(EMPTY_BORDER);
 
         Container pc = frame.getContentPane();
         pc.setLayout(new BorderLayout());
         pc.add(panel);
-        frame.setTitle("ESC to Hide");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setAlwaysOnTop(true);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-        frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        frame.setToCenter();
+        frame.repaint();
 
         SwingUtils.addEscKeyAction(frame);
     }
 
-    private void addFilter(TableRowSorter<DefaultTableModel> sorter, JTextField txtFilter) {
-        RowFilter<DefaultTableModel, Object> rf;
-        try {
-            rf = RowFilter.regexFilter("(?i)" + txtFilter.getText(), 0);
-        } catch (PatternSyntaxException e) {
-            return;
-        }
-        sorter.setRowFilter(rf);
-    }
-
     private void deleteAndCreateRows(JMenu src, JTable table, DefaultTableModel model) {
-        int rows = table.getRowCount();
+        /*int rows = table.getRowCount();
+        System.out.println("removing rows = " + rows);
         for (int i = 0; i < rows; i++) {
             model.removeRow(i);
-        }
+        }*/
 
         int items = src.getItemCount();
         for (int i = 0; i < items; i++) {
