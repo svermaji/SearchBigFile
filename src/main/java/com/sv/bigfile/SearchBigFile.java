@@ -638,20 +638,8 @@ public class SearchBigFile extends AppFrame {
         JTextField txtFilter = new JTextField();
         txtFilter.setColumns(30);
 
-        //DefaultTableModel model = SwingUtils.getTableModel(new String[]{colName + " - Dbl-click or select & ENTER"});
-        DefaultTableModel model = new DefaultTableModel() {
-
-            @Override
-            public int getColumnCount() {
-                return 1;
-            }
-
-            @Override
-            public String getColumnName(int index) {
-                return colName + " - Dbl-click or select & ENTER";
-            }
-        };
-
+        DefaultTableModel model = SwingUtils.getTableModel(new String[]{colName + " - Dbl-click or select & ENTER"});
+        
         AppTable table = new AppTable(model);
         createRowsForRecentVals(src, model);
 
