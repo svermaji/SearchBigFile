@@ -1,8 +1,8 @@
 package com.sv.bigfile;
 
-import com.sv.bigfile.helpers.HelpColorChangerTask;
 import com.sv.bigfile.helpers.CopyCommandAction;
 import com.sv.bigfile.helpers.FontChangerTask;
+import com.sv.bigfile.helpers.HelpColorChangerTask;
 import com.sv.bigfile.helpers.StartWarnIndicator;
 import com.sv.core.DefaultConfigs;
 import com.sv.core.MyLogger;
@@ -11,11 +11,8 @@ import com.sv.swingui.*;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableRowSorter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
 import javax.swing.text.StyleConstants;
@@ -23,16 +20,15 @@ import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.regex.PatternSyntaxException;
 
 import static com.sv.bigfile.Constants.*;
 
@@ -657,7 +653,7 @@ public class SearchBigFile extends AppFrame {
         };
 
         AppTable table = new AppTable(model);
-        deleteAndCreateRows(src, table, model);
+        createRowsForRecentVals(src, model);
 
         // ToolTip and alignment
         TableColumn firstCol = table.getColumnModel().getColumn(0);
@@ -700,13 +696,7 @@ public class SearchBigFile extends AppFrame {
         table.applyChangeListener(txtFilter);
     }
 
-    private void deleteAndCreateRows(JMenu src, JTable table, DefaultTableModel model) {
-        /*int rows = table.getRowCount();
-        System.out.println("removing rows = " + rows);
-        for (int i = 0; i < rows; i++) {
-            model.removeRow(i);
-        }*/
-
+    private void createRowsForRecentVals(JMenu src, DefaultTableModel model) {
         int items = src.getItemCount();
         for (int i = 0; i < items; i++) {
             String s = src.getItem(i).getText();
