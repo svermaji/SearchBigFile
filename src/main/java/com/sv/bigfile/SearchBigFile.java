@@ -639,7 +639,7 @@ public class SearchBigFile extends AppFrame {
         txtFilter.setColumns(30);
 
         DefaultTableModel model = SwingUtils.getTableModel(new String[]{colName + " - Dbl-click or select & ENTER"});
-        
+
         AppTable table = new AppTable(model);
         createRowsForRecentVals(src, model);
 
@@ -677,7 +677,7 @@ public class SearchBigFile extends AppFrame {
     private void setUpSorterAndFilter(SearchBigFile sbf, AppTable table, DefaultTableModel model,
                                       JTextField dest, JTextField txtFilter,
                                       JFrame frame, Object[] params) {
-    table.addSorter(model);
+        table.addSorter(model);
         table.addFilter(txtFilter);
         table.addDblClickOnRow(sbf, params);
         table.addEnterOnRow(new CopyCommandAction(table, frame, dest));
