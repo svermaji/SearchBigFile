@@ -664,15 +664,10 @@ public class SearchBigFile extends AppFrame {
         firstCol.setMinWidth(25);
         firstCol.setCellRenderer(new CellRendererLeftAlign());
 
-        /**********************************************/
         //TODO: Analyze why single method not working
-        table.addSorter(model);
-        table.addFilter(txtFilter);
-        table.addDblClickOnRow(this, new Object[]{dest, frame});
-        table.addEnterOnRow(new CopyCommandAction(table, frame, dest));
-        table.applyChangeListener(txtFilter);
-
         //table.setUpSorterAndFilter(model, this, dest, new CopyCommandAction(table, frame, dest), new Object[]{dest, frame});
+        setUpSorterAndFilter(this, table, model, dest, txtFilter, frame, new Object[]{dest, frame});
+
         table.setScrollProps();
         table.setBorder(EMPTY_BORDER);
 
@@ -691,9 +686,18 @@ public class SearchBigFile extends AppFrame {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setAlwaysOnTop(true);
         frame.setToCenter();
-        frame.repaint();
 
         SwingUtils.addEscKeyAction(frame);
+    }
+
+    private void setUpSorterAndFilter(SearchBigFile sbf, AppTable table, DefaultTableModel model,
+                                      JTextField dest, JTextField txtFilter,
+                                      JFrame frame, Object[] params) {
+    table.addSorter(model);
+        table.addFilter(txtFilter);
+        table.addDblClickOnRow(sbf, params);
+        table.addEnterOnRow(new CopyCommandAction(table, frame, dest));
+        table.applyChangeListener(txtFilter);
     }
 
     private void deleteAndCreateRows(JMenu src, JTable table, DefaultTableModel model) {
