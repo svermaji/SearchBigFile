@@ -705,7 +705,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private Integer[] getLastNOptions() {
-        return new Integer[]{10, 50, 200, 500, 1000, 2000, 3000, 4000, 5000};
+        return new Integer[]{100, 200, 500, 1000, 2000, 3000, 4000, 5000};
     }
 
     private void resetForNewSearch() {
