@@ -40,7 +40,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Any recent files/searches starting with `*` will be added as favourite button `(max 5)`, ex. `*FILE (TAG)`.
 * Line number will be displayed as bold at the start of line to match with an original file. 
 * Summary will be displayed in title bar with file size, time taken and number of occurrences matched.
-* Another feature added to read last N (200-5000) lines of a file along with the highlight of search pattern  
+* Another feature added to read last N (100-5000) lines of a file along with the highlight of search pattern  
 * Recently searched files and search-patterns will be stored. 
 * Additional filtering is provided to search among recent lists
 * Application displays warning if search runs for too long or too many search occurrences 
