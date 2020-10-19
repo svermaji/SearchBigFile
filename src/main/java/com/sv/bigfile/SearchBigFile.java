@@ -442,20 +442,22 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void findWordInResult() {
-        if (!searchStr.equalsIgnoreCase(getSearchString())) {
-            resetLineOffsetsIdx();
-            lineOffsets.clear();
-            setSearchStrings();
-            updateRecentValues();
-            updateOffsets();
-            int size = lineOffsets.size();
-            if (size > 0) {
-                showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + size + "] found. Use next/pre occurrences controls.");
+        if (isValidate()) {
+            if (!searchStr.equalsIgnoreCase(getSearchString())) {
+                resetLineOffsetsIdx();
+                lineOffsets.clear();
+                setSearchStrings();
+                updateRecentValues();
+                updateOffsets();
+                int size = lineOffsets.size();
+                if (size > 0) {
+                    showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + size + "] found. Use next/pre occurrences controls.");
+                } else {
+                    showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
+                }
             } else {
-                showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
+                showMsg("Search for same word [" + searchStr + "] already build.", MsgType.WARN);
             }
-        } else {
-            showMsg("Search for same word [" + searchStr + "] already build.", MsgType.WARN);
         }
     }
 
@@ -1343,17 +1345,18 @@ public class SearchBigFile extends AppFrame {
 
             readNFlag = true;
             updateTitle("Reading last " + LIMIT + " lines");
-            logger.log("Loading last " + LIMIT + " lines from: " + fn);
+            logger.log("Loading last [" + LIMIT + "] lines from [" + fn + "]");
             // FIFO
             stack.removeAllElements();
 
-            boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
+            // TODO: not stable - need to check
+            //boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
+            boolean useBR = false;
             log("File read with buffered reader [" + useBR + "].");
             if (useBR) {
                 try {
-                    // open input stream test.txt for reading purpose.
                     BufferedReader br = new BufferedReader(new FileReader(file));
-                    List<String> tempCollection = new LinkedList<>();
+                    Stack<String> tempCollection = new Stack<>();
 
                     String line;
                     long time = System.currentTimeMillis();
@@ -1366,6 +1369,7 @@ public class SearchBigFile extends AppFrame {
                     log("File read complete in " + Utils.getTimeDiffSecStr(time));
                     int l = 0;
                     while (!tempCollection.isEmpty()) {
+                        readLines++;
                         String s = tempCollection.remove(tempCollection.size() - 1);
                         occr += calculateOccr(s, searchPattern);
                         processForRead(l++, s, occr, tempCollection.isEmpty());
@@ -1579,7 +1583,7 @@ public class SearchBigFile extends AppFrame {
             StringBuilder sb = new StringBuilder();
 
             int qSize = qMsgsToAppend.size();
-            synchronized (this) {
+            synchronized (SearchBigFile.class) {
                 if (!qMsgsToAppend.isEmpty()) {
                     while (!qMsgsToAppend.isEmpty()) {
                         String m = qMsgsToAppend.poll();
