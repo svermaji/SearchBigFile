@@ -104,3 +104,6 @@ Added on 14-Oct-2020. Attaching screen shot of application. Tabs for help and re
 Added on 17-Oct-2020. Attaching screen shot of application. Tabs for help and result.  Find from results:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-find.png) 
 
+Added on 21-Oct-2020. Attaching screen shot of application. Aa/W used for case-sensitive and word search:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-bar.png) 
+
