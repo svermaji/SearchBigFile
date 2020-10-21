@@ -6,8 +6,10 @@ import com.sv.bigfile.helpers.HelpColorChangerTask;
 import com.sv.bigfile.helpers.StartWarnIndicator;
 import com.sv.core.DefaultConfigs;
 import com.sv.core.MyLogger;
+import com.sv.core.MyLogger.MsgType;
 import com.sv.core.Utils;
 import com.sv.swingui.*;
+import com.sv.swingui.UIConstants.*;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -30,7 +32,9 @@ import java.util.Timer;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static com.sv.bigfile.Constants.*;
+import static com.sv.bigfile.AppConstants.*;
+import static com.sv.core.Constants.*;
+import static com.sv.swingui.UIConstants.*;
 
 /**
  * Java Utility to search big files.
@@ -55,35 +59,6 @@ public class SearchBigFile extends AppFrame {
 
     enum FONT_OPR {
         INCREASE, DECREASE, RESET
-    }
-
-    public enum AppFonts {
-        CALIBRI("Calibri"),
-        ALGERIAN("Algerian"),
-        ELEPHANT("Elephant"),
-        LUCIDA("Lucida Bright"),
-        LUCIDA_ITALIC("Lucida Calligraphy Italic"),
-        SEGOE_UI("Segoe UI"),
-        TAHOMA("Tahoma"),
-        TNR("Times New Roman"),
-        VARDANA("Vardana"),
-        ARIAL("Arial Black"),
-        COMIC("Comic Sans MS"),
-        CONSOLAS("Consolas");
-
-        String font;
-
-        AppFonts(String font) {
-            this.font = font;
-        }
-
-        public String getFont() {
-            return font;
-        }
-    }
-
-    enum MsgType {
-        INFO, WARN, ERROR
     }
 
     private MyLogger logger;
@@ -377,7 +352,7 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
         menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
 
-        new Timer().schedule(new FontChangerTask(this), 0, FONT_CHANGE_TIME);
+        new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
         setControlsToEnable();
@@ -765,11 +740,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String[] getFiles() {
-        return getCfg(Configs.RecentFiles).split(Utils.SEMI_COLON);
+        return getCfg(Configs.RecentFiles).split(SEMI_COLON);
     }
 
     private String[] getSearches() {
-        return getCfg(Configs.RecentSearches).split(Utils.SEMI_COLON);
+        return getCfg(Configs.RecentSearches).split(SEMI_COLON);
     }
 
     private void resetShowWarning() {
@@ -819,10 +794,10 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateTitleAndMsg(String s) {
-        updateTitleAndMsg(s, MsgType.WARN);
+        updateTitleAndMsg(s, MyLogger.MsgType.WARN);
     }
 
-    private void updateTitleAndMsg(String s, MsgType type) {
+    private void updateTitleAndMsg(String s, MyLogger.MsgType type) {
         updateTitle(s);
         showMsg(s, type);
     }
@@ -856,9 +831,9 @@ public class SearchBigFile extends AppFrame {
         recentFilesStr = checkItems(getFilePath(), recentFilesStr);
         recentSearchesStr = checkItems(getSearchString(), recentSearchesStr);
 
-        String[] arrF = recentFilesStr.split(Utils.SEMI_COLON);
+        String[] arrF = recentFilesStr.split(SEMI_COLON);
         updateRecentMenu(menuRFiles, arrF, txtFilePath);
-        String[] arrS = recentSearchesStr.split(Utils.SEMI_COLON);
+        String[] arrS = recentSearchesStr.split(SEMI_COLON);
         updateRecentMenu(menuRSearches, arrS, txtSearch);
 
         // Updating auto-complete action
@@ -873,12 +848,12 @@ public class SearchBigFile extends AppFrame {
             int idx = csvLC.indexOf(ssLC);
             // remove item and add it again to bring it on top
             csv = csv.substring(0, idx)
-                    + csv.substring(idx + searchStr.length() + Utils.SEMI_COLON.length());
+                    + csv.substring(idx + searchStr.length() + SEMI_COLON.length());
         }
-        csv = searchStr + Utils.SEMI_COLON + csv;
+        csv = searchStr + SEMI_COLON + csv;
 
-        if (csv.split(Utils.SEMI_COLON).length >= RECENT_LIMIT) {
-            csv = csv.substring(0, csv.lastIndexOf(Utils.SEMI_COLON));
+        if (csv.split(SEMI_COLON).length >= RECENT_LIMIT) {
+            csv = csv.substring(0, csv.lastIndexOf(SEMI_COLON));
         }
 
         return csv;
@@ -1078,17 +1053,17 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void showMsgAsInfo(String msg) {
-        showMsg(msg, MsgType.INFO);
+        showMsg(msg, MyLogger.MsgType.INFO);
     }
 
-    public void showMsg(String msg, MsgType type) {
+    public void showMsg(String msg, MyLogger.MsgType type) {
         if (Utils.hasValue(msg)) {
             Color b = Color.WHITE;
             Color f = Color.BLUE;
-            if (type == MsgType.ERROR) {
+            if (type == MyLogger.MsgType.ERROR) {
                 b = Color.RED;
                 f = Color.WHITE;
-            } else if (type == MsgType.WARN) {
+            } else if (type == MyLogger.MsgType.WARN) {
                 b = Color.ORANGE;
                 f = Color.BLACK;
             }
@@ -1287,10 +1262,10 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getNextFont() {
-        if (fontIdx == AppFonts.values().length) {
+        if (fontIdx == ColorsNFonts.values().length) {
             fontIdx = 0;
         }
-        return AppFonts.values()[fontIdx++].getFont();
+        return ColorsNFonts.values()[fontIdx++].getFont();
     }
 
     public void changeHelpColor() {
@@ -1305,7 +1280,7 @@ public class SearchBigFile extends AppFrame {
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
-        String tip = "Font for this bar [" + msg + "], changes every [" + FONT_CHANGE_MIN + "min]. " + getInitialMsg();
+        String tip = "Font for this bar [" + msg + "], changes every [" + MIN_10 + "min]. " + getInitialMsg();
         lblMsg.setToolTipText(tip);
         msgPanel.setToolTipText(tip);
         showMsgAsInfo(msg);

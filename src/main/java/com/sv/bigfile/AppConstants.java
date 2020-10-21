@@ -6,14 +6,11 @@ import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.util.concurrent.TimeUnit;
 
-public final class Constants {
+public final class AppConstants {
 
-    private Constants() {
+    private AppConstants() {
     }
 
-    public static final String PREFERRED_FONT = "Calibri";
-    public static final long FONT_CHANGE_MIN = 10;
-    public static final long FONT_CHANGE_TIME = TimeUnit.MINUTES.toMillis(FONT_CHANGE_MIN);
     public static final long HELP_COLOR_CHANGE_SEC = 10;
     public static final long HELP_COLOR_CHANGE_TIME = TimeUnit.SECONDS.toMillis(HELP_COLOR_CHANGE_SEC);
     public static final int PREFERRED_FONT_SIZE = 12;
@@ -27,7 +24,4 @@ public final class Constants {
     public static final int WARN_LIMIT_OCCR = 100;
     public static final int FORCE_STOP_LIMIT_OCCR = 500;
     public static final int APPEND_MSG_CHUNK = 100;
-    public static final int EB = 5;
-    public static final Border EMPTY_BORDER = new EmptyBorder(new Insets(EB, EB, EB, EB));
-    public static final Border BLUE_BORDER = new LineBorder(Color.BLUE, 1, true);
 }
