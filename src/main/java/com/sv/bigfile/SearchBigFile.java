@@ -74,7 +74,7 @@ public class SearchBigFile extends AppFrame {
     private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
-    private JEditorPane tpResults, tpHelp;
+    private JEditorPane epResults, tpHelp;
     private JScrollPane jspResults, jspHelp;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
@@ -85,6 +85,7 @@ public class SearchBigFile extends AppFrame {
             Color.WHITE, Color.PINK, Color.GREEN,
             Color.YELLOW, Color.ORANGE, Color.CYAN
     };
+    private final String W_BG_FONT_PREFIX = "<font style=\"background-color:white\">";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
     private final String R_FONT_PREFIX = "<font style=\"color:red\">";
     private final String FONT_SUFFIX = "</font>";
@@ -112,7 +113,6 @@ public class SearchBigFile extends AppFrame {
     private static List<Integer> lineOffsets;
     private static int lineOffsetsIdx;
     private static int globalCharIdx;
-    private static String htmlDocText;
 
     // LIFO
     private static Queue<String> qMsgsToAppend;
@@ -323,16 +323,16 @@ public class SearchBigFile extends AppFrame {
         tpHelp.setEditable(false);
         tpHelp.setContentType("text/html");
 
-        tpResults = new JEditorPane();
-        tpResults.setEditable(false);
-        tpResults.setContentType("text/html");
-        tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
-        tpResults.setForeground(Color.BLACK);
-        tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        epResults = new JEditorPane();
+        epResults.setEditable(false);
+        epResults.setContentType("text/html");
+        epResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
+        epResults.setForeground(Color.BLACK);
+        epResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
-        tpResults.setDocument(htmlDoc);
+        epResults.setDocument(htmlDoc);
         kit = new HTMLEditorKit();
-        jspResults = new JScrollPane(tpResults);
+        jspResults = new JScrollPane(epResults);
         jspHelp = new JScrollPane(tpHelp);
         jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jspResults.setBorder(EMPTY_BORDER);
@@ -552,7 +552,7 @@ public class SearchBigFile extends AppFrame {
 
     private void setFontSize(FONT_OPR opr) {
         hideHelp();
-        Font font = tpResults.getFont();
+        Font font = epResults.getFont();
         boolean changed = false;
         int fs = font.getName().equals(PREFERRED_FONT) ? PREFERRED_FONT_SIZE : DEFAULT_FONT_SIZE;
 
@@ -580,7 +580,7 @@ public class SearchBigFile extends AppFrame {
         if (changed) {
             String m = "Applying new font as " + getFontDetail(font);
             logger.log(m);
-            tpResults.setFont(font);
+            epResults.setFont(font);
             btnFontInfo.setText(getFontSize());
             showMsgAsInfo(m);
         } else {
@@ -688,7 +688,6 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend.clear();
         idxMsgsToAppend.clear();
         globalCharIdx = 0;
-        htmlDocText = "";
         lineOffsets.clear();
         resetLineOffsetsIdx();
         setSearchStrings();
@@ -1000,7 +999,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void emptyResults() {
-        tpResults.setText("");
+        epResults.setText("");
     }
 
     /**
@@ -1019,7 +1018,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public String getFontSize() {
-        return tpResults.getFont().getSize() + "";
+        return epResults.getFont().getSize() + "";
     }
 
     public String getSearchString() {
@@ -1176,8 +1175,8 @@ public class SearchBigFile extends AppFrame {
 
     public void selectAndGoToIndex(int sIdx, int eIdx) {
         hideHelp();
-        tpResults.grabFocus();
-        tpResults.select(sIdx, eIdx);
+        epResults.grabFocus();
+        epResults.select(sIdx, eIdx);
     }
 
     public void finishAction() {
@@ -1197,16 +1196,17 @@ public class SearchBigFile extends AppFrame {
         debug("Offsets size " + lineOffsets.size());
         if (lineOffsets.size() == 0) {
             try {
-                htmlDocText = htmlDoc.getText(0, htmlDoc.getLength()).toLowerCase();
+                String strToSearch = searchStr.toLowerCase();
+                int strToSearchLen = strToSearch.length();
+                debug("Starting search for string [" + strToSearch + "]");
+
+                String htmlDocText = htmlDoc.getText(0, htmlDoc.getLength()).toLowerCase();
                 log("For offsets document length calculated as " + htmlDocText.length());
 
                 int idx = 0;
-                String strToSearch = searchStr.toLowerCase();
-                debug("Starting search for string [" + strToSearch + "]");
                 while (idx != -1) {
                     idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
-                    debug("idx = " + idx + ", globalCharIdx = " + globalCharIdx);
-                    globalCharIdx = idx + strToSearch.length();
+                    globalCharIdx = idx + strToSearchLen;
                     if (idx != -1) {
                         lineOffsets.add(idx);
                     }
@@ -1428,7 +1428,7 @@ public class SearchBigFile extends AppFrame {
         private void catchForRead(Exception e) {
             String msg = "ERROR: " + e.getMessage();
             logger.error(e.getMessage());
-            tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+            epResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
             sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
         }
 
@@ -1648,7 +1648,7 @@ public class SearchBigFile extends AppFrame {
                 String result = getSearchResult(path, Utils.getTimeDiffSecStr(startTime), stats.getLineNum(), stats.getOccurrences());
                 if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
                     String s = "No match found";
-                    sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
+                    sbf.epResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
                     sbf.showMsg(s, MsgType.WARN);
                 }
 
@@ -1664,7 +1664,7 @@ public class SearchBigFile extends AppFrame {
             } catch (IOException e) {
                 String msg = "ERROR: " + e.getMessage();
                 sbf.logger.error(e.getMessage());
-                sbf.tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+                sbf.epResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
                 sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
                 status = Status.DONE;
             } finally {
