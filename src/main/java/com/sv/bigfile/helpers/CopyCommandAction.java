@@ -1,6 +1,6 @@
 package com.sv.bigfile.helpers;
 
-import com.sv.swingui.AppTable;
+import com.sv.swingui.component.table.AppTable;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

@@ -4,11 +4,13 @@ import com.sv.bigfile.helpers.CopyCommandAction;
 import com.sv.bigfile.helpers.FontChangerTask;
 import com.sv.bigfile.helpers.HelpColorChangerTask;
 import com.sv.bigfile.helpers.StartWarnIndicator;
-import com.sv.core.DefaultConfigs;
-import com.sv.core.MyLogger;
-import com.sv.core.MyLogger.MsgType;
+import com.sv.core.config.DefaultConfigs;
+import com.sv.core.logger.MyLogger;
+import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.core.Utils;
 import com.sv.swingui.*;
+import com.sv.swingui.component.*;
+import com.sv.swingui.component.table.*;
 import com.sv.swingui.UIConstants.*;
 
 import javax.swing.*;
@@ -803,7 +805,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private boolean isValidate() {
-        updateTitle("");
+        //updateTitle("");
         boolean result = true;
         if (!Utils.hasValue(getFilePath())) {
             updateTitleAndMsg("Validation error - REQUIRED: file to search");
@@ -1325,13 +1327,13 @@ public class SearchBigFile extends AppFrame {
             stack.removeAllElements();
 
             // TODO: not stable - need to check
-            //boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
-            boolean useBR = false;
+            boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
+//            boolean useBR = false;
             log("File read with buffered reader [" + useBR + "].");
             if (useBR) {
                 try {
                     BufferedReader br = new BufferedReader(new FileReader(file));
-                    Stack<String> tempCollection = new Stack<>();
+                    List<String> tempCollection = new ArrayList<>();
 
                     String line;
                     long time = System.currentTimeMillis();
