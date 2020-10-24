@@ -90,6 +90,10 @@ public class SearchBigFile extends AppFrame {
     private final String R_FONT_PREFIX = "<font style=\"color:red\">";
     private final String FONT_SUFFIX = "</font>";
 
+    private final String HTML_STR = "<html>";
+    private final String HTML_END = "</html>";
+    private final String BR = "<br>";
+
     private static boolean showWarning = false;
     private static boolean readNFlag = false;
     private static long insertCounter = 0;
@@ -896,7 +900,6 @@ public class SearchBigFile extends AppFrame {
 
     public void appendResultNoFormat(String data) {
         synchronized (SearchBigFile.class) {
-            data = lineEndToBR(data);
             // Needs to be sync else line numbers and data will be jumbled
             try {
                 if (readNFlag) {
@@ -1281,7 +1284,7 @@ public class SearchBigFile extends AppFrame {
         f = new Font(getNextFont(), f.getStyle(), f.getSize());
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
-        String tip = "Font for this bar [" + msg + "], changes every [" + MIN_10 + "min]. " + getInitialMsg();
+        String tip = HTML_STR + "Font for this bar [" + msg + "], changes every [" + TEN + "min]. " + BR + getInitialMsg() + HTML_END;
         lblMsg.setToolTipText(tip);
         msgPanel.setToolTipText(tip);
         showMsgAsInfo(msg);
@@ -1293,12 +1296,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String addLineNumAndEsc(long lineNum, String str) {
-        //return getLineNumStr(lineNum) + escString(str) + System.lineSeparator();
-        return "<tr border=0 style=\"padding:0px;border-spacing:0px\" width=\"100%\"><td width=\"3%\" align=\"right\" valign=\"top\">" + getLineNumStr(lineNum) + "</td><td width=\"*\">" + escString(str) + "</td></tr>" + System.lineSeparator();
+        return getLineNumStr(lineNum) + escString(str) + BR;
     }
 
     private String addLineEnd(String str) {
-        return str + System.lineSeparator();
+        return str + BR;
     }
 
     /*   Inner classes    */
