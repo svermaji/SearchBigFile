@@ -1294,7 +1294,7 @@ public class SearchBigFile extends AppFrame {
 
     private String addLineNumAndEsc(long lineNum, String str) {
         //return getLineNumStr(lineNum) + escString(str) + System.lineSeparator();
-        return "<tr border=1 cellpadding=0 cellspacing=0 width=\"100%\"><td width=\"3%\" align=\"right\" valign=\"top\">" + getLineNumStr(lineNum) + "</td><td width=\"*\">" + escString(str) + "</td></tr>" + System.lineSeparator();
+        return "<tr border=0 style=\"padding:0px;border-spacing:0px\" width=\"100%\"><td width=\"3%\" align=\"right\" valign=\"top\">" + getLineNumStr(lineNum) + "</td><td width=\"*\">" + escString(str) + "</td></tr>" + System.lineSeparator();
     }
 
     private String addLineEnd(String str) {
