@@ -708,8 +708,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getLineNumStr(long line) {
-//        return "<span style=\"color: #A9A9A9\"><b>" + line + "  </b></span>";
-        return "<span style=\"color: #0000FF\">" + line + "  </span>";
+        return "<span style=\"color:blue;\">" + line + "&nbsp;&nbsp;</span>";
     }
 
     private int calculateOccr(String line, String pattern) {
@@ -1294,7 +1293,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String addLineNumAndEsc(long lineNum, String str) {
-        return getLineNumStr(lineNum) + escString(str) + System.lineSeparator();
+        //return getLineNumStr(lineNum) + escString(str) + System.lineSeparator();
+        return "<tr border=1 cellpadding=0 cellspacing=0 width=\"100%\"><td width=\"3%\" align=\"right\" valign=\"top\">" + getLineNumStr(lineNum) + "</td><td width=\"*\">" + escString(str) + "</td></tr>" + System.lineSeparator();
     }
 
     private String addLineEnd(String str) {
