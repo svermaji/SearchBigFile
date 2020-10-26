@@ -713,10 +713,21 @@ public class SearchBigFile extends AppFrame {
         String lineLC = isMatchCase() ? line : line.toLowerCase();
         int occr = 0;
         if (Utils.hasValue(lineLC) && Utils.hasValue(pattern)) {
-            occr = lineLC.split(pattern).length;
+            int idx = 0;
+            while (idx != -1) {
+                idx = lineLC.indexOf(pattern, idx);
+                if (idx != -1) {
+                    if (checkForWholeWord(pattern, lineLC, idx)) {
+                        occr++;
+                    }
+                    idx = idx + pattern.length();
+                }
+            }
+            /*occr = lineLC.split(pattern).length;
+            // ends with breaks array correct element
             if (!lineLC.endsWith(pattern)) {
                 occr--;
-            }
+            }*/
         }
         /*String lineStr = "";
         if (occr > 0) {
@@ -980,13 +991,18 @@ public class SearchBigFile extends AppFrame {
         String dt = isMatchCase() ? data : data.toLowerCase();
         int idx = 0, oldIdx = 0;
         while (idx != -1) {
-            idx = dt.indexOf(strEsc, oldIdx);
+            idx = dt.indexOf(strEsc, idx);
             if (idx != -1) {
-                sb.append(data, oldIdx, idx)
-                        .append(Y_BG_FONT_PREFIX)
-                        .append(data, idx, idx + sLen)
-                        .append(FONT_SUFFIX);
-                oldIdx = idx + sLen;
+                debug("yellow");
+                if (checkForWholeWord(strEsc, data, idx)) {
+                    int xlen = idx + sLen;
+                    sb.append(data, oldIdx, idx)
+                            .append(Y_BG_FONT_PREFIX)
+                            .append(data, idx, xlen)
+                            .append(FONT_SUFFIX);
+                    oldIdx = xlen;
+                }
+                idx = idx + sLen;
             }
         }
         sb.append(data, oldIdx, data.length());
@@ -1204,20 +1220,11 @@ public class SearchBigFile extends AppFrame {
                 log("For offsets document length calculated as " + htmlDocText.length());
                 debug(htmlDocText);
 
-                String[] arr = htmlDocText.split(strToSearch);
-                int x = 0;
-                // don't need last element
-                /*for (int i = 0, arrLength = arr.length; i < arrLength - 1; i++) {
-                    String a = arr[i];
-                    x += a.length();
-                    lineOffsets.add(x);
-                    x += getSearchString().length();
-                }*/
                 int idx = 0;
                 while (idx != -1) {
                     idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
                     globalCharIdx = idx + strToSearchLen;
-                    if (idx != -1) {
+                    if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
                         lineOffsets.add(idx);
                     }
                 }
@@ -1227,6 +1234,33 @@ public class SearchBigFile extends AppFrame {
                 logger.error("Unable to get document text");
             }
         }
+    }
+
+    private boolean checkForWholeWord(String strToSearch, String line, int idx) {
+        if (!isWholeWord()) {
+            return true;
+        }
+
+        int searchLen = strToSearch.length();
+        int lineLen = line.length();
+        /*debug("strToSearch " + Utils.applyBraces(strToSearch) + ", line = " + Utils.applyBraces(line) + ", idx = " + Utils.applyBraces(idx) +
+                ", lineLen = " + lineLen + ", searchLen = " + searchLen);*/
+        // starts with case
+        if (idx == 0) {
+            if (lineLen == idx + searchLen) {
+                return true;
+            } else if (lineLen >= idx + searchLen + 1) {
+                return Utils.isWholeWordChar(line.charAt(idx + searchLen));
+            }
+        } else if (idx == lineLen - searchLen) { // ends with case
+            if (idx > 0) {
+                return Utils.isWholeWordChar(line.charAt(idx - 1));
+            }
+        } else if (idx != -1 && lineLen > idx + searchLen) { // + 2 is for char before and after
+            // in between
+            return Utils.isWholeWordChar(line.charAt(idx + searchLen)) && Utils.isWholeWordChar(line.charAt(idx - 1));
+        }
+        return false;
     }
 
     public boolean getBooleanCfg(Configs c) {
@@ -1499,9 +1533,11 @@ public class SearchBigFile extends AppFrame {
 
             if (stats.isMatch()) {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
-                stats.setOccurrences(stats.getOccurrences() + occr);
-                sb.append(addLineNumAndEsc(lineNum, stats.getLine()));
-                qMsgsToAppend.add(sb.toString());
+                if (occr > 0) {
+                    stats.setOccurrences(stats.getOccurrences() + occr);
+                    sb.append(addLineNumAndEsc(lineNum, stats.getLine()));
+                    qMsgsToAppend.add(sb.toString());
+                }
             }
             stats.setLineNum(lineNum + 1);
 
