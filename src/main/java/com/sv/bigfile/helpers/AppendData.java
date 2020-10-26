@@ -14,7 +14,7 @@ public class AppendData extends SwingWorker<Integer, String> {
 
     @Override
     public Integer doInBackground() {
-        synchronized (SearchBigFile.class) {
+        synchronized (AppendData.class) {
             sbf.incRCtrNAppendIdxData();
         }
         return 1;

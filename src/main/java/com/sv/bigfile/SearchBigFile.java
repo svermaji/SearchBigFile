@@ -1,9 +1,6 @@
 package com.sv.bigfile;
 
-import com.sv.bigfile.helpers.CopyCommandAction;
-import com.sv.bigfile.helpers.FontChangerTask;
-import com.sv.bigfile.helpers.HelpColorChangerTask;
-import com.sv.bigfile.helpers.StartWarnIndicator;
+import com.sv.bigfile.helpers.*;
 import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
@@ -424,20 +421,16 @@ public class SearchBigFile extends AppFrame {
 
     private void findWordInResult() {
         if (isValidate()) {
-            if (!searchStr.equalsIgnoreCase(getSearchString())) {
-                resetLineOffsetsIdx();
-                lineOffsets.clear();
-                setSearchStrings();
-                updateRecentValues();
-                updateOffsets();
-                int size = lineOffsets.size();
-                if (size > 0) {
-                    showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + size + "] found. Use next/pre occurrences controls.");
-                } else {
-                    showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
-                }
+            resetLineOffsetsIdx();
+            lineOffsets.clear();
+            setSearchStrings();
+            updateRecentValues();
+            updateOffsets();
+            int size = lineOffsets.size();
+            if (size > 0) {
+                showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + size + "] found. Use next/pre occurrences controls.");
             } else {
-                showMsg("Search for same word [" + searchStr + "] already build.", MsgType.WARN);
+                showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
             }
         }
     }
@@ -716,12 +709,12 @@ public class SearchBigFile extends AppFrame {
     }
 
     private int calculateOccr(String line, String pattern) {
-        String lineLC = line.toLowerCase();
-        String patternLC = pattern.toLowerCase();
+        // Pattern already processed when calling this method
+        String lineLC = isMatchCase() ? line : line.toLowerCase();
         int occr = 0;
-        if (Utils.hasValue(lineLC) && Utils.hasValue(patternLC)) {
-            occr = lineLC.split(patternLC).length;
-            if (!lineLC.endsWith(patternLC)) {
+        if (Utils.hasValue(lineLC) && Utils.hasValue(pattern)) {
+            occr = lineLC.split(pattern).length;
+            if (!lineLC.endsWith(pattern)) {
                 occr--;
             }
         }
@@ -958,15 +951,10 @@ public class SearchBigFile extends AppFrame {
 
     public void appendResult(String data) {
 
-        // Html escaping here, so html '<' character processed and searched properly
-        //data = htmlEsc(data);
-
-        if (Utils.hasValue(searchStr)) {
-            if (!isMatchCase()) {
-                data = replaceWithSameCase(data);
-            } else {
-                data = data.replaceAll(searchStr, searchStrReplace);
-            }
+        if (!isMatchCase()) {
+            data = replaceWithSameCase(data);
+        } else {
+            data = data.replaceAll(searchStr, searchStrReplace);
         }
 
         // TODO
@@ -986,17 +974,22 @@ public class SearchBigFile extends AppFrame {
      */
     private String replaceWithSameCase(String data) {
         // Putting yellow background after escaping
-        String s = searchStrEsc.toLowerCase();
+        String strEsc = isMatchCase() ? searchStrEsc : searchStrEsc.toLowerCase();
+        int sLen = strEsc.length();
         StringBuilder sb = new StringBuilder();
-        while (data.toLowerCase().contains(s)) {
-            int idx = data.toLowerCase().indexOf(s);
-            sb.append(data, 0, idx)
-                    .append(Y_BG_FONT_PREFIX)
-                    .append(data, idx, idx + s.length())
-                    .append(FONT_SUFFIX);
-            data = data.substring(idx + s.length());
+        String dt = isMatchCase() ? data : data.toLowerCase();
+        int idx = 0, oldIdx = 0;
+        while (idx != -1) {
+            idx = dt.indexOf(strEsc, oldIdx);
+            if (idx != -1) {
+                sb.append(data, oldIdx, idx)
+                        .append(Y_BG_FONT_PREFIX)
+                        .append(data, idx, idx + sLen)
+                        .append(FONT_SUFFIX);
+                oldIdx = idx + sLen;
+            }
         }
-        sb.append(data);
+        sb.append(data, oldIdx, data.length());
         return sb.toString();
     }
 
@@ -1108,9 +1101,11 @@ public class SearchBigFile extends AppFrame {
         if (!isMatchCase()) {
             searchPattern = searchPattern.toLowerCase();
         }
-        if (isWholeWord()) {
-            searchPattern = ".*\\b" + searchPattern + "\\b.*";
-        }
+        //TODO
+        /*if (isWholeWord()) {
+//            searchPattern = ".*\\b" + searchPattern + "\\b.*";
+            searchPattern = "\\b" + searchPattern + "\\b";
+        }*/
         return searchPattern;
     }
 
@@ -1198,13 +1193,26 @@ public class SearchBigFile extends AppFrame {
         debug("Offsets size " + lineOffsets.size());
         if (lineOffsets.size() == 0) {
             try {
-                String strToSearch = searchStr.toLowerCase();
+                String strToSearch = processPattern();
                 int strToSearchLen = strToSearch.length();
                 debug("Starting search for string [" + strToSearch + "]");
 
-                String htmlDocText = htmlDoc.getText(0, htmlDoc.getLength()).toLowerCase();
+                String htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
+                if (!isMatchCase()) {
+                    htmlDocText = htmlDocText.toLowerCase();
+                }
                 log("For offsets document length calculated as " + htmlDocText.length());
+                debug(htmlDocText);
 
+                String[] arr = htmlDocText.split(strToSearch);
+                int x = 0;
+                // don't need last element
+                /*for (int i = 0, arrLength = arr.length; i < arrLength - 1; i++) {
+                    String a = arr[i];
+                    x += a.length();
+                    lineOffsets.add(x);
+                    x += getSearchString().length();
+                }*/
                 int idx = 0;
                 while (idx != -1) {
                     idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
@@ -1261,8 +1269,10 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void incRCtrNAppendIdxData() {
-        readCounter++;
-        appendResult(idxMsgsToAppend.get(readCounter));
+        synchronized (SearchBigFile.class) {
+            readCounter++;
+            appendResult(idxMsgsToAppend.get(readCounter));
+        }
     }
 
     private String getNextFont() {
@@ -1324,7 +1334,7 @@ public class SearchBigFile extends AppFrame {
 
             readNFlag = true;
             updateTitle("Reading last " + LIMIT + " lines");
-            logger.log("Loading last [" + LIMIT + "] lines from [" + fn + "]");
+            logger.log("Loading last [" + LIMIT + "] lines from [" + fn + "] with read flag as " + Utils.applyBraces(readNFlag));
             // FIFO
             stack.removeAllElements();
 
@@ -1410,7 +1420,7 @@ public class SearchBigFile extends AppFrame {
                 }
             }
 
-            occr += calculateOccr(sb.toString(), searchStr);
+            occr += calculateOccr(sb.toString(), searchPattern);
             if (!hasError) {
                 String result = getSearchResult(
                         fn,
@@ -1460,17 +1470,18 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    class AppendData extends SwingWorker<Integer, String> {
+    /*class AppendData extends SwingWorker<Integer, String> {
 
         @Override
         public Integer doInBackground() {
             synchronized (SearchBigFile.class) {
                 readCounter++;
+                logger.debug("Read counter value is " + Utils.applyBraces(readCounter));
                 appendResult(idxMsgsToAppend.get(readCounter));
             }
             return 1;
         }
-    }
+    }*/
 
     // To avoid async order of lines this cannot be worker
     class SearchData {
@@ -1573,7 +1584,7 @@ public class SearchBigFile extends AppFrame {
                     if (readNFlag || sb.length() > 0) {
                         insertCounter++;
                         idxMsgsToAppend.put(insertCounter, sb.toString());
-                        SwingUtilities.invokeLater(new AppendData());
+                        SwingUtilities.invokeLater(new AppendData(sbf));
                     }
                     /*logger.debug("Initial Q size [" + qSize + "], after message processing Q size ["
                             + qMsgsToAppend.size() + "]");*/
@@ -1645,6 +1656,7 @@ public class SearchBigFile extends AppFrame {
                         logger.debug("Waiting for readCounter to be equal insertCounter");
                         Utils.sleep(200, sbf.logger);
                     }
+                    idxMsgsToAppend.clear();
                     logger.log("Time in waiting all message to append is " + Utils.getTimeDiffSecStr(time));
                 }
                 String result = getSearchResult(path, Utils.getTimeDiffSecStr(startTime), stats.getLineNum(), stats.getOccurrences());
