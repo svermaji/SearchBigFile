@@ -1611,7 +1611,7 @@ public class SearchBigFile extends AppFrame {
 
     static class AppendMsgCallable implements Callable<Boolean> {
 
-        SearchBigFile sbf;
+        private SearchBigFile sbf;
 
         public AppendMsgCallable(SearchBigFile sbf) {
             this.sbf = sbf;
