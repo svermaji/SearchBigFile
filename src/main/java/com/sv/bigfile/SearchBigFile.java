@@ -1,15 +1,15 @@
 package com.sv.bigfile;
 
 import com.sv.bigfile.helpers.*;
-import com.sv.core.Constants;
+import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
-import com.sv.core.Utils;
-import com.sv.swingui.*;
-import com.sv.swingui.component.*;
-import com.sv.swingui.component.table.*;
+import com.sv.swingui.SwingUtils;
 import com.sv.swingui.UIConstants.*;
+import com.sv.swingui.component.*;
+import com.sv.swingui.component.table.AppTable;
+import com.sv.swingui.component.table.CellRendererLeftAlign;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -83,7 +83,6 @@ public class SearchBigFile extends AppFrame {
             Color.WHITE, Color.PINK, Color.GREEN,
             Color.YELLOW, Color.ORANGE, Color.CYAN
     };
-    private final String W_BG_FONT_PREFIX = "<font style=\"background-color:white\">";
     private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
     private final String R_FONT_PREFIX = "<font style=\"color:red\">";
     private final String FONT_SUFFIX = "</font>";
@@ -757,11 +756,7 @@ public class SearchBigFile extends AppFrame {
                 occr--;
             }*/
         }
-        /*String lineStr = "";
-        if (occr > 0) {
-            lineStr = "line [" + line + "],";
-        }
-        debug("calculateOccr: " + lineStr + " pattern [" + pattern + "], occr [" + occr + "]");*/
+        //debug("calculateOccr: " + " pattern [" + pattern + "], occr [" + occr + "]");*/
         return occr;
     }
 
@@ -982,12 +977,6 @@ public class SearchBigFile extends AppFrame {
         return sb.toString() + data.substring(idx);
     }
 
-    private String lineEndToBR(String data) {
-        String NEW_LINE_REGEX = "\r?\n";
-        String HTML_LINE_END = "<br>";
-        return data.replaceAll(NEW_LINE_REGEX, HTML_LINE_END);
-    }
-
     public void appendResult(String data) {
 
         if (!isMatchCase()) {
@@ -995,11 +984,6 @@ public class SearchBigFile extends AppFrame {
         } else {
             data = data.replaceAll(searchStr, searchStrReplace);
         }
-
-        // TODO
-        /*if (isWholeWord()) {
-            searchStr = ".*\\b" + searchStr + "\\b.*";
-        }*/
 
         appendResultNoFormat(data);
     }
@@ -1625,7 +1609,7 @@ public class SearchBigFile extends AppFrame {
                 || (isWholeWord() && line.matches(searchPattern));
     }
 
-    class AppendMsgCallable implements Callable<Boolean> {
+    static class AppendMsgCallable implements Callable<Boolean> {
 
         SearchBigFile sbf;
 
