@@ -1005,7 +1005,6 @@ public class SearchBigFile extends AppFrame {
         while (idx != -1) {
             idx = dt.indexOf(strEsc, idx);
             if (idx != -1) {
-                debug("yellow");
                 if (checkForWholeWord(strEsc, data, idx)) {
                     int xlen = idx + sLen;
                     sb.append(data, oldIdx, idx)
