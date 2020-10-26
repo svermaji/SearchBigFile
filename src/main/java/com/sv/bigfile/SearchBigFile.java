@@ -1,6 +1,7 @@
 package com.sv.bigfile;
 
 import com.sv.bigfile.helpers.*;
+import com.sv.core.Constants;
 import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
@@ -216,11 +217,31 @@ public class SearchBigFile extends AppFrame {
         JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/recent-icon.png");
         btnListRS.addActionListener(e -> showListRS());
 
+        uin = UIName.BTN_UC;
+        AppButton btnUC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        btnUC.addActionListener(e -> changeCase(CaseType.UPPER));
+        uin = UIName.BTN_LC;
+        AppButton btnLC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        btnLC.addActionListener(e -> changeCase(CaseType.LOWER));
+        uin = UIName.BTN_TC;
+        AppButton btnTC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        btnTC.addActionListener(e -> changeCase(CaseType.TITLE));
+        uin = UIName.BTN_IC;
+        AppButton btnIC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        btnIC.addActionListener(e -> changeCase(CaseType.INVERT));
         JToolBar jtbSearch = new JToolBar();
         jtbSearch.setFloatable(false);
         jtbSearch.setRollover(false);
         jtbSearch.add(txtSearch);
+        jtbSearch.add(btnUC);
+        jtbSearch.addSeparator();
+        jtbSearch.add(btnLC);
+        jtbSearch.addSeparator();
+        jtbSearch.add(btnTC);
+        jtbSearch.addSeparator();
+        jtbSearch.add(btnIC);
 
+        //TODO: If single line is around 30mb in one file as json response?
         uin = UIName.LBL_RSEARCHES;
         JMenuBar mbar = new JMenuBar();
         menuRSearches = new JMenu(uin.name);
@@ -283,9 +304,10 @@ public class SearchBigFile extends AppFrame {
 
         btnHelp.addActionListener(e -> showHelp());
 
-        setBkColors(new JButton[]{btnPlusFont, btnMinusFont, btnResetFont,
-                btnFontInfo, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp});
-        btnHelp.setForeground(Color.RED);
+        setBkColors(new JButton[]{
+                //btnUC, btnLC, btnTC, btnIC, btnFileOpen,
+                btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnGoTop,
+                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp});
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
@@ -366,6 +388,12 @@ public class SearchBigFile extends AppFrame {
 
         setToCenter();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+    }
+
+    private void changeCase(CaseType type) {
+        if (isValidate()) {
+            txtSearch.setText(Utils.changeCase(type, txtSearch.getText()));
+        }
     }
 
     private void setControlsToEnable() {
@@ -1236,7 +1264,8 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private boolean checkForWholeWord(String strToSearch, String line, int idx) {
+    // made public for test, will check later
+    public boolean checkForWholeWord(String strToSearch, String line, int idx) {
         if (!isWholeWord()) {
             return true;
         }

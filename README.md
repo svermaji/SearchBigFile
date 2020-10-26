@@ -8,17 +8,18 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 >   - Core module `https://github.com/svermaji/Core`
 >   - UI module `https://github.com/svermaji/SwingUI`
 
-## Author Information<br>
+## Author Information
 * **Name:** Shailendra Verma
 * **Email:** shailendravermag@gmail.com
 * **Blogs:** https://sv-technical.blogspot.com/
 
-## Test Results!!<br>
+## Test Results!!
  - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
  - Attaching result with the name as `With BufferedReader`<br>
 
-## Description<br>
+## Description
 * Program stores the last searched file and search string. 
+* Added button to change cases in search box - Upper, Lower, Title and Invert case. 
 * Tabs present for help and results. 
 * Help button text color changes to 6 different colors every 30sec. 
 * After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 
@@ -47,7 +48,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Tooltip provided for maximum controls.  
 * Validations applied as and when needed.
 
-#### Images of different stages of development/features<br>
+#### Images of different stages of development/features
 Attaching screen shot of application:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png) 
 
@@ -106,4 +107,7 @@ Added on 17-Oct-2020. Attaching screen shot of application. Tabs for help and re
 
 Added on 21-Oct-2020. Attaching screen shot of application. Aa/W used for case-sensitive and word search:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-bar.png) 
+
+Added on 26-Oct-2020. Attaching screen shot of application. New button to change case in search box (upper/lower/title/invert):<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-cases.png) 
 
