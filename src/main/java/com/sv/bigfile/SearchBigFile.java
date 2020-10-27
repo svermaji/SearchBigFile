@@ -755,13 +755,8 @@ public class SearchBigFile extends AppFrame {
                     idx = idx + pattern.length();
                 }
             }
-            /*occr = lineLC.split(pattern).length;
-            // ends with breaks array correct element
-            if (!lineLC.endsWith(pattern)) {
-                occr--;
-            }*/
         }
-        //debug("calculateOccr: " + " pattern [" + pattern + "], occr [" + occr + "]");*/
+        //debug("calculateOccr: pattern [" + pattern + "], occr [" + occr + "]");*/
         return occr;
     }
 
@@ -1480,7 +1475,6 @@ public class SearchBigFile extends AppFrame {
                     while (!stack.empty()) {
                         qMsgsToAppend.add(stack.pop());
                     }
-                    //debug("Read: Starting msg callable and Q size is " + qMsgsToAppend.size());
                     startThread(msgCallable);
                 }
             }
@@ -1492,19 +1486,6 @@ public class SearchBigFile extends AppFrame {
             }
         }
     }
-
-    /*class AppendData extends SwingWorker<Integer, String> {
-
-        @Override
-        public Integer doInBackground() {
-            synchronized (SearchBigFile.class) {
-                readCounter++;
-                logger.debug("Read counter value is " + Utils.applyBraces(readCounter));
-                appendResult(idxMsgsToAppend.get(readCounter));
-            }
-            return 1;
-        }
-    }*/
 
     // To avoid async order of lines this cannot be worker
     class SearchData {
@@ -1635,9 +1616,6 @@ public class SearchBigFile extends AppFrame {
 
             String path = sbf.getFilePath();
 
-            /*try (InputStream stream = new FileInputStream(path);
-                 Scanner sc = new Scanner(stream, "UTF-8")
-            ) {*/
             try (InputStream stream = new FileInputStream(path);
                  BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
             ) {
@@ -1647,15 +1625,12 @@ public class SearchBigFile extends AppFrame {
 
                 String line;
                 while ((line = br.readLine()) != null) {
-                /*while (sc.hasNextLine()) {
-                    String line = sc.nextLine();*/
                     stats.setLine(line);
                     stats.setMatch(sbf.hasOccr(line, searchPattern));
 
                     if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
                         searchData.process();
                         if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
-                            //debug("Search: Starting msg callable and Q size is " + qMsgsToAppend.size());
                             startThread(msgCallable);
                         }
                     }
