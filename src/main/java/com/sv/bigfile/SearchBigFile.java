@@ -1381,7 +1381,7 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int KB = 1024, LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+            final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
             int readLines = 0, occr = 0;
             boolean hasError = false;
             String searchPattern = processPattern(), fn = getFilePath();
@@ -1394,86 +1394,53 @@ public class SearchBigFile extends AppFrame {
             // FIFO
             stack.removeAllElements();
 
-            // TODO: not stable - need to check
-//            boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
-            boolean useBR = false;
-            log("File read with buffered reader [" + useBR + "].");
-            if (useBR) {
-                try {
-                    BufferedReader br = new BufferedReader(new FileReader(file));
-                    List<String> tempCollection = new ArrayList<>();
+            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+                long fileLength = file.length() - 1;
+                // Set the pointer at the last of the file
+                randomAccessFile.seek(fileLength);
 
-                    String line;
-                    long time = System.currentTimeMillis();
-                    while ((line = br.readLine()) != null) {
-                        tempCollection.add(line);
-                        if (tempCollection.size() > LIMIT) {
-                            tempCollection.remove(0);
+                long time = System.currentTimeMillis();
+                for (long pointer = fileLength; pointer >= 0; pointer--) {
+                    randomAccessFile.seek(pointer);
+                    char c;
+                    // read from the last, one char at the time
+                    c = (char) randomAccessFile.read();
+                    // break when end of the line
+                    if (c == '\n') {
+
+                        if (Utils.hasValue(sb.toString())) {
+                            sb.reverse();
                         }
-                    }
-                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
-                    int l = 0;
-                    while (!tempCollection.isEmpty()) {
+
+                        occr += calculateOccr(sb.toString(), searchPattern);
+                        processForRead(readLines, sb.toString(), occr);
+
+                        sb = new StringBuilder();
                         readLines++;
-                        String s = tempCollection.remove(tempCollection.size() - 1);
-                        occr += calculateOccr(s, searchPattern);
-                        processForRead(l++, s, occr, tempCollection.isEmpty());
-                    }
-                } catch (Exception e) {
-                    catchForRead(e);
-                    hasError = true;
-                } finally {
-                    enableControls();
-                }
-            } else {
-                try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                    long fileLength = file.length() - 1;
-                    // Set the pointer at the last of the file
-                    randomAccessFile.seek(fileLength);
-
-                    long time = System.currentTimeMillis();
-                    for (long pointer = fileLength; pointer >= 0; pointer--) {
-                        randomAccessFile.seek(pointer);
-                        char c;
-                        // read from the last, one char at the time
-                        c = (char) randomAccessFile.read();
-                        // break when end of the line
-                        if (c == '\n') {
-
-                            if (Utils.hasValue(sb.toString())) {
-                                sb.reverse();
-                            }
-
-                            occr += calculateOccr(sb.toString(), searchPattern);
-                            processForRead(readLines, sb.toString(), occr);
-
-                            sb = new StringBuilder();
-                            readLines++;
-                            // Last line will be printed after loop
-                            if (readLines == LIMIT - 1) {
-                                break;
-                            }
-                            if (isCancelled()) {
-                                logger.warn("---xxx--- Read cancelled ---xxx---");
-                                break;
-                            }
-                        } else {
-                            sb.append(c);
+                        // Last line will be printed after loop
+                        if (readLines == LIMIT - 1) {
+                            break;
                         }
-                        fileLength = fileLength - pointer;
+                        if (isCancelled()) {
+                            logger.warn("---xxx--- Read cancelled ---xxx---");
+                            break;
+                        }
+                    } else {
+                        sb.append(c);
                     }
-                    log("File read complete in " + Utils.getTimeDiffSecStr(time));
-                    if (Utils.hasValue(sb.toString())) {
-                        sb.reverse();
-                    }
-                    processForRead(readLines, sb.toString(), occr, true);
-                    readLines++;
-                } catch (IOException e) {
-                    catchForRead(e);
-                    hasError = true;
-                } finally {
-                    enableControls();
+                    fileLength = fileLength - pointer;
                 }
+                log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                if (Utils.hasValue(sb.toString())) {
+                    sb.reverse();
+                }
+                processForRead(readLines, sb.toString(), occr, true);
+                readLines++;
+            } catch (IOException e) {
+                catchForRead(e);
+                hasError = true;
+            } finally {
+                enableControls();
             }
 
             occr += calculateOccr(sb.toString(), searchPattern);
