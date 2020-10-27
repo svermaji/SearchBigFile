@@ -109,5 +109,5 @@ Added on 21-Oct-2020. Attaching screen shot of application. Aa/W used for case-s
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-bar.png) 
 
 Added on 26-Oct-2020. Attaching screen shot of application. New button to change case in search box (upper/lower/title/invert):<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-cases.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-case.png) 
 
