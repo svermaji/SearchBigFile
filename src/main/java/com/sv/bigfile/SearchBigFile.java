@@ -3,12 +3,14 @@ package com.sv.bigfile;
 import com.sv.bigfile.helpers.*;
 import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
+import com.sv.core.exception.AppException;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.swingui.SwingUtils;
 import com.sv.swingui.UIConstants.*;
 import com.sv.swingui.component.*;
 import com.sv.swingui.component.table.AppTable;
+import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
 import javax.swing.*;
@@ -64,10 +66,15 @@ public class SearchBigFile extends AppFrame {
     private MyLogger logger;
     private DefaultConfigs configs;
 
+    private DefaultTableModel modelAllOccr;
+    private AppTable tblAllOccr;
+    private JPanel bottomPanel;
+    private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
     private JMenu menuRFiles, menuRSearches;
     private JPanel msgPanel;
     private JLabel lblMsg;
+    private JButton btnShowAll;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
     private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
@@ -333,11 +340,16 @@ public class SearchBigFile extends AppFrame {
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
-        msgPanel = new JPanel();
+        msgPanel = new JPanel(new BorderLayout());
         msgPanel.setBorder(BLUE_BORDER);
         lblMsg = new JLabel(getInitialMsg());
+        lblMsg.setHorizontalAlignment(SwingConstants.CENTER);
         lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
-        msgPanel.add(lblMsg);
+        uin = UIName.BTN_SHOWALL;
+        btnShowAll = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnShowAll.addActionListener(e -> showAllOccr());
+        msgPanel.add(lblMsg, BorderLayout.CENTER);
+        msgPanel.add(btnShowAll, BorderLayout.LINE_END);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
 
@@ -363,7 +375,13 @@ public class SearchBigFile extends AppFrame {
         tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
-        parentContainer.add(tabbedPane, BorderLayout.CENTER);
+
+        bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(tabbedPane, BorderLayout.CENTER);
+        jspAllOccr = new JScrollPane(createAllOccrTable());
+        jspAllOccr.setPreferredSize(new Dimension(100, 150));
+        bottomPanel.add(jspAllOccr, BorderLayout.SOUTH);
+        parentContainer.add(bottomPanel, BorderLayout.CENTER);
 
         btnExit.addActionListener(evt -> exitForm());
         addWindowListener(new WindowAdapter() {
@@ -384,9 +402,65 @@ public class SearchBigFile extends AppFrame {
         resetForNewSearch();
         enableControls();
         showHelp();
+        showAllOccr();
 
         setToCenter();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+    }
+
+    public void dblClickOffset(AppTable table, Object[] params) {
+        gotoOccr(Integer.parseInt(table.getValueAt(table.getSelectedRow(), 0).toString()));
+    }
+
+    private AppTable createAllOccrTable() {
+        modelAllOccr = SwingUtils.getTableModel(
+                new String[]{"#", "All occurrences"});
+        tblAllOccr = new AppTable(modelAllOccr);
+        tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
+        tblAllOccr.getColumnModel().getColumn(0).setMaxWidth(100);
+        tblAllOccr.getColumnModel().getColumn(0).setMinWidth(100);
+        tblAllOccr.getColumnModel().getColumn(0)
+                .setCellRenderer(new CellRendererCenterAlign());
+
+        // TODO: Message if no row exist
+        /*table.add(new JLabel("Perform search to populate here."));
+        table.setFillsViewportHeight(true);*/
+        /*for (int i = 0; i < 5; i++) {
+            model.addRow(new String[]{});
+        }*/
+        return tblAllOccr;
+    }
+
+    private void createAllOccrRows() {
+        String htmlDocText = "";
+        try {
+            htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
+        } catch (BadLocationException e) {
+            throw new AppException("Unable to create offset rows");
+        }
+        int sz = lineOffsets.size();
+        debug("Creating offset rows " + Utils.applyBraces(sz));
+        for (int i = 0; i < sz; i++) {
+            modelAllOccr.addRow(new String[]{(i + 1) + "", getOccrExcerpt(htmlDocText, lineOffsets.get(i))});
+        }
+    }
+
+    private String getOccrExcerpt(String htmlDocText, Integer idx) {
+        int searchIdx = idx + getSearchString().length();
+        if (idx == 0) {
+            return htmlDocText.substring(0, 40);
+        } else if (idx > 20 && htmlDocText.length() > searchIdx + 20) {
+            return htmlDocText.substring(idx - 20, searchIdx + 20);
+        } else if (htmlDocText.length() < searchIdx + 20) {
+            return htmlDocText.substring(idx - 40, searchIdx);
+        }
+        return htmlDocText.substring(idx, searchIdx);
+    }
+
+    private void showAllOccr() {
+        jspAllOccr.setVisible(!jspAllOccr.isVisible());
+        bottomPanel.revalidate();
+        bottomPanel.repaint();
     }
 
     private void changeCase(CaseType type) {
@@ -1244,6 +1318,7 @@ public class SearchBigFile extends AppFrame {
                         break;
                     }
                 }
+                createAllOccrRows();
                 log("Total occurrences offsets are " + lineOffsets.size());
                 debug("All offsets are " + lineOffsets);
             } catch (BadLocationException e) {
@@ -1347,7 +1422,7 @@ public class SearchBigFile extends AppFrame {
         String msg = getFontDetail(f);
         String tip = HTML_STR + "Font for this bar [" + msg + "], changes every [" + TEN + "min]. " + BR + getInitialMsg() + HTML_END;
         lblMsg.setToolTipText(tip);
-        msgPanel.setToolTipText(tip);
+        //msgPanel.setToolTipText(tip);
         showMsgAsInfo(msg);
         debug(msg);
     }
@@ -1649,7 +1724,7 @@ public class SearchBigFile extends AppFrame {
                     time = System.currentTimeMillis();
                     startThread(msgCallable);
                     while (readCounter != insertCounter) {
-                        if (!isCancelled()) {
+                        if (isCancelled()) {
                             debug("Status is cancelled.  Exiting wait condition.");
                             break;
                         }

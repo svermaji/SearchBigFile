@@ -20,6 +20,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Description
 * Program stores the last searched file and search string. 
 * Added button to change cases in search box - Upper, Lower, Title and Invert case. 
+* Added all occurrences table to search occurrences quicker. 
 * Tabs present for help and results. 
 * Help button text color changes to 6 different colors every 30sec. 
 * After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 
@@ -110,4 +111,7 @@ Added on 21-Oct-2020. Attaching screen shot of application. Aa/W used for case-s
 
 Added on 26-Oct-2020. Attaching screen shot of application. New button to change case in search box (upper/lower/title/invert):<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-case.png) 
+
+Added on 27-Oct-2020. Attaching screen shot of application. Added all occurrences table to search occurrences quicker:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-alloccr.png) 
 

@@ -16,6 +16,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 
 ## Recent Changes<br>
 #### On 26-Oct-2020
+* Added all occurrences table to search occurrences quicker. 
+
+#### On 26-Oct-2020
 * Added buttons to change cases in search box - Upper, Lower, Title and Invert case. 
 
 #### On 21-Oct-2020
