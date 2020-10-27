@@ -67,6 +67,7 @@ public class SearchBigFile extends AppFrame {
     private DefaultConfigs configs;
 
     private DefaultTableModel modelAllOccr;
+    private JLabel lblNoRow;
     private AppTable tblAllOccr;
     private JPanel bottomPanel;
     private JScrollPane jspAllOccr;
@@ -422,16 +423,19 @@ public class SearchBigFile extends AppFrame {
         tblAllOccr.getColumnModel().getColumn(0)
                 .setCellRenderer(new CellRendererCenterAlign());
 
-        // TODO: Message if no row exist
-        /*table.add(new JLabel("Perform search to populate here."));
-        table.setFillsViewportHeight(true);*/
-        /*for (int i = 0; i < 5; i++) {
-            model.addRow(new String[]{});
-        }*/
+        String msg = "Search/read and use < or >";
+        lblNoRow = new JLabel(msg);
+        lblNoRow.setToolTipText(msg);
+        lblNoRow.setSize(lblNoRow.getPreferredSize());
+        tblAllOccr.add(lblNoRow);
+        tblAllOccr.setFillsViewportHeight(true);
+
         return tblAllOccr;
     }
 
     private void createAllOccrRows() {
+        // removing previos rows
+        modelAllOccr.setRowCount(0);
         String htmlDocText = "";
         try {
             htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
@@ -440,6 +444,7 @@ public class SearchBigFile extends AppFrame {
         }
         int sz = lineOffsets.size();
         debug("Creating offset rows " + Utils.applyBraces(sz));
+        lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
             modelAllOccr.addRow(new String[]{(i + 1) + "", getOccrExcerpt(htmlDocText, lineOffsets.get(i))});
         }
