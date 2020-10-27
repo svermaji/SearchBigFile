@@ -20,8 +20,8 @@ public final class AppConstants {
     public static final int RECENT_LIMIT = 20;
     public static final int SEARCH_STR_LEN_LIMIT = 2;
     public static final int WARN_LIMIT_SEC = 10;
-    public static final int FORCE_STOP_LIMIT_SEC = 50;
+    public static final int ERROR_LIMIT_SEC = 50;
     public static final int WARN_LIMIT_OCCR = 100;
-    public static final int FORCE_STOP_LIMIT_OCCR = 500;
+    public static final int ERROR_LIMIT_OCCR = 500;
     public static final int APPEND_MSG_CHUNK = 100;
 }

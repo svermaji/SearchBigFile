@@ -453,9 +453,14 @@ public class SearchBigFile extends AppFrame {
             setSearchStrings();
             updateRecentValues();
             updateOffsets();
-            int size = lineOffsets.size();
-            if (size > 0) {
-                showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + size + "] found. Use next/pre occurrences controls.");
+            if (occrTillNow > 0) {
+                if (occrTillNow > ERROR_LIMIT_OCCR) {
+                    showMsg(getProblemMsg(), MsgType.ERROR);
+                } else if (occrTillNow > WARN_LIMIT_OCCR) {
+                    showMsg(getProblemMsg(), MsgType.WARN);
+                } else {
+                    showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + occrTillNow + "] found. Use next/pre occurrences controls.");
+                }
             } else {
                 showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
             }
@@ -534,8 +539,8 @@ public class SearchBigFile extends AppFrame {
         return "This bar turns 'Orange' to show warnings and 'Red' to show error/force-stop. " +
                 "Time/occurrences limit for warning [" + WARN_LIMIT_SEC
                 + "sec/" + WARN_LIMIT_OCCR
-                + "] and for error [" + FORCE_STOP_LIMIT_SEC
-                + "sec/" + FORCE_STOP_LIMIT_OCCR + "]";
+                + "] and for error [" + ERROR_LIMIT_SEC
+                + "sec/" + ERROR_LIMIT_OCCR + "]";
 
     }
 
@@ -1107,11 +1112,11 @@ public class SearchBigFile extends AppFrame {
             sb.append("Warning: Occurrences [").append(occrTillNow).append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
         }
         StringBuilder sbErr = new StringBuilder();
-        if (timeTillNow > FORCE_STOP_LIMIT_SEC) {
-            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_SEC).append("]. Cancelling search...");
+        if (timeTillNow > ERROR_LIMIT_SEC) {
+            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(ERROR_LIMIT_SEC).append("]. Cancelling search...");
         }
-        if (occrTillNow > FORCE_STOP_LIMIT_OCCR) {
-            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(FORCE_STOP_LIMIT_OCCR).append("], try to narrow your search. Cancelling search...");
+        if (occrTillNow > ERROR_LIMIT_OCCR) {
+            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(ERROR_LIMIT_OCCR).append("], try to narrow your search. Cancelling search...");
         }
 
         if (Utils.hasValue(sbErr.toString())) {
@@ -1218,6 +1223,7 @@ public class SearchBigFile extends AppFrame {
 
     private void updateOffsets() {
         debug("Offsets size " + lineOffsets.size());
+        timeTillNow = 0;
         if (lineOffsets.size() == 0) {
             try {
                 String strToSearch = processPattern();
@@ -1237,6 +1243,10 @@ public class SearchBigFile extends AppFrame {
                     globalCharIdx = idx + strToSearchLen;
                     if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
                         lineOffsets.add(idx);
+                    }
+                    occrTillNow = lineOffsets.size();
+                    if (occrTillNow > ERROR_LIMIT_OCCR) {
+                        break;
                     }
                 }
                 log("Total occurrences offsets are " + lineOffsets.size());
@@ -1311,7 +1321,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public boolean isErrorState() {
-        return timeTillNow > FORCE_STOP_LIMIT_SEC || occrTillNow > FORCE_STOP_LIMIT_OCCR;
+        return timeTillNow > ERROR_LIMIT_SEC || occrTillNow > ERROR_LIMIT_OCCR;
     }
 
     public void incRCtrNAppendIdxData() {
@@ -1675,7 +1685,7 @@ public class SearchBigFile extends AppFrame {
                     stats.setLine(line);
                     stats.setMatch(sbf.hasOccr(line, searchPattern));
 
-                    if (!isCancelled() && occrTillNow <= FORCE_STOP_LIMIT_OCCR) {
+                    if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
                         searchData.process();
                         if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                             //debug("Search: Starting msg callable and Q size is " + qMsgsToAppend.size());
