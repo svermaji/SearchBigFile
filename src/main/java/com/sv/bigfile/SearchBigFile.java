@@ -1207,11 +1207,7 @@ public class SearchBigFile extends AppFrame {
         if (!isMatchCase()) {
             searchPattern = searchPattern.toLowerCase();
         }
-        //TODO
-        /*if (isWholeWord()) {
-//            searchPattern = ".*\\b" + searchPattern + "\\b.*";
-            searchPattern = "\\b" + searchPattern + "\\b";
-        }*/
+
         return searchPattern;
     }
 
