@@ -153,7 +153,7 @@ public class SearchBigFile extends AppFrame {
 
         JPanel filePanel = new JPanel();
 
-        final int TXT_COLS = 18;
+        final int TXT_COLS = 15;
         UIName uin = UIName.LBL_FILE;
         txtFilePath = new AppTextField(getCfg(Configs.FilePath), TXT_COLS, getFiles());
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
