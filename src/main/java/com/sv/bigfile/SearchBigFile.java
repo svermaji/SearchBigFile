@@ -410,7 +410,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void dblClickOffset(AppTable table, Object[] params) {
-        gotoOccr(Integer.parseInt(table.getValueAt(table.getSelectedRow(), 0).toString()));
+        // -1 as row number starts from 1
+        lineOffsetsIdx = Integer.parseInt(table.getValueAt(table.getSelectedRow(), 0).toString()) - 1;
+        gotoOccr(lineOffsetsIdx);
     }
 
     private AppTable createAllOccrTable() {
