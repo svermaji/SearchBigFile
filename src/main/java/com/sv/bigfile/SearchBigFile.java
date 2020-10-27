@@ -1395,8 +1395,8 @@ public class SearchBigFile extends AppFrame {
             stack.removeAllElements();
 
             // TODO: not stable - need to check
-            boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
-//            boolean useBR = false;
+//            boolean useBR = file.length() <= (useBRFileSizeInMB * KB * KB);
+            boolean useBR = false;
             log("File read with buffered reader [" + useBR + "].");
             if (useBR) {
                 try {
