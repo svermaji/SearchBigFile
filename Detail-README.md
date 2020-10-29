@@ -15,10 +15,11 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
-#### On 26-Oct-2020
-* Added all occurrences table to search occurrences quicker. 
+#### On 29-Oct-2020
+* Added all occurrences table to search occurrences quicker with highlighted text. 
 
 #### On 26-Oct-2020
+* Added all occurrences table to search occurrences quicker. 
 * Added buttons to change cases in search box - Upper, Lower, Title and Invert case. 
 
 #### On 21-Oct-2020

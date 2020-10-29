@@ -91,13 +91,6 @@ public class SearchBigFile extends AppFrame {
             Color.WHITE, Color.PINK, Color.GREEN,
             Color.YELLOW, Color.ORANGE, Color.CYAN
     };
-    private final String Y_BG_FONT_PREFIX = "<font style=\"background-color:yellow\">";
-    private final String R_FONT_PREFIX = "<font style=\"color:red\">";
-    private final String FONT_SUFFIX = "</font>";
-
-    private final String HTML_STR = "<html>";
-    private final String HTML_END = "</html>";
-    private final String BR = "<br>";
 
     private static boolean showWarning = false;
     private static boolean readNFlag = false;
@@ -436,7 +429,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void createAllOccrRows() {
-        // removing previos rows
+        // removing previous rows
         modelAllOccr.setRowCount(0);
         String htmlDocText = "";
         try {
@@ -448,8 +441,12 @@ public class SearchBigFile extends AppFrame {
         debug("Creating offset rows " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
-            modelAllOccr.addRow(new String[]{(i + 1) + "", getOccrExcerpt(htmlDocText, lineOffsets.get(i))});
+            modelAllOccr.addRow(new String[]{(i + 1) + "", formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i)))});
         }
+    }
+
+    public String formatValueAsHtml(String val) {
+        return HTML_STR + formatWithYellowBk(processPattern(), val) + HTML_END;
     }
 
     private String getOccrExcerpt(String htmlDocText, Integer idx) {
@@ -1079,7 +1076,7 @@ public class SearchBigFile extends AppFrame {
     private String replaceWithSameCase(String data) {
         // Putting yellow background after escaping
         String strEsc = isMatchCase() ? searchStrEsc : searchStrEsc.toLowerCase();
-        int sLen = strEsc.length();
+        /*int sLen = strEsc.length();
         StringBuilder sb = new StringBuilder();
         String dt = isMatchCase() ? data : data.toLowerCase();
         int idx = 0, oldIdx = 0;
@@ -1098,6 +1095,29 @@ public class SearchBigFile extends AppFrame {
             }
         }
         sb.append(data, oldIdx, data.length());
+        return sb.toString();*/
+        return formatWithYellowBk(strEsc, data);
+    }
+
+    private String formatWithYellowBk (String strToSearch, String line) {
+        StringBuilder sb = new StringBuilder();
+        String dt = isMatchCase() ? line : line.toLowerCase();
+        int idx = 0, oldIdx = 0, sLen = strToSearch.length();
+        while (idx != -1) {
+            idx = dt.indexOf(strToSearch, idx);
+            if (idx != -1) {
+                if (checkForWholeWord(strToSearch, line, idx)) {
+                    int xlen = idx + sLen;
+                    sb.append(line, oldIdx, idx)
+                            .append(Y_BG_FONT_PREFIX)
+                            .append(line, idx, xlen)
+                            .append(FONT_SUFFIX);
+                    oldIdx = xlen;
+                }
+                idx = idx + sLen;
+            }
+        }
+        sb.append(line, oldIdx, line.length());
         return sb.toString();
     }
 
