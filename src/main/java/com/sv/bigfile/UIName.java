@@ -17,7 +17,7 @@ public enum UIName {
     BTN_GOBOTTOM("↓", '2', "Go to last line."),
     BTN_PREOCCR("<", ',', "Previous occurrence."),
     BTN_NEXTOCCR(">", '.', "Next occurrence."),
-    BTN_FIND("¤", 'z', "Set new word from Search box to see occurrences."),
+    BTN_FIND("¤", 'z', "Set new word from Search box to see occurrences without highlighting."),
     BTN_HELP("?", '/', "Application help."),
     JCB_MATCHCASE("Aa", 'a', "Match case."),
     JCB_WHOLEWORD("W", 'w', "Whole word."),

@@ -100,6 +100,7 @@ public class SearchBigFile extends AppFrame {
     private static int fontIdx = 0;
 
     private final int USE_BR_INMB_DEFAULT = 100;
+    private final int EXCERPT_LIMIT = 80;
     private int useBRFileSizeInMB;
     private boolean debugAllowed;
     private String searchStr, searchStrEsc, searchStrReplace, operation;
@@ -441,24 +442,32 @@ public class SearchBigFile extends AppFrame {
         debug("Creating offset rows " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
-            modelAllOccr.addRow(new String[]{(i + 1) + "", formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i)))});
+            modelAllOccr.addRow(new String[]{(i + 1) + "",
+                    formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
         }
     }
 
     public String formatValueAsHtml(String val) {
-        return HTML_STR + formatWithYellowBk(processPattern(), val) + HTML_END;
+        return HTML_STR + ELLIPSIS + formatWithYellowBk(processPattern(), htmlEsc(val)) + ELLIPSIS + HTML_END;
     }
 
-    private String getOccrExcerpt(String htmlDocText, Integer idx) {
+    private String getOccrExcerpt(String htmlDocText, int idx, int limit) {
+        int halfLimit = limit / 2;
         int searchIdx = idx + getSearchString().length();
         if (idx == 0) {
-            return htmlDocText.substring(0, 40);
-        } else if (idx > 20 && htmlDocText.length() > searchIdx + 20) {
-            return htmlDocText.substring(idx - 20, searchIdx + 20);
-        } else if (htmlDocText.length() < searchIdx + 20) {
-            return htmlDocText.substring(idx - 40, searchIdx);
+            return htmlDocText.substring(0, limit);
+        } else if (idx > halfLimit && htmlDocText.length() > searchIdx + halfLimit) {
+            return htmlDocText.substring(idx - halfLimit, searchIdx + halfLimit);
+        } else if (htmlDocText.length() < searchIdx + halfLimit) {
+            return htmlDocText.substring(idx - limit, searchIdx);
         }
-        return htmlDocText.substring(idx, searchIdx);
+
+        if (limit <= getSearchString().length() * 2) {
+            return htmlDocText.substring(idx, searchIdx);
+        }
+
+        // give it a try with reduce limit using recurssion
+        return getOccrExcerpt(htmlDocText, idx, halfLimit);
     }
 
     private void showAllOccr() {
@@ -1060,7 +1069,13 @@ public class SearchBigFile extends AppFrame {
         if (!isMatchCase()) {
             data = replaceWithSameCase(data);
         } else {
-            data = data.replaceAll(searchStr, searchStrReplace);
+            if (isMatchCase() && !isWholeWord()) {
+                data = data.replaceAll(searchStr, searchStrReplace);
+            } else {
+                if (isWholeWord()) {
+                    data = replaceWithSameCase(data);
+                }
+            }
         }
 
         appendResultNoFormat(data);
@@ -1076,30 +1091,10 @@ public class SearchBigFile extends AppFrame {
     private String replaceWithSameCase(String data) {
         // Putting yellow background after escaping
         String strEsc = isMatchCase() ? searchStrEsc : searchStrEsc.toLowerCase();
-        /*int sLen = strEsc.length();
-        StringBuilder sb = new StringBuilder();
-        String dt = isMatchCase() ? data : data.toLowerCase();
-        int idx = 0, oldIdx = 0;
-        while (idx != -1) {
-            idx = dt.indexOf(strEsc, idx);
-            if (idx != -1) {
-                if (checkForWholeWord(strEsc, data, idx)) {
-                    int xlen = idx + sLen;
-                    sb.append(data, oldIdx, idx)
-                            .append(Y_BG_FONT_PREFIX)
-                            .append(data, idx, xlen)
-                            .append(FONT_SUFFIX);
-                    oldIdx = xlen;
-                }
-                idx = idx + sLen;
-            }
-        }
-        sb.append(data, oldIdx, data.length());
-        return sb.toString();*/
         return formatWithYellowBk(strEsc, data);
     }
 
-    private String formatWithYellowBk (String strToSearch, String line) {
+    private String formatWithYellowBk(String strToSearch, String line) {
         StringBuilder sb = new StringBuilder();
         String dt = isMatchCase() ? line : line.toLowerCase();
         int idx = 0, oldIdx = 0, sLen = strToSearch.length();
@@ -1358,9 +1353,12 @@ public class SearchBigFile extends AppFrame {
 
         int searchLen = strToSearch.length();
         int lineLen = line.length();
-        /*debug("strToSearch " + Utils.addBraces(strToSearch) + ", line = " + Utils.addBraces(line) + ", idx = " + Utils.addBraces(idx) +
-                ", lineLen = " + lineLen + ", searchLen = " + searchLen);*/
         // starts with case
+        debug("strToSearch " + Utils.addBraces(strToSearch)
+                //+ ", line " + Utils.addBraces(line)
+                + ", idx " + Utils.addBraces(idx)
+                + ", lineLen " + Utils.addBraces(lineLen)
+                + ", searchLen " + Utils.addBraces(searchLen));
         if (idx == 0) {
             if (lineLen == idx + searchLen) {
                 return true;
