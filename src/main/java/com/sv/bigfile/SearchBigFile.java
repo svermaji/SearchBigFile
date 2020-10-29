@@ -445,7 +445,7 @@ public class SearchBigFile extends AppFrame {
             throw new AppException("Unable to create offset rows");
         }
         int sz = lineOffsets.size();
-        debug("Creating offset rows " + Utils.applyBraces(sz));
+        debug("Creating offset rows " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
             modelAllOccr.addRow(new String[]{(i + 1) + "", getOccrExcerpt(htmlDocText, lineOffsets.get(i))});
@@ -1338,7 +1338,7 @@ public class SearchBigFile extends AppFrame {
 
         int searchLen = strToSearch.length();
         int lineLen = line.length();
-        /*debug("strToSearch " + Utils.applyBraces(strToSearch) + ", line = " + Utils.applyBraces(line) + ", idx = " + Utils.applyBraces(idx) +
+        /*debug("strToSearch " + Utils.addBraces(strToSearch) + ", line = " + Utils.addBraces(line) + ", idx = " + Utils.addBraces(idx) +
                 ", lineLen = " + lineLen + ", searchLen = " + searchLen);*/
         // starts with case
         if (idx == 0) {
@@ -1463,7 +1463,7 @@ public class SearchBigFile extends AppFrame {
 
             readNFlag = true;
             updateTitle("Reading last " + LIMIT + " lines");
-            logger.log("Loading last [" + LIMIT + "] lines from [" + fn + "] with read flag as " + Utils.applyBraces(readNFlag));
+            logger.log("Loading last [" + LIMIT + "] lines from [" + fn + "] with read flag as " + Utils.addBraces(readNFlag));
             // FIFO
             stack.removeAllElements();
 
