@@ -1322,7 +1322,7 @@ public class SearchBigFile extends AppFrame {
                     htmlDocText = htmlDocText.toLowerCase();
                 }
                 log("For offsets document length calculated as " + htmlDocText.length());
-                debug(htmlDocText);
+                //debug(htmlDocText);
 
                 int idx = 0;
                 while (idx != -1) {
@@ -1354,11 +1354,11 @@ public class SearchBigFile extends AppFrame {
         int searchLen = strToSearch.length();
         int lineLen = line.length();
         // starts with case
-        debug("strToSearch " + Utils.addBraces(strToSearch)
+        /*debug("strToSearch " + Utils.addBraces(strToSearch)
                 //+ ", line " + Utils.addBraces(line)
                 + ", idx " + Utils.addBraces(idx)
                 + ", lineLen " + Utils.addBraces(lineLen)
-                + ", searchLen " + Utils.addBraces(searchLen));
+                + ", searchLen " + Utils.addBraces(searchLen));*/
         if (idx == 0) {
             if (lineLen == idx + searchLen) {
                 return true;
