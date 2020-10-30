@@ -52,7 +52,7 @@ public class SearchBigFile extends AppFrame {
      */
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches,
-        LastN, FontSize, MatchCase, WholeWord, DebugEnabled, UseBRFileSizeInMB
+        LastN, FontSize, MatchCase, WholeWord, DebugEnabled
     }
 
     enum Status {
@@ -99,9 +99,7 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
     private static int fontIdx = 0;
 
-    private final int USE_BR_INMB_DEFAULT = 100;
     private final int EXCERPT_LIMIT = 80;
-    private int useBRFileSizeInMB;
     private boolean debugAllowed;
     private String searchStr, searchStrEsc, searchStrReplace, operation;
     private String recentFilesStr, recentSearchesStr;
@@ -137,10 +135,6 @@ public class SearchBigFile extends AppFrame {
         logger = MyLogger.createLogger(getClass());
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         debugAllowed = getBooleanCfg(Configs.DebugEnabled);
-        useBRFileSizeInMB = getIntCfg(Configs.UseBRFileSizeInMB);
-        if (useBRFileSizeInMB < 0) {
-            useBRFileSizeInMB = USE_BR_INMB_DEFAULT;
-        }
         logger.setDebug(debugAllowed);
         printConfigs();
         qMsgsToAppend = new LinkedBlockingQueue<>();
@@ -495,10 +489,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void printConfigs() {
-        log("Debug enabled [" + logger.isDebug()
-                + "], useBRFileSizeInMB [" + useBRFileSizeInMB
-                + "]"
-        );
+        log("Debug enabled " + Utils.addBraces(logger.isDebug()));
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF) {
@@ -1165,10 +1156,6 @@ public class SearchBigFile extends AppFrame {
 
     public String getDebugEnabled() {
         return debugAllowed + "";
-    }
-
-    public String getUseBRFileSizeInMB() {
-        return useBRFileSizeInMB + "";
     }
 
     public void showMsgAsInfo(String msg) {
