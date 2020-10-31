@@ -441,7 +441,7 @@ public class SearchBigFile extends AppFrame {
             throw new AppException("Unable to create offset rows");
         }
         int sz = lineOffsets.size();
-        debug("Creating offset rows " + Utils.addBraces(sz));
+        debug("Creating rows for occurrences " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
             modelAllOccr.addRow(new String[]{(i + 1) + "",
@@ -602,7 +602,7 @@ public class SearchBigFile extends AppFrame {
     private void gotoOccr(int idx) {
 
         debug("Going to occurrence with index " + idx);
-        if (lineOffsets.size() == 0) {
+        if (offsetsNeedUpdate()) {
             updateOffsets();
         }
 
@@ -613,6 +613,10 @@ public class SearchBigFile extends AppFrame {
         } else {
             showMsg("No occurrences of [" + searchStr + "] to show", MsgType.WARN);
         }
+    }
+
+    private boolean offsetsNeedUpdate() {
+        return lineOffsets.size() == 0 || lineOffsets.size() != occrTillNow;
     }
 
     private void openFile() {
@@ -1207,8 +1211,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     public String getProblemMsg() {
-        debug("getProblem: timeTillNow = " + timeTillNow + ", occrTillNow = " + occrTillNow);
-
         StringBuilder sb = new StringBuilder();
         if (timeTillNow > WARN_LIMIT_SEC) {
             sb.append("Warning: Time [").append(timeTillNow).append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
@@ -1226,9 +1228,9 @@ public class SearchBigFile extends AppFrame {
 
         if (Utils.hasValue(sbErr.toString())) {
             sb = sbErr;
+            debug("Problem found - " + sb.toString());
         }
 
-        debug("Returning problem as " + sb.toString());
         return sb.toString();
     }
 
@@ -1325,7 +1327,8 @@ public class SearchBigFile extends AppFrame {
     private void updateOffsets() {
         debug("Offsets size " + lineOffsets.size());
         timeTillNow = 0;
-        if (lineOffsets.size() == 0) {
+        if (offsetsNeedUpdate()) {
+            lineOffsets.clear();
             try {
                 String strToSearch = processPattern();
                 int strToSearchLen = strToSearch.length();
@@ -1335,7 +1338,7 @@ public class SearchBigFile extends AppFrame {
                 if (!isMatchCase()) {
                     htmlDocText = htmlDocText.toLowerCase();
                 }
-                log("For offsets document length calculated as " + htmlDocText.length());
+                log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
                 //debug(htmlDocText);
 
                 int idx = 0;
@@ -1351,11 +1354,12 @@ public class SearchBigFile extends AppFrame {
                     }
                 }
                 createAllOccrRows();
-                log("Total occurrences offsets are " + lineOffsets.size());
                 debug("All offsets are " + lineOffsets);
             } catch (BadLocationException e) {
                 logger.error("Unable to get document text");
             }
+        } else {
+            debug("No need to update offsets");
         }
     }
 
