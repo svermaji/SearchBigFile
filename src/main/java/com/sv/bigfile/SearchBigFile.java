@@ -508,9 +508,11 @@ public class SearchBigFile extends AppFrame {
             char ch = (char) i;
             JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + a);
 //            mi.setAccelerator(KeyStroke.getKeyStroke((char) i++));
-            mi.setMnemonic(i++);
             mi.addActionListener(e -> txtF.setText(a));
-            addActionOnMenu(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
+            if (i <= 'z') {
+                mi.setMnemonic(i++);
+                addActionOnMenu(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
+            }
             m.add(mi);
         }
     }
