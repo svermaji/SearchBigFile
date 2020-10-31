@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 31-Oct-2020
+* Added shortcuts to recent list of files/searches. 
+
 #### On 29-Oct-2020
 * Added all occurrences table to search occurrences quicker with highlighted text. 
 

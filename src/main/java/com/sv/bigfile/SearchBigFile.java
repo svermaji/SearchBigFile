@@ -89,7 +89,10 @@ public class SearchBigFile extends AppFrame {
 
     private final Color[] HELP_COLORS = {
             Color.WHITE, Color.PINK, Color.GREEN,
-            Color.YELLOW, Color.ORANGE, Color.CYAN
+            Color.YELLOW, Color.ORANGE,
+            new Color(217, 248, 228),
+            new Color(192, 218, 255),
+            Color.LIGHT_GRAY, Color.MAGENTA, Color.CYAN
     };
 
     private static boolean showWarning = false;
@@ -99,6 +102,8 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
     private static int fontIdx = 0;
 
+    private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
+    private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
     private boolean debugAllowed;
     private String searchStr, searchStrEsc, searchStrReplace, operation;
@@ -184,7 +189,7 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.setMnemonic(uin.mnemonic);
         menuRFiles.setToolTipText(uin.tip);
         mb.add(menuRFiles);
-        updateRecentMenu(menuRFiles, getFiles(), txtFilePath);
+        updateRecentMenu(menuRFiles, getFiles(), txtFilePath, TXT_F_MAP_KEY);
 
         filePanel.add(jtbFile);
         filePanel.add(btnListRF);
@@ -244,7 +249,7 @@ public class SearchBigFile extends AppFrame {
         menuRSearches.setMnemonic(uin.mnemonic);
         menuRSearches.setToolTipText(uin.tip);
         mbar.add(menuRSearches);
-        updateRecentMenu(menuRSearches, getSearches(), txtSearch);
+        updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
 
         uin = UIName.BTN_CANCEL;
         btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
@@ -395,6 +400,9 @@ public class SearchBigFile extends AppFrame {
 
         setToCenter();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+        menuRFiles.grabFocus();
+        menuRFiles.requestFocus();
     }
 
     public void dblClickOffset(AppTable table, Object[] params) {
@@ -426,7 +434,7 @@ public class SearchBigFile extends AppFrame {
     private void createAllOccrRows() {
         // removing previous rows
         modelAllOccr.setRowCount(0);
-        String htmlDocText = "";
+        String htmlDocText;
         try {
             htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
         } catch (BadLocationException e) {
@@ -492,13 +500,26 @@ public class SearchBigFile extends AppFrame {
         log("Debug enabled " + Utils.addBraces(logger.isDebug()));
     }
 
-    private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF) {
+    private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
         m.removeAll();
+
+        int i = 'a';
         for (String a : arr) {
-            JMenuItem mi = new JMenuItem(a);
-            mi.addActionListener(e -> txtF.setText(e.getActionCommand()));
+            char ch = (char) i;
+            JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + a);
+//            mi.setAccelerator(KeyStroke.getKeyStroke((char) i++));
+            mi.setMnemonic(i++);
+            mi.addActionListener(e -> txtF.setText(a));
+            addActionOnMenu(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
             m.add(mi);
         }
+    }
+
+    private void addActionOnMenu(AbstractAction action, JMenuItem mi, char keycode, String mapKey) {
+        InputMap im = mi.getInputMap();
+        im.put(KeyStroke.getKeyStroke(keycode, 0), mapKey);
+        ActionMap am = mi.getActionMap();
+        am.put(mapKey, action);
     }
 
     private void showHelp() {
@@ -941,9 +962,9 @@ public class SearchBigFile extends AppFrame {
         recentSearchesStr = checkItems(getSearchString(), recentSearchesStr);
 
         String[] arrF = recentFilesStr.split(SEMI_COLON);
-        updateRecentMenu(menuRFiles, arrF, txtFilePath);
+        updateRecentMenu(menuRFiles, arrF, txtFilePath, TXT_F_MAP_KEY);
         String[] arrS = recentSearchesStr.split(SEMI_COLON);
-        updateRecentMenu(menuRSearches, arrS, txtSearch);
+        updateRecentMenu(menuRSearches, arrS, txtSearch, TXT_S_MAP_KEY);
 
         // Updating auto-complete action
         txtFilePath.setAutoCompleteArr(arrF);
@@ -1016,6 +1037,10 @@ public class SearchBigFile extends AppFrame {
                 }
             } catch (BadLocationException | IOException e) {
                 logger.error("Unable to append data: " + data);
+            }
+
+            if (readCounter == insertCounter) {
+                updateOffsets();
             }
         }
     }
