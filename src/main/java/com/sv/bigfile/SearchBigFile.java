@@ -1448,6 +1448,10 @@ public class SearchBigFile extends AppFrame {
         return status == Status.CANCELLED;
     }
 
+    public boolean isReading() {
+        return status == Status.READING;
+    }
+
     public MsgType getMsgType() {
         if (isErrorState()) {
             return MsgType.ERROR;
