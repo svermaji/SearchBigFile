@@ -457,6 +457,7 @@ public class SearchBigFile extends AppFrame {
     private String getOccrExcerpt(String htmlDocText, int idx, int limit) {
         int halfLimit = limit / 2;
 
+        // below commented lines will select all then occurrences in an excerpt
         /*int searchIdx = idx + getSearchString().length();
         if (idx == 0) {
             return htmlDocText.substring(0, limit);
@@ -470,6 +471,7 @@ public class SearchBigFile extends AppFrame {
             return htmlDocText.substring(idx, searchIdx);
         }*/
 
+        // below lines will select offset occurrence only in an excerpt
         int searchLen = getSearchString().length();
         int searchIdx = idx + searchLen;
         String str;
@@ -1347,9 +1349,9 @@ public class SearchBigFile extends AppFrame {
     public void finishAction() {
         log("Performing finish action");
         printCounters();
-        if (showWarning) {
+        /*if (showWarning && !isErrorState()) {
             SwingUtilities.invokeLater(new StartWarnIndicator(this));
-        }
+        }*/
         goToEnd(false);
         logger.debug("Timer: thread pool status " + threadPool.toString());
         // requesting to free used memory
@@ -1376,14 +1378,17 @@ public class SearchBigFile extends AppFrame {
 
                 int idx = 0;
                 while (idx != -1) {
+                    // Let create offsets for all occurrences even if
+                    // those are slightly higher then error due to in-line processing
+                    // This is because count will be mismatched if break is applied
+                    /*occrTillNow = lineOffsets.size();
+                    if (occrTillNow > ERROR_LIMIT_OCCR) {
+                        break;
+                    }*/
                     idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
                     globalCharIdx = idx + strToSearchLen;
                     if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
                         lineOffsets.add(idx);
-                    }
-                    occrTillNow = lineOffsets.size();
-                    if (occrTillNow > ERROR_LIMIT_OCCR) {
-                        break;
                     }
                 }
                 createAllOccrRows();
@@ -1511,6 +1516,13 @@ public class SearchBigFile extends AppFrame {
         return str + BR;
     }
 
+    private MsgType getMsgTypeForOpr() {
+        if (isErrorState()) {
+            return MsgType.ERROR;
+        }
+        return isWarningState() ? MsgType.WARN : MsgType.INFO;
+    }
+
     /*   Inner classes    */
     class LastNRead implements Callable<Boolean> {
 
@@ -1586,6 +1598,7 @@ public class SearchBigFile extends AppFrame {
             }
 
             occr += calculateOccr(sb.toString(), searchPattern);
+            occrTillNow = occr;
             if (!hasError) {
                 String result = getSearchResult(
                         fn,
@@ -1593,7 +1606,7 @@ public class SearchBigFile extends AppFrame {
                         readLines,
                         occr);
                 String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
-                updateTitleAndMsg(statusStr + result, MsgType.INFO);
+                updateTitleAndMsg(statusStr + result, getMsgTypeForOpr());
             }
             status = Status.DONE;
 
@@ -1687,7 +1700,7 @@ public class SearchBigFile extends AppFrame {
                     timeElapse = Utils.getTimeDiffSec(startTime);
                     timeTillNow = timeElapse;
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
-                    if (showWarning || isWarningState()) {
+                    if ((showWarning || isWarningState())) {
                         msg += sbf.getProblemMsg();
                         sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
@@ -1696,7 +1709,9 @@ public class SearchBigFile extends AppFrame {
                         sbf.logger.warn("Stopping forcefully.");
                         cancelSearch();
                     }
-                    sbf.updateTitle(msg);
+                    if (status == Status.READING) {
+                        sbf.updateTitle(msg);
+                    }
                     logger.debug("Timer callable sleeping now for a second");
                     Utils.sleep(1000, sbf.logger);
                 }
@@ -1819,7 +1834,7 @@ public class SearchBigFile extends AppFrame {
                     String msg = "--- Search complete ---";
                     qMsgsToAppend.add(addLineEnd(msg));
                     startThread(msgCallable);
-                    sbf.updateTitleAndMsg("Search complete - " + result, MsgType.INFO);
+                    sbf.updateTitleAndMsg("Search complete - " + result, getMsgTypeForOpr());
                 }
                 status = Status.DONE;
             } catch (IOException e) {
