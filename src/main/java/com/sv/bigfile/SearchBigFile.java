@@ -413,7 +413,7 @@ public class SearchBigFile extends AppFrame {
 
     private AppTable createAllOccrTable() {
         modelAllOccr = SwingUtils.getTableModel(
-                new String[]{"#", "All occurrences"});
+                new String[]{"#", "All occurrences (Show/Hide this panel using Alt+" + (Character.toString(((char) btnShowAll.getMnemonic())).toLowerCase()) + ")"});
         tblAllOccr = new AppTable(modelAllOccr);
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
         tblAllOccr.getColumnModel().getColumn(0).setMaxWidth(100);
@@ -450,12 +450,14 @@ public class SearchBigFile extends AppFrame {
     }
 
     public String formatValueAsHtml(String val) {
-        return HTML_STR + ELLIPSIS + formatWithYellowBk(processPattern(), htmlEsc(val)) + ELLIPSIS + HTML_END;
+        //return HTML_STR + ELLIPSIS + formatWithYellowBk(processPattern(), htmlEsc(val)) + ELLIPSIS + HTML_END;
+        return HTML_STR + ELLIPSIS + val + ELLIPSIS + HTML_END;
     }
 
     private String getOccrExcerpt(String htmlDocText, int idx, int limit) {
         int halfLimit = limit / 2;
-        int searchIdx = idx + getSearchString().length();
+
+        /*int searchIdx = idx + getSearchString().length();
         if (idx == 0) {
             return htmlDocText.substring(0, limit);
         } else if (idx > halfLimit && htmlDocText.length() > searchIdx + halfLimit) {
@@ -466,6 +468,37 @@ public class SearchBigFile extends AppFrame {
 
         if (limit <= getSearchString().length() * 2) {
             return htmlDocText.substring(idx, searchIdx);
+        }*/
+
+        int searchLen = getSearchString().length();
+        int searchIdx = idx + searchLen;
+        String str;
+        if (idx == 0) {
+            str = htmlDocText.substring(0, limit);
+            return Y_BG_FONT_PREFIX
+                    + htmlEsc(str.substring(0, searchLen))
+                    + FONT_SUFFIX
+                    + htmlEsc(str.substring(searchLen));
+        } else if (idx > halfLimit && htmlDocText.length() > searchIdx + halfLimit) {
+            str = htmlDocText.substring(idx - halfLimit, searchIdx + halfLimit);
+            return htmlEsc(str.substring(0, halfLimit))
+                    + Y_BG_FONT_PREFIX
+                    + htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
+                    + FONT_SUFFIX
+                    + htmlEsc(str.substring(halfLimit + searchLen));
+        } else if (htmlDocText.length() < searchIdx + halfLimit) {
+            str = htmlDocText.substring(idx - limit, searchIdx);
+            return htmlEsc(str.substring(0, limit))
+                    + Y_BG_FONT_PREFIX
+                    + htmlEsc(str.substring(limit, limit + searchLen))
+                    + FONT_SUFFIX
+                    + htmlEsc(str.substring(limit + searchLen));
+        }
+
+        if (limit <= getSearchString().length() * 2) {
+            return Y_BG_FONT_PREFIX
+                    + htmlDocText.substring(idx, searchIdx)
+                    + FONT_SUFFIX;
         }
 
         // give it a try with reduce limit using recurssion
