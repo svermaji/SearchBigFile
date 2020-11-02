@@ -375,6 +375,13 @@ public class SearchBigFile extends AppFrame {
         jspAllOccr = new JScrollPane(createAllOccrTable());
         jspAllOccr.setPreferredSize(new Dimension(100, 150));
         bottomPanel.add(jspAllOccr, BorderLayout.SOUTH);
+
+        // TODO: Spilt pane
+        /*JSplitPane jSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                tabbedPane, jspAllOccr);
+        jSplitPane.setOneTouchExpandable(true);
+        jSplitPane.setDividerLocation(150);*/
+
         parentContainer.add(bottomPanel, BorderLayout.CENTER);
 
         btnExit.addActionListener(evt -> exitForm());
@@ -435,7 +442,7 @@ public class SearchBigFile extends AppFrame {
     private void createAllOccrRows() {
         int sz = lineOffsets.size();
         TableColumn col0 = tblAllOccr.getColumnModel().getColumn(0);
-        col0.setHeaderValue("# " + Utils.addBraces(sz + " Rows"));
+        col0.setHeaderValue("# " + Utils.addBraces(sz+" row(s)"));
 
         // removing previous rows
         modelAllOccr.setRowCount(0);
@@ -1093,6 +1100,8 @@ public class SearchBigFile extends AppFrame {
             }
 
             if (readCounter == insertCounter) {
+                // clearing so if text without occurrence appended offset will change
+                lineOffsets.clear();
                 updateOffsets();
             }
         }
