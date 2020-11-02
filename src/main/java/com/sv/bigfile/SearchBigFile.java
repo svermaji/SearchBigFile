@@ -436,14 +436,6 @@ public class SearchBigFile extends AppFrame {
         int sz = lineOffsets.size();
         TableColumn col0 = tblAllOccr.getColumnModel().getColumn(0);
         col0.setHeaderValue("# " + Utils.addBraces(sz + " Rows"));
-        // TODO: column name refresh
-        /*int w = (int) (Math.random() * 20) + 100;
-        System.out.println("w = " + w);
-        System.out.println("sz = " + sz);
-        col0.setMaxWidth(w);
-        col0.setMinWidth(w);
-        tblAllOccr.revalidate();
-        tblAllOccr.repaint();*/
 
         // removing previous rows
         modelAllOccr.setRowCount(0);
@@ -460,6 +452,9 @@ public class SearchBigFile extends AppFrame {
             modelAllOccr.addRow(new String[]{(i + 1) + "",
                     formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
         }
+
+        // refresh column name change with result count
+        refreshBottomPanel();
     }
 
     public String formatValueAsHtml(String val) {
@@ -522,6 +517,10 @@ public class SearchBigFile extends AppFrame {
 
     private void showAllOccr() {
         jspAllOccr.setVisible(!jspAllOccr.isVisible());
+        refreshBottomPanel();
+    }
+
+    private void refreshBottomPanel() {
         bottomPanel.revalidate();
         bottomPanel.repaint();
     }
