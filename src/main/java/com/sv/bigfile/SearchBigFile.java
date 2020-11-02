@@ -413,7 +413,7 @@ public class SearchBigFile extends AppFrame {
 
     private AppTable createAllOccrTable() {
         modelAllOccr = SwingUtils.getTableModel(
-                new String[]{"#", "All occurrences (Show/Hide this panel using Alt+" + (Character.toString(((char) btnShowAll.getMnemonic())).toLowerCase()) + ")"});
+                new String[]{"#", "All occurrences - Double click or Enter (Show/Hide this panel using Alt+" + (Character.toString(((char) btnShowAll.getMnemonic())).toLowerCase()) + ")"});
         tblAllOccr = new AppTable(modelAllOccr);
         tblAllOccr.addEnterOnRow(new AllOccrEnterAction(tblAllOccr, this));
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
