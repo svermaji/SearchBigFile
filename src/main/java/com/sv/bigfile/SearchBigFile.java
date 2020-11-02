@@ -415,6 +415,7 @@ public class SearchBigFile extends AppFrame {
         modelAllOccr = SwingUtils.getTableModel(
                 new String[]{"#", "All occurrences (Show/Hide this panel using Alt+" + (Character.toString(((char) btnShowAll.getMnemonic())).toLowerCase()) + ")"});
         tblAllOccr = new AppTable(modelAllOccr);
+        tblAllOccr.addEnterOnRow(new AllOccrEnterAction(tblAllOccr, this));
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
         tblAllOccr.getColumnModel().getColumn(0).setMaxWidth(100);
         tblAllOccr.getColumnModel().getColumn(0).setMinWidth(100);
@@ -432,15 +433,27 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void createAllOccrRows() {
+        int sz = lineOffsets.size();
+        TableColumn col0 = tblAllOccr.getColumnModel().getColumn(0);
+        col0.setHeaderValue("# " + Utils.addBraces(sz + " Rows"));
+        // TODO: column name refresh
+        /*int w = (int) (Math.random() * 20) + 100;
+        System.out.println("w = " + w);
+        System.out.println("sz = " + sz);
+        col0.setMaxWidth(w);
+        col0.setMinWidth(w);
+        tblAllOccr.revalidate();
+        tblAllOccr.repaint();*/
+
         // removing previous rows
         modelAllOccr.setRowCount(0);
+
         String htmlDocText;
         try {
             htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
         } catch (BadLocationException e) {
             throw new AppException("Unable to create offset rows");
         }
-        int sz = lineOffsets.size();
         debug("Creating rows for occurrences " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
