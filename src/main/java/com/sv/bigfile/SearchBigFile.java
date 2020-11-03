@@ -453,7 +453,7 @@ public class SearchBigFile extends AppFrame {
         } catch (BadLocationException e) {
             throw new AppException("Unable to create offset rows");
         }
-        debug("Creating rows for occurrences " + Utils.addBraces(sz));
+        debug("Total offsets " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
             modelAllOccr.addRow(new String[]{(i + 1) + "",
