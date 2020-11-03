@@ -112,5 +112,5 @@ Added on 26-Oct-2020. Attaching screen shot of application. New button to change
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-case.png) 
 
 Added on 27-Oct-2020. Attaching screen shot of application. Added all occurrences table to search occurrences quicker:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-all-occr.png) 
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-all-occrs.png) 
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-no-occr.png) 
