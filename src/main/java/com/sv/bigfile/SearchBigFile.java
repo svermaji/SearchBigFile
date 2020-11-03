@@ -460,6 +460,11 @@ public class SearchBigFile extends AppFrame {
                     formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
         }
 
+        if (sz > 0) {
+            // select first row
+            tblAllOccr.changeSelection(0, 0, false, false);
+        }
+
         // refresh column name change with result count
         refreshBottomPanel();
     }
@@ -1413,7 +1418,7 @@ public class SearchBigFile extends AppFrame {
                     }
                 }
                 createAllOccrRows();
-                debug("All offsets are " + lineOffsets);
+                //debug("All offsets are " + lineOffsets);
             } catch (BadLocationException e) {
                 logger.error("Unable to get document text");
             }
