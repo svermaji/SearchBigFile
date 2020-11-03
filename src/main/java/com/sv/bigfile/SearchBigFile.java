@@ -3,7 +3,6 @@ package com.sv.bigfile;
 import com.sv.bigfile.helpers.*;
 import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
-import com.sv.core.exception.AppException;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.swingui.SwingUtils;
@@ -28,7 +27,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.*;
@@ -102,6 +100,8 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
     private static int fontIdx = 0;
 
+    private final String LINE_NUM_PREFIX = "<span style=\"color:blue;\">";
+    private final String LINE_NUM_SUFFIX = "&nbsp;&nbsp;</span>";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
@@ -116,7 +116,8 @@ public class SearchBigFile extends AppFrame {
 
     // indexed structure to maintain line indexing
     private static Map<Long, String> idxMsgsToAppend;
-    private static List<Integer> lineOffsets;
+    //    private static List<Integer> lineOffsets;
+    private static Map<Integer, OffsetInfo> lineOffsets;
     private static int lineOffsetsIdx;
     private static int globalCharIdx;
 
@@ -144,7 +145,8 @@ public class SearchBigFile extends AppFrame {
         printConfigs();
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
-        lineOffsets = new ArrayList<>();
+//        lineOffsets = new ArrayList<>();
+        lineOffsets = new LinkedHashMap<>();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -424,8 +426,8 @@ public class SearchBigFile extends AppFrame {
         tblAllOccr = new AppTable(modelAllOccr);
         tblAllOccr.addEnterOnRow(new AllOccrEnterAction(tblAllOccr, this));
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
-        tblAllOccr.getColumnModel().getColumn(0).setMaxWidth(100);
-        tblAllOccr.getColumnModel().getColumn(0).setMinWidth(100);
+        tblAllOccr.getColumnModel().getColumn(0).setMaxWidth(150);
+        tblAllOccr.getColumnModel().getColumn(0).setMinWidth(150);
         tblAllOccr.getColumnModel().getColumn(0)
                 .setCellRenderer(new CellRendererCenterAlign());
 
@@ -442,22 +444,28 @@ public class SearchBigFile extends AppFrame {
     private void createAllOccrRows() {
         int sz = lineOffsets.size();
         TableColumn col0 = tblAllOccr.getColumnModel().getColumn(0);
-        col0.setHeaderValue("# " + Utils.addBraces(sz+" row(s)"));
+        col0.setHeaderValue("# " + Utils.addBraces(sz + " row(s)"));
 
         // removing previous rows
         modelAllOccr.setRowCount(0);
 
-        String htmlDocText;
+        /*String htmlDocText;
         try {
             htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
         } catch (BadLocationException e) {
             throw new AppException("Unable to create offset rows");
-        }
+        }*/
         debug("Creating rows for occurrences " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
-        for (int i = 0; i < sz; i++) {
-            modelAllOccr.addRow(new String[]{(i + 1) + "",
-                    formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
+        /*for (int i = 0; i < sz; i++) {
+            *//*modelAllOccr.addRow(new String[]{(i + 1) + "",
+                    formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i).getOffset(), EXCERPT_LIMIT))});*//*
+        }*/
+
+        for (Map.Entry<Integer, OffsetInfo> entry : lineOffsets.entrySet()) {
+            Integer k = entry.getKey();
+            OffsetInfo v = entry.getValue();
+            modelAllOccr.addRow(new String[]{v.getNum() + "", v.getExcerpt()});
         }
 
         // refresh column name change with result count
@@ -661,7 +669,7 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
-            int ix = lineOffsets.get(idx);
+            int ix = lineOffsets.get(idx).getOffset();
             selectAndGoToIndex(ix, ix + searchStr.length());
             showMsgAsInfo("Going occurrences of [" + searchStr + "] # " + (idx + 1) + "/" + lineOffsets.size());
         } else {
@@ -896,7 +904,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getLineNumStr(long line) {
-        return "<span style=\"color:blue;\">" + line + "&nbsp;&nbsp;</span>";
+        return LINE_NUM_PREFIX + line + LINE_NUM_SUFFIX;
     }
 
     private int calculateOccr(String line, String pattern) {
@@ -1396,8 +1404,10 @@ public class SearchBigFile extends AppFrame {
                 }
                 log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
                 //debug(htmlDocText);
+                debug(epResults.getText());
 
-                int idx = 0;
+                int idx = 0, prevIdx = 0;
+                int num = 0;
                 while (idx != -1) {
                     // Let create offsets for all occurrences even if
                     // those are slightly higher then error due to in-line processing
@@ -1409,8 +1419,12 @@ public class SearchBigFile extends AppFrame {
                     idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
                     globalCharIdx = idx + strToSearchLen;
                     if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
-                        lineOffsets.add(idx);
+                        //lineOffsets.add(idx);
+                        String excerpt = formatValueAsHtml(getOccrExcerpt(htmlDocText, idx, EXCERPT_LIMIT));
+                        int lineNum = extractLineNum(htmlDocText, idx, prevIdx);
+                        lineOffsets.put(num, new OffsetInfo(lineNum, idx, excerpt, ++num));
                     }
+                    prevIdx = idx;
                 }
                 createAllOccrRows();
                 debug("All offsets are " + lineOffsets);
@@ -1420,6 +1434,23 @@ public class SearchBigFile extends AppFrame {
         } else {
             debug("No need to update offsets");
         }
+    }
+
+    private int extractLineNum(String text, int idx, int prevIdx) {
+        String subStr = text.substring(prevIdx, idx);
+        System.out.println("subStr = " + subStr);
+        int bx = subStr.lastIndexOf(LINE_NUM_PREFIX, prevIdx);
+        System.out.println("bx = " + bx);
+        int ex = subStr.indexOf(LINE_NUM_SUFFIX, bx);
+        System.out.println("ex = " + ex);
+        int val = 0;
+        if (bx != -1 && ex != -1) {
+            String intStr = text.substring(bx + LINE_NUM_PREFIX.length(), ex);
+            System.out.println("intStr = " + intStr);
+            debug("intStr==" + intStr);
+            val = Integer.parseInt(intStr);
+        }
+        return val;
     }
 
     // made public for test, will check later
