@@ -15,6 +15,7 @@ public class SearchBigFileTest {
     public void test() {
         testWholeWord();
         testOccrExcerpt();
+        testRegEx();
     }
 
     public void testWholeWord() {
@@ -49,13 +50,14 @@ public class SearchBigFileTest {
                 "(test)",
                 "test)",
                 "(test",
+                " test() ",
                 " test ",
                 ":test;",
                 "this is test; test, test)"
         };
 
         int EXCERPT_LIMIT=80;
-        String s = "test";
+        String s = "test(";
         for (String a : arr) {
             int idx = a.indexOf(s);
             while (idx != -1) {
@@ -65,6 +67,20 @@ public class SearchBigFileTest {
                 idx += s.length();
                 idx = a.indexOf(s, idx);
             }
+        }
+    }
+
+    public void testRegEx() {
+        String[] arr = new String[]{
+                "<font style=\\\"background-color:yellow\\\">this is test( man</font>",
+                "this is test( man",
+                "this is test( test( test)"
+        };
+
+        String f = "test\\(";
+        String r = "sv\\(";
+        for (String a : arr) {
+            System.out.println(a.replaceAll(f, r));
         }
     }
 

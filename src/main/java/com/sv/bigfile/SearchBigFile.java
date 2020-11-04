@@ -92,7 +92,7 @@ public class SearchBigFile extends AppFrame {
             Color.YELLOW, Color.ORANGE,
             new Color(217, 248, 228),
             new Color(192, 218, 255),
-            Color.LIGHT_GRAY, Color.MAGENTA, Color.CYAN
+            Color.CYAN
     };
 
     private static boolean showWarning = false;
@@ -1078,6 +1078,13 @@ public class SearchBigFile extends AppFrame {
         return str.replaceAll(Utils.HtmlEsc.LT.getCh(), Utils.HtmlEsc.LT.getEscStr());
     }
 
+    private String regexEsc(String str) {
+        str = str.replaceAll("\\(", "\\\\(");
+        //str = str.replaceAll("\\.", "\\\\.");
+        //str = str.replaceAll("\\[", "\\\\[");
+        return str;
+    }
+
     private void setSearchStrings() {
         searchStr = getSearchString();
         searchStrEsc = htmlEsc(searchStr);
@@ -1152,7 +1159,7 @@ public class SearchBigFile extends AppFrame {
             data = replaceWithSameCase(data);
         } else {
             if (isMatchCase() && !isWholeWord()) {
-                data = data.replaceAll(searchStr, searchStrReplace);
+                data = data.replaceAll(regexEsc(searchStr), searchStrReplace);
             } else {
                 if (isWholeWord()) {
                     data = replaceWithSameCase(data);
@@ -1315,8 +1322,8 @@ public class SearchBigFile extends AppFrame {
 
     private String getSearchResult(String path, String seconds, long lineNum, long occurrences) {
         String result =
-                String.format("File size: %s, " +
-                                "time taken: %s, lines read: [%s], occurrences: [%s]",
+                String.format("File size %s, " +
+                                "time taken %s, lines read [%s], occurrences [%s]",
                         Utils.getFileSizeString(new File(path).length()),
                         seconds,
                         lineNum,
@@ -1873,7 +1880,6 @@ public class SearchBigFile extends AppFrame {
                 sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
                 status = Status.DONE;
             } finally {
-                logger.debug("Search: Enabling controls.");
                 sbf.enableControls();
             }
 
