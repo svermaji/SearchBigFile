@@ -63,6 +63,10 @@ public class SearchBigFile extends AppFrame {
         INCREASE, DECREASE, RESET
     }
 
+    enum FILE_OPR {
+        SEARCH, READ, FIND
+    }
+
     private MyLogger logger;
     private DefaultConfigs configs;
 
@@ -95,8 +99,9 @@ public class SearchBigFile extends AppFrame {
             Color.CYAN
     };
 
+    private static FILE_OPR operation;
+
     private static boolean showWarning = false;
-    private static boolean readNFlag = false;
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
@@ -106,7 +111,7 @@ public class SearchBigFile extends AppFrame {
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
     private boolean debugAllowed;
-    private String searchStr, searchStrEsc, searchStrReplace, operation;
+    private String searchStr, searchStrEsc, searchStrReplace;
     private String recentFilesStr, recentSearchesStr;
     private long timeTillNow;
     private long occrTillNow;
@@ -442,22 +447,25 @@ public class SearchBigFile extends AppFrame {
     private void createAllOccrRows() {
         int sz = lineOffsets.size();
         TableColumn col0 = tblAllOccr.getColumnModel().getColumn(0);
-        col0.setHeaderValue("# " + Utils.addBraces(sz+" row(s)"));
+        col0.setHeaderValue("# " + Utils.addBraces(sz + " row(s)"));
 
         // removing previous rows
         modelAllOccr.setRowCount(0);
 
-        String htmlDocText;
-        try {
-            htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
-        } catch (BadLocationException e) {
-            throw new AppException("Unable to create offset rows");
-        }
         debug("Total offsets " + Utils.addBraces(sz));
         lblNoRow.setVisible(sz == 0);
-        for (int i = 0; i < sz; i++) {
-            modelAllOccr.addRow(new String[]{(i + 1) + "",
-                    formatValueAsHtml(getOccrExcerpt(getSearchString(), htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
+
+        if (sz > 0) {
+            String htmlDocText;
+            try {
+                htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
+            } catch (BadLocationException e) {
+                throw new AppException("Unable to create offset rows");
+            }
+            for (int i = 0; i < sz; i++) {
+                modelAllOccr.addRow(new String[]{(i + 1) + "",
+                        formatValueAsHtml(getOccrExcerpt(getSearchString(), htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
+            }
         }
 
         if (sz > 0) {
@@ -604,9 +612,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void findWordInResult() {
+        operation = FILE_OPR.FIND;
         if (isValidate()) {
-            resetLineOffsetsIdx();
-            lineOffsets.clear();
+            resetOffsets();
             setSearchStrings();
             updateRecentValues();
             updateOffsets();
@@ -626,8 +634,10 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private void resetLineOffsetsIdx() {
+    private void resetOffsets() {
+        lineOffsets.clear();
         lineOffsetsIdx = -1;
+        createAllOccrRows();
     }
 
     private void nextOccr() {
@@ -880,13 +890,11 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend.clear();
         idxMsgsToAppend.clear();
         globalCharIdx = 0;
-        lineOffsets.clear();
-        resetLineOffsetsIdx();
+        resetOffsets();
         setSearchStrings();
         logger.log(getSearchDetails());
         startTime = System.currentTimeMillis();
         status = Status.READING;
-        readNFlag = false;
     }
 
     private void printMemoryDetails() {
@@ -962,8 +970,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void searchFile() {
+        operation = FILE_OPR.SEARCH;
         if (isValidate()) {
-            operation = "search";
             resetForNewSearch();
             showMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
             status = Status.READING;
@@ -975,8 +983,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void readFile() {
+        operation = FILE_OPR.READ;
         if (isValidate()) {
-            operation = "read";
             resetForNewSearch();
             showMsgAsInfo("Starting [" + operation + "] for file " + getFilePath());
             status = Status.READING;
@@ -1003,11 +1011,13 @@ public class SearchBigFile extends AppFrame {
             updateTitleAndMsg("Validation error - REQUIRED: file to search");
             result = false;
         }
-        if (result && !Utils.hasValue(getSearchString())) {
+
+        if (result && operation != FILE_OPR.READ && !Utils.hasValue(getSearchString())) {
             updateTitleAndMsg("Validation error - REQUIRED: text to search");
             result = false;
         }
-        if (result && getSearchString().length() < SEARCH_STR_LEN_LIMIT) {
+        int len = getSearchString().length();
+        if (result && len != 0 && len < SEARCH_STR_LEN_LIMIT) {
             updateTitleAndMsg("Validation error - LENGTH: text to search should be " + SEARCH_STR_LEN_LIMIT + " or more characters");
             result = false;
         }
@@ -1022,20 +1032,28 @@ public class SearchBigFile extends AppFrame {
     private void updateRecentValues() {
         debug("update recent search values");
 
-        recentFilesStr = checkItems(getFilePath(), recentFilesStr);
-        recentSearchesStr = checkItems(getSearchString(), recentSearchesStr);
+        String s = getFilePath();
+        if (Utils.hasValue(s)) {
+            recentFilesStr = checkItems(s, recentFilesStr);
+            String[] arrF = recentFilesStr.split(SEMI_COLON);
+            updateRecentMenu(menuRFiles, arrF, txtFilePath, TXT_F_MAP_KEY);
+            txtFilePath.setAutoCompleteArr(arrF);
+        }
 
-        String[] arrF = recentFilesStr.split(SEMI_COLON);
-        updateRecentMenu(menuRFiles, arrF, txtFilePath, TXT_F_MAP_KEY);
-        String[] arrS = recentSearchesStr.split(SEMI_COLON);
-        updateRecentMenu(menuRSearches, arrS, txtSearch, TXT_S_MAP_KEY);
-
-        // Updating auto-complete action
-        txtFilePath.setAutoCompleteArr(arrF);
-        txtSearch.setAutoCompleteArr(arrS);
+        s = getSearchString();
+        if (Utils.hasValue(s)) {
+            recentSearchesStr = checkItems(s, recentSearchesStr);
+            String[] arrS = recentSearchesStr.split(SEMI_COLON);
+            updateRecentMenu(menuRSearches, arrS, txtSearch, TXT_S_MAP_KEY);
+            txtSearch.setAutoCompleteArr(arrS);
+        }
     }
 
     private String checkItems(String searchStr, String csv) {
+        if (Utils.hasValue(searchStr)) {
+            return csv;
+        }
+
         String csvLC = csv.toLowerCase();
         String ssLC = searchStr.toLowerCase();
         if (csvLC.contains(ssLC)) {
@@ -1099,7 +1117,7 @@ public class SearchBigFile extends AppFrame {
         synchronized (SearchBigFile.class) {
             // Needs to be sync else line numbers and data will be jumbled
             try {
-                if (readNFlag) {
+                if (isReadOpr()) {
                     Element body = getBodyElement();
                     int offs = Math.max(body.getStartOffset(), 0);
                     kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
@@ -1155,14 +1173,16 @@ public class SearchBigFile extends AppFrame {
 
     public void appendResult(String data) {
 
-        if (!isMatchCase()) {
-            data = replaceWithSameCase(data);
-        } else {
-            if (isMatchCase() && !isWholeWord()) {
-                data = data.replaceAll(regexEsc(searchStr), searchStrReplace);
+        if (!isSearchStrEmpty()) {
+            if (!isMatchCase()) {
+                data = replaceWithSameCase(data);
             } else {
-                if (isWholeWord()) {
-                    data = replaceWithSameCase(data);
+                if (isMatchCase() && !isWholeWord()) {
+                    data = data.replaceAll(regexEsc(searchStr), searchStrReplace);
+                } else {
+                    if (isWholeWord()) {
+                        data = replaceWithSameCase(data);
+                    }
                 }
             }
         }
@@ -1323,7 +1343,8 @@ public class SearchBigFile extends AppFrame {
     private String getSearchResult(String path, String seconds, long lineNum, long occurrences) {
         String result =
                 String.format("File size %s, " +
-                                "time taken %s, lines read [%s], occurrences [%s]",
+                                "time taken %s, lines read [%s]" +
+                                (isSearchStrEmpty() ? "" : ", occurrences [%s]"),
                         Utils.getFileSizeString(new File(path).length()),
                         seconds,
                         lineNum,
@@ -1352,7 +1373,8 @@ public class SearchBigFile extends AppFrame {
         }
         // Go to first
         selectAndGoToIndex(0);
-        resetLineOffsetsIdx();
+        // so next occr can work
+        lineOffsetsIdx = -1;
     }
 
     public void goToEnd() {
@@ -1396,37 +1418,39 @@ public class SearchBigFile extends AppFrame {
         timeTillNow = 0;
         if (offsetsNeedUpdate()) {
             lineOffsets.clear();
-            try {
-                String strToSearch = processPattern();
-                int strToSearchLen = strToSearch.length();
-                debug("Starting search for string [" + strToSearch + "]");
+            if (!isSearchStrEmpty()) {
+                try {
+                    String strToSearch = processPattern();
+                    int strToSearchLen = strToSearch.length();
+                    debug("Starting search for string [" + strToSearch + "]");
 
-                String htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
-                if (!isMatchCase()) {
-                    htmlDocText = htmlDocText.toLowerCase();
-                }
-                log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
-                //debug(htmlDocText);
-
-                int idx = 0;
-                while (idx != -1) {
-                    // Let create offsets for all occurrences even if
-                    // those are slightly higher then error due to in-line processing
-                    // This is because count will be mismatched if break is applied
-                    /*occrTillNow = lineOffsets.size();
-                    if (occrTillNow > ERROR_LIMIT_OCCR) {
-                        break;
-                    }*/
-                    idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
-                    globalCharIdx = idx + strToSearchLen;
-                    if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
-                        lineOffsets.add(idx);
+                    String htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
+                    if (!isMatchCase()) {
+                        htmlDocText = htmlDocText.toLowerCase();
                     }
+                    log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
+                    //debug(htmlDocText);
+
+                    int idx = 0;
+                    while (idx != -1) {
+                        // Let create offsets for all occurrences even if
+                        // those are slightly higher then error due to in-line processing
+                        // This is because count will be mismatched if break is applied
+                        /*occrTillNow = lineOffsets.size();
+                        if (occrTillNow > ERROR_LIMIT_OCCR) {
+                            break;
+                        }*/
+                        idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
+                        globalCharIdx = idx + strToSearchLen;
+                        if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
+                            lineOffsets.add(idx);
+                        }
+                    }
+                    createAllOccrRows();
+                    //debug("All offsets are " + lineOffsets);
+                } catch (BadLocationException e) {
+                    logger.error("Unable to get document text");
                 }
-                createAllOccrRows();
-                //debug("All offsets are " + lineOffsets);
-            } catch (BadLocationException e) {
-                logger.error("Unable to get document text");
             }
         } else {
             debug("No need to update offsets");
@@ -1482,6 +1506,14 @@ public class SearchBigFile extends AppFrame {
 
     public boolean isReading() {
         return status == Status.READING;
+    }
+
+    public boolean isReadOpr() {
+        return operation == FILE_OPR.READ;
+    }
+
+    public boolean isSearchStrEmpty() {
+        return !Utils.hasValue(getSearchString());
     }
 
     public MsgType getMsgType() {
@@ -1578,9 +1610,8 @@ public class SearchBigFile extends AppFrame {
             StringBuilder sb = new StringBuilder();
             File file = new File(fn);
 
-            readNFlag = true;
             updateTitle("Reading last " + LIMIT + " lines");
-            logger.log("Loading last [" + LIMIT + "] lines from [" + fn + "] with read flag as " + Utils.addBraces(readNFlag));
+            logger.log("Loading last [" + LIMIT + "] lines from [" + Utils.addBraces(fn));
             // FIFO
             stack.removeAllElements();
 
@@ -1781,11 +1812,11 @@ public class SearchBigFile extends AppFrame {
                 if (!qMsgsToAppend.isEmpty()) {
                     while (!qMsgsToAppend.isEmpty()) {
                         String m = qMsgsToAppend.poll();
-                        if (readNFlag || Utils.hasValue(m)) {
+                        if (sbf.isReadOpr() || Utils.hasValue(m)) {
                             sb.append(m);
                         }
                     }
-                    if (readNFlag || sb.length() > 0) {
+                    if (sbf.isReadOpr() || sb.length() > 0) {
                         insertCounter++;
                         idxMsgsToAppend.put(insertCounter, sb.toString());
                         SwingUtilities.invokeLater(new AppendData(sbf));
