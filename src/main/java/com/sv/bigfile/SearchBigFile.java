@@ -377,13 +377,7 @@ public class SearchBigFile extends AppFrame {
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
 
         bottomPanel = new JPanel(new BorderLayout());
-        /*bottomPanel.add(tabbedPane, BorderLayout.CENTER);
         jspAllOccr = new JScrollPane(createAllOccrTable());
-        jspAllOccr.setPreferredSize(new Dimension(100, 150));
-        bottomPanel.add(jspAllOccr, BorderLayout.SOUTH);*/
-
-        jspAllOccr = new JScrollPane(createAllOccrTable());
-        // TODO: Spilt pane
         splitAllOccr = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, jspAllOccr);
         splitAllOccr.setOneTouchExpandable(true);
         bottomPanel.add(splitAllOccr, BorderLayout.CENTER);
@@ -422,9 +416,6 @@ public class SearchBigFile extends AppFrame {
         splitAllOccr.setBottomComponent(jspAllOccr);
         splitAllOccr.setDividerLocation(0.70);
         splitAllOccr.revalidate();
-        /*SwingUtilities.invokeLater(() -> {
-            splitAllOccr.setDividerLocation(0.75);
-        });*/
     }
 
     public void dblClickOffset(AppTable table, Object[] params) {
