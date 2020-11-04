@@ -610,6 +610,8 @@ public class SearchBigFile extends AppFrame {
             setSearchStrings();
             updateRecentValues();
             updateOffsets();
+            // Setting here to avoid break and count mismatch during offset processing
+            occrTillNow = lineOffsets.size();
             if (occrTillNow > 0) {
                 if (occrTillNow > ERROR_LIMIT_OCCR) {
                     showMsg(getProblemMsg(), MsgType.ERROR);
