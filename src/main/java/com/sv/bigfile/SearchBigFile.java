@@ -457,7 +457,7 @@ public class SearchBigFile extends AppFrame {
         lblNoRow.setVisible(sz == 0);
         for (int i = 0; i < sz; i++) {
             modelAllOccr.addRow(new String[]{(i + 1) + "",
-                    formatValueAsHtml(getOccrExcerpt(htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
+                    formatValueAsHtml(getOccrExcerpt(getSearchString(), htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
         }
 
         if (sz > 0) {
@@ -474,8 +474,10 @@ public class SearchBigFile extends AppFrame {
         return HTML_STR + ELLIPSIS + val + ELLIPSIS + HTML_END;
     }
 
-    private String getOccrExcerpt(String htmlDocText, int idx, int limit) {
+    // made public for test, will check later
+    public String getOccrExcerpt(String searchStr, String htmlDocText, int idx, int limit) {
         int halfLimit = limit / 2;
+        int htmlDocLen = htmlDocText.length();
 
         // below commented lines will select all then occurrences in an excerpt
         /*int searchIdx = idx + getSearchString().length();
@@ -492,39 +494,34 @@ public class SearchBigFile extends AppFrame {
         }*/
 
         // below lines will select offset occurrence only in an excerpt
-        int searchLen = getSearchString().length();
+        int searchLen = searchStr.length();
         int searchIdx = idx + searchLen;
         String str;
-        if (idx == 0) {
-            str = htmlDocText.substring(0, limit);
-            return Y_BG_FONT_PREFIX
-                    + htmlEsc(str.substring(0, searchLen))
-                    + FONT_SUFFIX
-                    + htmlEsc(str.substring(searchLen));
-        } else if (idx > halfLimit && htmlDocText.length() > searchIdx + halfLimit) {
-            str = htmlDocText.substring(idx - halfLimit, searchIdx + halfLimit);
-            return htmlEsc(str.substring(0, halfLimit))
-                    + Y_BG_FONT_PREFIX
-                    + htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
-                    + FONT_SUFFIX
-                    + htmlEsc(str.substring(halfLimit + searchLen));
-        } else if (htmlDocText.length() < searchIdx + halfLimit) {
-            str = htmlDocText.substring(idx - limit, searchIdx);
-            return htmlEsc(str.substring(0, limit))
-                    + Y_BG_FONT_PREFIX
-                    + htmlEsc(str.substring(limit, limit + searchLen))
-                    + FONT_SUFFIX
-                    + htmlEsc(str.substring(limit + searchLen));
+        if (htmlDocLen > limit) {
+            if (idx == 0) {
+                str = htmlDocText.substring(0, htmlDocLen);
+                return Y_BG_FONT_PREFIX
+                        + htmlEsc(str.substring(0, searchLen))
+                        + FONT_SUFFIX
+                        + htmlEsc(str.substring(searchLen));
+            } else if (idx > halfLimit && htmlDocLen > searchIdx + halfLimit) {
+                str = htmlDocText.substring(idx - halfLimit, searchIdx + halfLimit);
+                return htmlEsc(str.substring(0, halfLimit))
+                        + Y_BG_FONT_PREFIX
+                        + htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
+                        + FONT_SUFFIX
+                        + htmlEsc(str.substring(halfLimit + searchLen));
+            }
+
+            if (limit <= searchLen * 2) {
+                return Y_BG_FONT_PREFIX
+                        + htmlDocText.substring(idx, searchIdx)
+                        + FONT_SUFFIX;
+            }
         }
 
-        if (limit <= getSearchString().length() * 2) {
-            return Y_BG_FONT_PREFIX
-                    + htmlDocText.substring(idx, searchIdx)
-                    + FONT_SUFFIX;
-        }
-
-        // give it a try with reduce limit using recurssion
-        return getOccrExcerpt(htmlDocText, idx, halfLimit);
+        // give it a try with reduce limit using recursion
+        return getOccrExcerpt(searchStr, htmlDocText, idx, halfLimit);
     }
 
     private void showAllOccr() {
