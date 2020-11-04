@@ -70,6 +70,7 @@ public class SearchBigFile extends AppFrame {
     private MyLogger logger;
     private DefaultConfigs configs;
 
+    private JSplitPane splitAllOccr;
     private DefaultTableModel modelAllOccr;
     private JLabel lblNoRow;
     private AppTable tblAllOccr;
@@ -376,16 +377,16 @@ public class SearchBigFile extends AppFrame {
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
 
         bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(tabbedPane, BorderLayout.CENTER);
+        /*bottomPanel.add(tabbedPane, BorderLayout.CENTER);
         jspAllOccr = new JScrollPane(createAllOccrTable());
         jspAllOccr.setPreferredSize(new Dimension(100, 150));
-        bottomPanel.add(jspAllOccr, BorderLayout.SOUTH);
+        bottomPanel.add(jspAllOccr, BorderLayout.SOUTH);*/
 
+        jspAllOccr = new JScrollPane(createAllOccrTable());
         // TODO: Spilt pane
-        /*JSplitPane jSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                tabbedPane, jspAllOccr);
-        jSplitPane.setOneTouchExpandable(true);
-        jSplitPane.setDividerLocation(150);*/
+        splitAllOccr = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, jspAllOccr);
+        splitAllOccr.setOneTouchExpandable(true);
+        bottomPanel.add(splitAllOccr, BorderLayout.CENTER);
 
         parentContainer.add(bottomPanel, BorderLayout.CENTER);
 
@@ -415,6 +416,15 @@ public class SearchBigFile extends AppFrame {
 
         menuRFiles.grabFocus();
         menuRFiles.requestFocus();
+    }
+
+    private void setSplitPaneLoc() {
+        splitAllOccr.setBottomComponent(jspAllOccr);
+        splitAllOccr.setDividerLocation(0.70);
+        splitAllOccr.revalidate();
+        /*SwingUtilities.invokeLater(() -> {
+            splitAllOccr.setDividerLocation(0.75);
+        });*/
     }
 
     public void dblClickOffset(AppTable table, Object[] params) {
@@ -534,12 +544,16 @@ public class SearchBigFile extends AppFrame {
 
     private void showAllOccr() {
         jspAllOccr.setVisible(!jspAllOccr.isVisible());
+        // as per order
+        if (jspAllOccr.isVisible()) {
+            setSplitPaneLoc();
+        }
         refreshBottomPanel();
     }
 
     private void refreshBottomPanel() {
         bottomPanel.revalidate();
-        bottomPanel.repaint();
+        //bottomPanel.repaint();
     }
 
     private void changeCase(CaseType type) {

@@ -21,7 +21,9 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Description
 * Program stores the last searched file and search string. 
 * Added a button to change cases in search box - Upper, Lower, Title and Invert case. 
-* Added all occurrences table to search occurrences quicker with highlighted text.  No occurrences' message also present. 
+* Added all occurrences table to search occurrences quicker with highlighted text.  
+    * No occurrences' message also present. 
+    * All occurrences tab;e is inside split pane to resize it any time. 
 * Tabs present for help and results. 
 * Help button text color changes to 6 different colors every 30sec. 
 * After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 
@@ -114,3 +116,6 @@ Added on 26-Oct-2020. Attaching screen shot of application. New button to change
 Added on 27-Oct-2020. Attaching screen shot of application. Added all occurrences table to search occurrences quicker:<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-all-occrs.png) 
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-no-occr.png) 
+
+Added on 4-Nov-2020. Attaching screen shot of application. Added split pane for all occurrences:<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-split-pane.png) 
