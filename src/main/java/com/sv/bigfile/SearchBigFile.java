@@ -1055,7 +1055,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String checkItems(String searchStr, String csv) {
-        if (Utils.hasValue(searchStr)) {
+        if (!Utils.hasValue(searchStr)) {
             return csv;
         }
 
