@@ -805,11 +805,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showListRF() {
-        showRecentList(menuRFiles, "Recent files", txtFilePath);
+        showRecentList(getFiles(), "Recent files", txtFilePath);
     }
 
     private void showListRS() {
-        showRecentList(menuRSearches, "Recent searches", txtSearch);
+        showRecentList(getSearches(), "Recent searches", txtSearch);
     }
 
     // This will be called by reflection from SwingUI jar
@@ -818,7 +818,7 @@ public class SearchBigFile extends AppFrame {
         ((JFrame) params[1]).setVisible(false);
     }
 
-    private void showRecentList(JMenu src, String colName, JTextField dest) {
+    private void showRecentList(String[] src, String colName, JTextField dest) {
         AppFrame frame = new AppFrame("ESC to Hide");
 
         JTextField txtFilter = new JTextField();
@@ -870,10 +870,8 @@ public class SearchBigFile extends AppFrame {
         table.applyChangeListener(txtFilter);
     }
 
-    private void createRowsForRecentVals(JMenu src, DefaultTableModel model) {
-        int items = src.getItemCount();
-        for (int i = 0; i < items; i++) {
-            String s = src.getItem(i).getText();
+    private void createRowsForRecentVals(String[] src, DefaultTableModel model) {
+        for (String s : src) {
             model.addRow(new String[]{s});
         }
     }

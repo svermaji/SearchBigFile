@@ -16,6 +16,7 @@ public class SearchBigFileTest {
         testWholeWord();
         testOccrExcerpt();
         testRegEx();
+        testSpaceSearch();
     }
 
     public void testWholeWord() {
@@ -80,6 +81,20 @@ public class SearchBigFileTest {
         String f = "test\\(";
         String r = "sv\\(";
         for (String a : arr) {
+            System.out.println(a.replaceAll(f, r));
+        }
+    }
+
+    public void testSpaceSearch() {
+        String[] arr = new String[]{
+                "a  b   c    d",
+                "x   y    z"
+        };
+
+        String f = "    ";
+        String r = "<font style=\"background-color:yellow\">SP</font>";
+        for (String a : arr) {
+            System.out.println(a.indexOf(f));
             System.out.println(a.replaceAll(f, r));
         }
     }
