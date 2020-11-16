@@ -122,8 +122,7 @@ public class SearchBigFile extends AppFrame {
 
     // indexed structure to maintain line indexing
     private static Map<Long, String> idxMsgsToAppend;
-    private static List<Integer> lineOffsets;
-    private static Map<Integer, OffsetInfo> lineOffsetsMap;
+    private static Map<Integer, OffsetInfo> lineOffsets;
     private static int lineOffsetsIdx, lastLineOffsetsIdx = -1;
     private static int globalCharIdx;
 
@@ -151,8 +150,7 @@ public class SearchBigFile extends AppFrame {
         printConfigs();
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
-        lineOffsets = new ArrayList<>();
-        lineOffsetsMap = new HashMap<>();
+        lineOffsets = new HashMap<>();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -457,11 +455,9 @@ public class SearchBigFile extends AppFrame {
 
     private void highlightSearch() {
         highlighter.removeAllHighlights();
-        int searchLen = searchStr.length();
-        int ix = 0;
-        for (int idx : lineOffsets) {
-            int e = idx + searchLen;
-            lineOffsetsMap.put(ix++, new OffsetInfo(highLightInResult(idx, e), idx, e));
+        for (int idx : lineOffsets.keySet()) {
+            OffsetInfo info = lineOffsets.get(idx);
+            info.setObj(highLightInResult(info.getSIdx(), info.getEIdx()));
         }
     }
 
@@ -495,7 +491,7 @@ public class SearchBigFile extends AppFrame {
             }
             for (int i = 0; i < sz; i++) {
                 modelAllOccr.addRow(new String[]{(i + 1) + "",
-                        formatValueAsHtml(getOccrExcerpt(getSearchString(), htmlDocText, lineOffsets.get(i), EXCERPT_LIMIT))});
+                        formatValueAsHtml(getOccrExcerpt(getSearchString(), htmlDocText, lineOffsets.get(i).getSIdx(), EXCERPT_LIMIT))});
             }
         }
 
@@ -513,37 +509,23 @@ public class SearchBigFile extends AppFrame {
     }
 
     // made public for test, will check later
-    public String getOccrExcerpt(String searchStr, String htmlDocText, int idx, int limit) {
+    public String getOccrExcerpt(String searchStr, String htmlDocText, int sIdx, int limit) {
         int halfLimit = limit / 2;
         int htmlDocLen = htmlDocText.length();
 
-        // below commented lines will select all then occurrences in an excerpt
-        /*int searchIdx = idx + getSearchString().length();
-        if (idx == 0) {
-            return htmlDocText.substring(0, limit);
-        } else if (idx > halfLimit && htmlDocText.length() > searchIdx + halfLimit) {
-            return htmlDocText.substring(idx - halfLimit, searchIdx + halfLimit);
-        } else if (htmlDocText.length() < searchIdx + halfLimit) {
-            return htmlDocText.substring(idx - limit, searchIdx);
-        }
-
-        if (limit <= getSearchString().length() * 2) {
-            return htmlDocText.substring(idx, searchIdx);
-        }*/
-
         // below lines will select offset occurrence only in an excerpt
         int searchLen = searchStr.length();
-        int searchIdx = idx + searchLen;
+        int searchIdx = sIdx + searchLen;
         String str;
         if (htmlDocLen > limit) {
-            if (idx == 0) {
+            if (sIdx == 0) {
                 str = htmlDocText.substring(0, htmlDocLen);
                 return Y_BG_FONT_PREFIX
                         + htmlEsc(str.substring(0, searchLen))
                         + FONT_SUFFIX
                         + htmlEsc(str.substring(searchLen));
-            } else if (idx > halfLimit && htmlDocLen > searchIdx + halfLimit) {
-                str = htmlDocText.substring(idx - halfLimit, searchIdx + halfLimit);
+            } else if (sIdx > halfLimit && htmlDocLen > searchIdx + halfLimit) {
+                str = htmlDocText.substring(sIdx - halfLimit, searchIdx + halfLimit);
                 return htmlEsc(str.substring(0, halfLimit))
                         + Y_BG_FONT_PREFIX
                         + htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
@@ -553,13 +535,13 @@ public class SearchBigFile extends AppFrame {
 
             if (limit <= searchLen * 2) {
                 return Y_BG_FONT_PREFIX
-                        + htmlDocText.substring(idx, searchIdx)
+                        + htmlDocText.substring(sIdx, searchIdx)
                         + FONT_SUFFIX;
             }
         }
 
         // give it a try with reduce limit using recursion
-        return getOccrExcerpt(searchStr, htmlDocText, idx, halfLimit);
+        return getOccrExcerpt(searchStr, htmlDocText, sIdx, halfLimit);
     }
 
     private void showAllOccr() {
@@ -709,8 +691,9 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
-            int ix = lineOffsets.get(idx);
-            selectAndGoToIndex(ix, ix + searchStr.length());
+            //int ix = lineOffsets.get(idx).getSIdx();
+            //selectAndGoToIndex(ix, ix + searchStr.length());
+            selectAndGoToIndex(lineOffsets.get(idx).getSIdx(), lineOffsets.get(idx).getEIdx());
             showMsgAsInfo("Going occurrences of [" + searchStr + "] # " + (idx + 1) + "/" + lineOffsets.size());
             lastLineOffsetsIdx = idx;
         } else {
@@ -1374,15 +1357,17 @@ public class SearchBigFile extends AppFrame {
 
     private void highlightLastSelectedItem() {
         if (lastLineOffsetsIdx != -1) {
-            OffsetInfo offsetInfo = lineOffsetsMap.get(lastLineOffsetsIdx);
-            highlighter.removeHighlight(offsetInfo.getObj());
-            offsetInfo.setObj(highLightInResult(offsetInfo.getSIdx(), offsetInfo.getEIdx()));
+            OffsetInfo offsetInfo = lineOffsets.get(lastLineOffsetsIdx);
+            if (offsetInfo != null) {
+                highlighter.removeHighlight(offsetInfo.getObj());
+                offsetInfo.setObj(highLightInResult(offsetInfo.getSIdx(), offsetInfo.getEIdx()));
+            }
         }
     }
 
     private void repaintLastItem() {
         if (lineOffsetsIdx != -1) {
-            highlighter.removeHighlight(lineOffsetsMap.get(lineOffsetsIdx).getObj());
+            highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
         }
         if (lineOffsetsIdx != lastLineOffsetsIdx) {
             highlightLastSelectedItem();
@@ -1427,7 +1412,7 @@ public class SearchBigFile extends AppFrame {
                     log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
                     //debug(htmlDocText);
 
-                    int idx = 0;
+                    int idx = 0, x = 0;
                     while (idx != -1) {
                         // Let create offsets for all occurrences even if
                         // those are slightly higher then error due to in-line processing
@@ -1435,7 +1420,7 @@ public class SearchBigFile extends AppFrame {
                         idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
                         globalCharIdx = idx + strToSearchLen;
                         if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
-                            lineOffsets.add(idx);
+                            lineOffsets.put(x++, new OffsetInfo(null, idx, globalCharIdx));
                         }
                     }
                     createAllOccrRows();
