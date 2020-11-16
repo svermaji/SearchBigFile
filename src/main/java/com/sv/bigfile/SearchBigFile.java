@@ -17,15 +17,12 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Element;
-import javax.swing.text.StyleConstants;
+import javax.swing.text.*;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
 import java.util.List;
@@ -86,6 +83,8 @@ public class SearchBigFile extends AppFrame {
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JEditorPane epResults, tpHelp;
+    private Highlighter.HighlightPainter painter;
+    private Highlighter highlighter;
     private JScrollPane jspResults, jspHelp;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
@@ -106,14 +105,15 @@ public class SearchBigFile extends AppFrame {
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
+    private static String timeTaken;
+    private static long lineNums;
     private static int fontIdx = 0;
 
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
     private boolean debugAllowed;
-    private String searchStr, searchStrEsc, searchStrReplace;
-    private String recentFilesStr, recentSearchesStr;
+    private String searchStr, recentFilesStr, recentSearchesStr;
     private long timeTillNow;
     private long occrTillNow;
     private long linesTillNow;
@@ -123,7 +123,8 @@ public class SearchBigFile extends AppFrame {
     // indexed structure to maintain line indexing
     private static Map<Long, String> idxMsgsToAppend;
     private static List<Integer> lineOffsets;
-    private static int lineOffsetsIdx;
+    private static Map<Integer, OffsetInfo> lineOffsetsMap;
+    private static int lineOffsetsIdx, lastLineOffsetsIdx = -1;
     private static int globalCharIdx;
 
     // LIFO
@@ -151,6 +152,7 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new ArrayList<>();
+        lineOffsetsMap = new HashMap<>();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -311,7 +313,6 @@ public class SearchBigFile extends AppFrame {
         btnHelp.addActionListener(e -> showHelp());
 
         setBkColors(new JButton[]{
-                //btnUC, btnLC, btnTC, btnIC, btnFileOpen,
                 btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnGoTop,
                 btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp});
 
@@ -357,7 +358,9 @@ public class SearchBigFile extends AppFrame {
         tpHelp.setEditable(false);
         tpHelp.setContentType("text/html");
 
+        painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
         epResults = new JEditorPane();
+        highlighter = epResults.getHighlighter();
         epResults.setEditable(false);
         epResults.setContentType("text/html");
         epResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
@@ -365,6 +368,13 @@ public class SearchBigFile extends AppFrame {
         epResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         epResults.setDocument(htmlDoc);
+        epResults.addFocusListener(new FocusAdapter() {
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                highlightLastSelectedItem();
+            }
+        });
         kit = new HTMLEditorKit();
         jspResults = new JScrollPane(epResults);
         jspHelp = new JScrollPane(tpHelp);
@@ -445,6 +455,26 @@ public class SearchBigFile extends AppFrame {
         return tblAllOccr;
     }
 
+    private void highlightSearch() {
+        highlighter.removeAllHighlights();
+        int searchLen = searchStr.length();
+        int ix = 0;
+        for (int idx : lineOffsets) {
+            int e = idx + searchLen;
+            lineOffsetsMap.put(ix++, new OffsetInfo(highLightInResult(idx, e), idx, e));
+        }
+    }
+
+    private Object highLightInResult(int s, int e) {
+        try {
+            return highlighter.addHighlight(s, e, painter);
+        } catch (BadLocationException ex) {
+            logger.error("Unable to highlight for start index " + Utils.addBraces(s)
+                    + ", end index " + Utils.addBraces(e));
+        }
+        return null;
+    }
+
     private void createAllOccrRows() {
         int sz = lineOffsets.size();
         TableColumn col0 = tblAllOccr.getColumnModel().getColumn(0);
@@ -479,7 +509,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     public String formatValueAsHtml(String val) {
-        //return HTML_STR + ELLIPSIS + formatWithYellowBk(processPattern(), htmlEsc(val)) + ELLIPSIS + HTML_END;
         return HTML_STR + ELLIPSIS + val + ELLIPSIS + HTML_END;
     }
 
@@ -576,7 +605,6 @@ public class SearchBigFile extends AppFrame {
         for (String a : arr) {
             char ch = (char) i;
             JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + a);
-//            mi.setAccelerator(KeyStroke.getKeyStroke((char) i++));
             mi.addActionListener(e -> txtF.setText(a));
             if (i <= 'z') {
                 mi.setMnemonic(i++);
@@ -632,6 +660,7 @@ public class SearchBigFile extends AppFrame {
                     showMsg(getProblemMsg(), MsgType.WARN);
                 } else {
                     showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + occrTillNow + "] found. Use next/pre occurrences controls.");
+                    updateTitle("Find complete - " + getSearchResult(getFilePath(), timeTaken, lineNums, occrTillNow));
                 }
             } else {
                 showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
@@ -683,9 +712,11 @@ public class SearchBigFile extends AppFrame {
             int ix = lineOffsets.get(idx);
             selectAndGoToIndex(ix, ix + searchStr.length());
             showMsgAsInfo("Going occurrences of [" + searchStr + "] # " + (idx + 1) + "/" + lineOffsets.size());
+            lastLineOffsetsIdx = idx;
         } else {
             showMsg("No occurrences of [" + searchStr + "] to show", MsgType.WARN);
         }
+
     }
 
     private boolean offsetsNeedUpdate() {
@@ -1108,15 +1139,13 @@ public class SearchBigFile extends AppFrame {
 
     private void setSearchStrings() {
         searchStr = getSearchString();
-        searchStrEsc = htmlEsc(searchStr);
-        searchStrReplace = Y_BG_FONT_PREFIX + searchStr + FONT_SUFFIX;
     }
 
     private void startThread(Callable<Boolean> callable) {
         threadPool.submit(callable);
     }
 
-    public void appendResultNoFormat(String data) {
+    public void appendResult(String data) {
         synchronized (SearchBigFile.class) {
             // Needs to be sync else line numbers and data will be jumbled
             try {
@@ -1172,60 +1201,6 @@ public class SearchBigFile extends AppFrame {
             }
         }
         return sb.toString() + data.substring(idx);
-    }
-
-    public void appendResult(String data) {
-
-        if (!isSearchStrEmpty()) {
-            if (!isMatchCase()) {
-                data = replaceWithSameCase(data);
-            } else {
-                if (isMatchCase() && !isWholeWord()) {
-                    data = data.replaceAll(regexEsc(searchStr), searchStrReplace);
-                } else {
-                    if (isWholeWord()) {
-                        data = replaceWithSameCase(data);
-                    }
-                }
-            }
-        }
-
-        appendResultNoFormat(data);
-    }
-
-    /**
-     * This method will check string occurrence as in-case-sensitive
-     * but highlights whatever original text is
-     *
-     * @param data String
-     * @return converted string
-     */
-    private String replaceWithSameCase(String data) {
-        // Putting yellow background after escaping
-        String strEsc = isMatchCase() ? searchStrEsc : searchStrEsc.toLowerCase();
-        return formatWithYellowBk(strEsc, data);
-    }
-
-    private String formatWithYellowBk(String strToSearch, String line) {
-        StringBuilder sb = new StringBuilder();
-        String dt = isMatchCase() ? line : line.toLowerCase();
-        int idx = 0, oldIdx = 0, sLen = strToSearch.length();
-        while (idx != -1) {
-            idx = dt.indexOf(strToSearch, idx);
-            if (idx != -1) {
-                if (checkForWholeWord(strToSearch, line, idx)) {
-                    int xlen = idx + sLen;
-                    sb.append(line, oldIdx, idx)
-                            .append(Y_BG_FONT_PREFIX)
-                            .append(line, idx, xlen)
-                            .append(FONT_SUFFIX);
-                    oldIdx = xlen;
-                }
-                idx = idx + sLen;
-            }
-        }
-        sb.append(line, oldIdx, line.length());
-        return sb.toString();
     }
 
     private void emptyResults() {
@@ -1397,9 +1372,27 @@ public class SearchBigFile extends AppFrame {
         selectAndGoToIndex(idx, idx);
     }
 
+    private void highlightLastSelectedItem() {
+        if (lastLineOffsetsIdx != -1) {
+            OffsetInfo offsetInfo = lineOffsetsMap.get(lastLineOffsetsIdx);
+            highlighter.removeHighlight(offsetInfo.getObj());
+            offsetInfo.setObj(highLightInResult(offsetInfo.getSIdx(), offsetInfo.getEIdx()));
+        }
+    }
+
+    private void repaintLastItem() {
+        if (lineOffsetsIdx != -1) {
+            highlighter.removeHighlight(lineOffsetsMap.get(lineOffsetsIdx).getObj());
+        }
+        if (lineOffsetsIdx != lastLineOffsetsIdx) {
+            highlightLastSelectedItem();
+        }
+    }
+
     public void selectAndGoToIndex(int sIdx, int eIdx) {
         hideHelp();
         epResults.grabFocus();
+        repaintLastItem();
         epResults.select(sIdx, eIdx);
     }
 
@@ -1439,10 +1432,6 @@ public class SearchBigFile extends AppFrame {
                         // Let create offsets for all occurrences even if
                         // those are slightly higher then error due to in-line processing
                         // This is because count will be mismatched if break is applied
-                        /*occrTillNow = lineOffsets.size();
-                        if (occrTillNow > ERROR_LIMIT_OCCR) {
-                            break;
-                        }*/
                         idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
                         globalCharIdx = idx + strToSearchLen;
                         if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
@@ -1450,6 +1439,7 @@ public class SearchBigFile extends AppFrame {
                         }
                     }
                     createAllOccrRows();
+                    highlightSearch();
                     //debug("All offsets are " + lineOffsets);
                 } catch (BadLocationException e) {
                     logger.error("Unable to get document text");
@@ -1670,10 +1660,12 @@ public class SearchBigFile extends AppFrame {
             occr += calculateOccr(sb.toString(), searchPattern);
             occrTillNow = occr;
             if (!hasError) {
+                timeTaken = Utils.getTimeDiffSecStr(startTime);
+                lineNums = readLines;
                 String result = getSearchResult(
                         fn,
-                        Utils.getTimeDiffSecStr(startTime),
-                        readLines,
+                        timeTaken,
+                        lineNums,
                         occr);
                 String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
                 updateTitleAndMsg(statusStr + result, getMsgTypeForOpr());
@@ -1800,7 +1792,7 @@ public class SearchBigFile extends AppFrame {
 
     static class AppendMsgCallable implements Callable<Boolean> {
 
-        private SearchBigFile sbf;
+        private final SearchBigFile sbf;
 
         public AppendMsgCallable(SearchBigFile sbf) {
             this.sbf = sbf;
@@ -1891,7 +1883,9 @@ public class SearchBigFile extends AppFrame {
                     idxMsgsToAppend.clear();
                     logger.log("Time in waiting all message to append is " + Utils.getTimeDiffSecStr(time));
                 }
-                String result = getSearchResult(path, Utils.getTimeDiffSecStr(startTime), stats.getLineNum(), stats.getOccurrences());
+                timeTaken = Utils.getTimeDiffSecStr(startTime);
+                lineNums = stats.getLineNum();
+                String result = getSearchResult(path, timeTaken, lineNums, stats.getOccurrences());
                 if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
                     String s = "No match found";
                     sbf.epResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);

@@ -23,7 +23,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Added a button to change cases in search box - Upper, Lower, Title and Invert case. 
 * Added all occurrences table to search occurrences quicker with highlighted text.  
     * No occurrences' message also present. 
-    * All occurrences tab;e is inside split pane to resize it any time. 
+    * All occurrences table is inside split pane to resize it any time. 
 * Tabs present for help and results. 
 * Help button text color changes to 6 different colors every 30sec. 
 * After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 

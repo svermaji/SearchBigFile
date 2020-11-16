@@ -15,6 +15,10 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 16-Nov-2020
+* Html highlighting removed and used Swing Highlighter class. 
+* Now find functionality will also highlight new results. 
+
 #### On 4-Nov-2020
 * Added split pane for all occurrences. 
 
