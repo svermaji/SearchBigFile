@@ -22,10 +22,12 @@ import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.*;
@@ -109,6 +111,7 @@ public class SearchBigFile extends AppFrame {
     private static long lineNums;
     private static int fontIdx = 0;
 
+    private final String SEPARATOR = "~@";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
@@ -555,7 +558,7 @@ public class SearchBigFile extends AppFrame {
 
     private void refreshBottomPanel() {
         bottomPanel.revalidate();
-        //bottomPanel.repaint();
+        bottomPanel.repaint();
     }
 
     private void changeCase(CaseType type) {
@@ -642,11 +645,11 @@ public class SearchBigFile extends AppFrame {
                     showMsg(getProblemMsg(), MsgType.WARN);
                 } else {
                     showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + occrTillNow + "] found. Use next/pre occurrences controls.");
-                    updateTitle("Find complete - " + getSearchResult(getFilePath(), timeTaken, lineNums, occrTillNow));
                 }
             } else {
                 showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
             }
+            updateTitle("Find complete - " + getSearchResult(getFilePath(), timeTaken, lineNums, occrTillNow));
         }
     }
 
@@ -959,11 +962,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String[] getFiles() {
-        return getCfg(Configs.RecentFiles).split(SEMI_COLON);
+        return getCfg(Configs.RecentFiles).split(SEPARATOR);
     }
 
     private String[] getSearches() {
-        return getCfg(Configs.RecentSearches).split(SEMI_COLON);
+        return getCfg(Configs.RecentSearches).split(SEPARATOR);
     }
 
     private void resetShowWarning() {
@@ -1052,7 +1055,7 @@ public class SearchBigFile extends AppFrame {
         String s = getFilePath();
         if (Utils.hasValue(s)) {
             recentFilesStr = checkItems(s, recentFilesStr);
-            String[] arrF = recentFilesStr.split(SEMI_COLON);
+            String[] arrF = recentFilesStr.split(SEPARATOR);
             updateRecentMenu(menuRFiles, arrF, txtFilePath, TXT_F_MAP_KEY);
             txtFilePath.setAutoCompleteArr(arrF);
         }
@@ -1060,7 +1063,7 @@ public class SearchBigFile extends AppFrame {
         s = getSearchString();
         if (Utils.hasValue(s)) {
             recentSearchesStr = checkItems(s, recentSearchesStr);
-            String[] arrS = recentSearchesStr.split(SEMI_COLON);
+            String[] arrS = recentSearchesStr.split(SEPARATOR);
             updateRecentMenu(menuRSearches, arrS, txtSearch, TXT_S_MAP_KEY);
             txtSearch.setAutoCompleteArr(arrS);
         }
@@ -1077,12 +1080,12 @@ public class SearchBigFile extends AppFrame {
             int idx = csvLC.indexOf(ssLC);
             // remove item and add it again to bring it on top
             csv = csv.substring(0, idx)
-                    + csv.substring(idx + searchStr.length() + SEMI_COLON.length());
+                    + csv.substring(idx + searchStr.length() + SEPARATOR.length());
         }
-        csv = searchStr + SEMI_COLON + csv;
+        csv = searchStr + SEPARATOR + csv;
 
-        if (csv.split(SEMI_COLON).length >= RECENT_LIMIT) {
-            csv = csv.substring(0, csv.lastIndexOf(SEMI_COLON));
+        if (csv.split(SEPARATOR).length >= RECENT_LIMIT) {
+            csv = csv.substring(0, csv.lastIndexOf(SEPARATOR));
         }
 
         return csv;
