@@ -15,8 +15,8 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * **Blogs:** https://sv-technical.blogspot.com/
 
 ## Test Results!!
- - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`<br>
- - Attaching result with the name as `With BufferedReader`<br>
+ - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`
+ - Attaching result with the name as `With BufferedReader`
 
 ## Description
 * Program stores the last searched file and search string. 
@@ -51,47 +51,47 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Validations applied as and when needed.
 
 #### Images of different stages of development/features since day 1
-Application Image
+Application Present Image<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight.png
-
-First cut
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png" target="_blank">First cut</a></td>
-
-Test result on 1GB file with Buffered Reader
+<br>
+First cut<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png
+<br>
+Test result on 1GB file with Buffered Reader<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-result-BR.png
-
-Test result on 1GB file improved
+<br>
+Test result on 1GB file improved<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb-new.png
-
-Test result on 1GB old
+<br>
+Test result on 1GB old<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb.png
-
-Information indicator
+<br>
+Information indicator<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-info.png
-
-Warning indicator
+<br>
+Warning indicator<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-warn.png
-
-Error indicator
+<br>
+Error indicator<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-error.png
-
-Auto complete
+<br>
+Auto complete<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-ac.png
-
-Menu bar
+<br>
+Menu bar<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-bar.png
-
-Help Tab
+<br>
+Help Tab<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-help.png
-
-If no occurrence found
+<br>
+If no occurrence found<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-no-occr.png
-
-Recent Menu
+<br>
+Recent Menu<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent.png
-
-Filter recent values
+<br>
+Filter recent values<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-filter.png
-
-Highlight Colors
+<br>
+Highlight Colors<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/highlight-colors.png
