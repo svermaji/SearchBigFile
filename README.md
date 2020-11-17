@@ -50,72 +50,48 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Tooltip provided for maximum controls.  
 * Validations applied as and when needed.
 
-#### Images of different stages of development/features
-Attaching screen shot of application:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png) 
+#### Images of different stages of development/features since day 1
+Application Image
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight.png
 
-Added on 11-Sep-2020. Attaching screen shot of application:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-controls.png) 
+First cut
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png" target="_blank">First cut</a></td>
 
-Added on 13-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB` :<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb.png) 
+Test result on 1GB file with Buffered Reader
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-result-BR.png
 
-Added on 14-Sep-2020. Attaching screen shot of application. Wider combo box list:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-wider-cb-list.png) 
+Test result on 1GB file improved
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb-new.png
 
-Added on 15-Sep-2020. Attaching screen shot of application. Test Result `Test 1GB New` :<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb-new.png) 
+Test result on 1GB old
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-1gb.png
 
-Added on 15-Sep-2020. Attaching screen shot of application. Read last N (500 to 5000) lines with highlight of pattern:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-N.png) 
+Information indicator
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-info.png
 
-Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-recent-filter.png) 
+Warning indicator
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-warn.png
 
-Added on 18-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-warn-font.png) 
+Error indicator
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-error.png
 
-Added on 24-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-favs.png) 
+Auto complete
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-ac.png
 
-Added on 25-Sep-2020. Attaching screen shot of application. Recent items filter:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-font-info.png) 
+Menu bar
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-bar.png
 
-Added on 26-Sep-2020. Attaching screen shot of application. With BufferedReader:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-test-result-BR.png) 
+Help Tab
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-help.png
 
-Added on 29-Sep-2020. Attaching screen shot of application. With new info, warning and error message:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-info-new.png) 
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-warn-new.png) 
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-error-new.png) 
+If no occurrence found
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-no-occr.png
 
-Added on 30-Sep-2020. Attaching screen shot of application. Added controls goto first line and last line:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-goto.png) 
+Recent Menu
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent.png
 
-Added on 3-Oct-2020. Attaching screen shot of application. Added controls goto next and previous occurrences:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-occr.png) 
+Filter recent values
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-filter.png
 
-Added on 12-Oct-2020. Attaching screen shot of application. Auto complete in text fields:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-ac.png) 
-
-Added on 13-Oct-2020. Attaching screen shot of application. Help:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-help.png) 
-
-Added on 14-Oct-2020. Attaching screen shot of application. Tabs for help and result.  The recent dropdown is now menu:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-tabs-and-menu.png) 
-
-Added on 17-Oct-2020. Attaching screen shot of application. Tabs for help and result.  Find from results:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-find.png) 
-
-Added on 21-Oct-2020. Attaching screen shot of application. Aa/W used for case-sensitive and word search:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-bar.png) 
-
-Added on 26-Oct-2020. Attaching screen shot of application. New button to change case in search box (upper/lower/title/invert):<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-case.png) 
-
-Added on 27-Oct-2020. Attaching screen shot of application. Added all occurrences table to search occurrences quicker:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-all-occrs.png) 
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-no-occr.png) 
-
-Added on 4-Nov-2020. Attaching screen shot of application. Added split pane for all occurrences:<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-split-pane.png) 
+Highlight Colors
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/highlight-colors.png

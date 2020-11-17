@@ -50,7 +50,7 @@ public class SearchBigFile extends AppFrame {
      * e.g. if enum is Xyz then when storing getXyz will be called
      */
     enum Configs {
-        RecentFiles, FilePath, SearchString, RecentSearches,
+        RecentFiles, HighlightColor, FilePath, SearchString, RecentSearches,
         LastN, FontSize, MatchCase, WholeWord, DebugEnabled
     }
 
@@ -76,7 +76,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel bottomPanel;
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
-    private JMenu menuRFiles, menuRSearches;
+    private JMenu menuRFiles, menuRSearches, menuColors;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll;
@@ -94,11 +94,11 @@ public class SearchBigFile extends AppFrame {
     private JComboBox<Integer> cbLastN;
 
     private final Color[] HELP_COLORS = {
-            Color.WHITE, Color.PINK, Color.GREEN,
-            Color.YELLOW, Color.ORANGE,
+            Color.white, Color.pink, Color.green,
+            Color.yellow, Color.orange,
             new Color(217, 248, 228),
             new Color(192, 218, 255),
-            Color.CYAN
+            Color.cyan
     };
 
     private static FILE_OPR operation;
@@ -111,7 +111,7 @@ public class SearchBigFile extends AppFrame {
     private static long lineNums;
     private static int fontIdx = 0;
 
-    private final String SEPARATOR = "~@";
+    private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
@@ -121,6 +121,9 @@ public class SearchBigFile extends AppFrame {
     private long occrTillNow;
     private long linesTillNow;
 
+    private JMenuBar mbColor;
+    private static Color highlightColor;
+    private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
 
     // indexed structure to maintain line indexing
@@ -154,6 +157,7 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new HashMap<>();
+        highlightColor = getHlColorFromCfg();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -194,7 +198,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.LBL_RFILES;
         JMenuBar mb = new JMenuBar();
         menuRFiles = new JMenu(uin.name);
-        mb.setBackground(Color.LIGHT_GRAY);
+        mb.setBackground(Color.lightGray);
         menuRFiles.setMnemonic(uin.mnemonic);
         menuRFiles.setToolTipText(uin.tip);
         mb.add(menuRFiles);
@@ -254,11 +258,19 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.LBL_RSEARCHES;
         JMenuBar mbar = new JMenuBar();
         menuRSearches = new JMenu(uin.name);
-        mbar.setBackground(Color.LIGHT_GRAY);
+        mbar.setBackground(Color.lightGray);
         menuRSearches.setMnemonic(uin.mnemonic);
         menuRSearches.setToolTipText(uin.tip);
         mbar.add(menuRSearches);
         updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
+
+        uin = UIName.MNU_COLOR;
+        mbColor = new JMenuBar();
+        menuColors = new JMenu(uin.name);
+        menuColors.setMnemonic(uin.mnemonic);
+        menuColors.setToolTipText(uin.tip + " Shortcut: Alt+" + uin.mnemonic);
+        mbColor.add(menuColors);
+        updateColorMenu();
 
         uin = UIName.BTN_CANCEL;
         btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
@@ -320,6 +332,7 @@ public class SearchBigFile extends AppFrame {
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
         controlPanel.add(jtbActions);
+        jtbActions.add(mbColor);
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
@@ -359,13 +372,13 @@ public class SearchBigFile extends AppFrame {
         tpHelp.setEditable(false);
         tpHelp.setContentType("text/html");
 
-        painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+        painter = new DefaultHighlighter.DefaultHighlightPainter(Color.yellow);
         epResults = new JEditorPane();
         highlighter = epResults.getHighlighter();
         epResults.setEditable(false);
         epResults.setContentType("text/html");
         epResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
-        epResults.setForeground(Color.BLACK);
+        epResults.setForeground(Color.black);
         epResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         epResults.setDocument(htmlDoc);
@@ -410,6 +423,7 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
         setControlsToEnable();
+        setHighlightColor(highlightColor);
         setupHelp();
         resetForNewSearch();
         enableControls();
@@ -421,6 +435,14 @@ public class SearchBigFile extends AppFrame {
 
         menuRFiles.grabFocus();
         menuRFiles.requestFocus();
+    }
+
+    private Color getHlColorFromCfg() {
+        String hlcfg = getCfg(Configs.HighlightColor);
+        String[] hlcfgArr = hlcfg.split(COMMA);
+        return new Color(Integer.parseInt(hlcfgArr[0]),
+                Integer.parseInt(hlcfgArr[1]),
+                Integer.parseInt(hlcfgArr[2]));
     }
 
     private void setSplitPaneLoc() {
@@ -494,7 +516,8 @@ public class SearchBigFile extends AppFrame {
             }
             for (int i = 0; i < sz; i++) {
                 modelAllOccr.addRow(new String[]{(i + 1) + "",
-                        formatValueAsHtml(getOccrExcerpt(getSearchString(), htmlDocText, lineOffsets.get(i).getSIdx(), EXCERPT_LIMIT))});
+                        formatValueAsHtml(getOccrExcerpt(getSearchString(),
+                                htmlDocText, lineOffsets.get(i).getSIdx(), EXCERPT_LIMIT))});
             }
         }
 
@@ -523,21 +546,21 @@ public class SearchBigFile extends AppFrame {
         if (htmlDocLen > limit) {
             if (sIdx == 0) {
                 str = htmlDocText.substring(0, htmlDocLen);
-                return Y_BG_FONT_PREFIX
+                return highlightColorStr
                         + htmlEsc(str.substring(0, searchLen))
                         + FONT_SUFFIX
                         + htmlEsc(str.substring(searchLen));
             } else if (sIdx > halfLimit && htmlDocLen > searchIdx + halfLimit) {
                 str = htmlDocText.substring(sIdx - halfLimit, searchIdx + halfLimit);
                 return htmlEsc(str.substring(0, halfLimit))
-                        + Y_BG_FONT_PREFIX
+                        + highlightColorStr
                         + htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
                         + FONT_SUFFIX
                         + htmlEsc(str.substring(halfLimit + searchLen));
             }
 
             if (limit <= searchLen * 2) {
-                return Y_BG_FONT_PREFIX
+                return highlightColorStr
                         + htmlDocText.substring(sIdx, searchIdx)
                         + FONT_SUFFIX;
             }
@@ -581,6 +604,35 @@ public class SearchBigFile extends AppFrame {
 
     private void printConfigs() {
         log("Debug enabled " + Utils.addBraces(logger.isDebug()));
+    }
+
+    private void updateColorMenu() {
+        int i = 'a';
+        for (Color c : HELP_COLORS) {
+            if (c == Color.white) {
+                // ignoring white
+                continue;
+            }
+            char ch = (char) i;
+            JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + "Set this as highlighter");
+            mi.setMnemonic(i++);
+            mi.addActionListener(e -> setHighlightColor(mi.getBackground()));
+            mi.setBackground(c);
+            menuColors.add(mi);
+        }
+    }
+
+    private void setHighlightColor(Color color) {
+        highlightColor = color;
+        mbColor.setBackground(highlightColor);
+        int r = highlightColor.getRed();
+        int g = highlightColor.getGreen();
+        int b = highlightColor.getBlue();
+        highlightColorStr = FONT_PREFIX + String.format("rgb(%s, %s, %s)", r, g, b) + FONT_PREFIX_END;
+        painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
+        if (timeTaken != null) {
+            findWordInResult();
+        }
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -747,8 +799,8 @@ public class SearchBigFile extends AppFrame {
 
     private void setBkColors(JButton[] btns) {
         for (JButton b : btns) {
-            b.setBackground(Color.GRAY);
-            b.setForeground(Color.WHITE);
+            b.setBackground(Color.gray);
+            b.setForeground(Color.white);
         }
     }
 
@@ -1236,6 +1288,11 @@ public class SearchBigFile extends AppFrame {
         return recentFilesStr;
     }
 
+    public String getHighlightColor() {
+        return String.format("%s,%s,%s",
+                highlightColor.getRed(), highlightColor.getGreen(), highlightColor.getBlue());
+    }
+
     public String getDebugEnabled() {
         return debugAllowed + "";
     }
@@ -1246,14 +1303,14 @@ public class SearchBigFile extends AppFrame {
 
     public void showMsg(String msg, MyLogger.MsgType type) {
         if (Utils.hasValue(msg)) {
-            Color b = Color.WHITE;
-            Color f = Color.BLUE;
+            Color b = Color.white;
+            Color f = Color.blue;
             if (type == MyLogger.MsgType.ERROR) {
-                b = Color.RED;
-                f = Color.WHITE;
+                b = Color.red;
+                f = Color.white;
             } else if (type == MyLogger.MsgType.WARN) {
-                b = Color.ORANGE;
-                f = Color.BLACK;
+                b = Color.orange;
+                f = Color.black;
             }
             msgPanel.setBackground(b);
             lblMsg.setForeground(f);

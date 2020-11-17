@@ -1,4 +1,5 @@
 <html>
+<title>Welcome to Search Big File</title>
 <body style="font-family: Calibri">
 <a id="top"></a>
 <i><font color="red"><b>Note:</b></font> For full feature working, please copy link of this file and paste in
@@ -19,10 +20,44 @@
     <li><b>Blogs:</b> <a href="https://sv-technical.blogspot.com/">https://sv-technical.blogspot.com/</a></li>
 </ul>
 <h3><a id="introduction">Introduction</a></h3>
-<img src="./app-images/app-image-all-occrs.png" width="800" height="400" title="Application image"/>
 <p>This application is Java8 based. UI is designed in Swing.<br>
     No third party library is used. <br><br>This program is developed to search big size files
     like 400MB or even higher like 1GB.</p>
+<h4>Application image</h4>
+<img src="./app-images/app-image-highlight.png" width="800" height="400" title="Application image"/>
+<h4>More application images (opens in new tab)</h4>
+<table cellpadding="3" cellspacing="3">
+    <tr>
+        <td colspan="3"><a href="./app-images/app-image.png" target="_blank">First cut</a></td>
+    </tr>
+    <tr>
+        <td><a href="./app-images/app-test-result-BR.png" target="_blank">Test result on 1GB file with Buffered Reader</a></td>
+        <td><a href="./app-images/app-test-1gb-new.png" target="_blank">Test result on 1GB file improved</a></td>
+        <td><a href="./app-images/app-test-1gb.png" target="_blank">Test result on 1GB old</a></td>
+    </tr>
+    <tr>
+        <td><a href="./app-images/app-image-info.png" target="_blank">Information indicator</a></td>
+        <td><a href="./app-images/app-image-warn.png" target="_blank">Warning indicator</a></td>
+        <td><a href="./app-images/app-image-error.png" target="_blank">Error indicator</a></td>
+    </tr>
+    <tr>
+        <td><a href="./app-images/app-image-ac.png" target="_blank">Auto complete</a></td>
+        <td><a href="./app-images/app-image-bar.png" target="_blank">Menu bar</a></td>
+        <td><a href="./app-images/app-image-help.png" target="_blank">Help Tab</a></td>
+    </tr>
+    <tr>
+        <td><a href="./app-images/app-image-no-occr.png" target="_blank">If no occurrence found</a></td>
+        <td><a href="./app-images/app-image-recent.png" target="_blank">Recent Menu</a></td>
+        <td><a href="./app-images/app-image-recent-filter.png" target="_blank">Filter recent values</a></td>
+    </tr>
+    <tr>
+        <td><a href="./app-images/highlight-colors.png" target="_blank">Highlight Colors</a></td>
+    </tr>
+    <tr>
+        <td colspan="3"><a href="./app-images/app-image-highlight.png" target="_blank">Present stage</a></td>
+    </tr>
+</table>
+
 <h3><a id="features">Features</a></h3>
 <ul>
     <li>Complete UI can be driven by keyboard. That means all actions has short cuts.</li>
@@ -46,7 +81,9 @@
             </ul>
             <li>Select from "Ellipsis" (...) to browse folders</li>
             <li>Select from Recent Menu</li>
-            <li>Select from Recent List Table (using <img src="./icons/recent-icon.png" width="12" height="12" title="Recent icon"/>)</li>
+            <li>Select from Recent List Table (using <img src="./icons/recent-icon.png" width="12" height="12"
+                                                          title="Recent icon"/>)
+            </li>
         </ul>
     </li>
     <li>Checkbox "Aa" - This can be checked if search is case sensitive</li>
@@ -58,7 +95,9 @@
                 <li>While manually typing auto complete is available</li>
             </ul>
             <li>Select from Recent Menu</li>
-            <li>Select from Recent List Table (using <img src="./icons/recent-icon.png" width="12" height="12" title="Recent icon"/>)</li>
+            <li>Select from Recent List Table (using <img src="./icons/recent-icon.png" width="12" height="12"
+                                                          title="Recent icon"/>)
+            </li>
         </ul>
     </li>
     <li>User can change case of search pattern text using below
@@ -75,17 +114,29 @@
     <li>Label and drop down for "Last N" gives option to display last N lines (100 to 5000) from the file.</li>
     <li>Read button action display last N lines.</li>
     <li>Search and Read button action also highlights with <span style="background-color: #FFFF00">yellow</span>
-        background to search pattern that matches.
+        background to search pattern that matches.  More color can be chosen.
     </li>
-    <li>Cancel button icon (<img src="./icons/cancel-icon.png" width="12" height="12" title="Cancel icon"/>) to stop operation while
+    <li>Cancel button icon (<img src="./icons/cancel-icon.png" width="12" height="12" title="Cancel icon"/>) to stop
+        operation while
         Search/Read going on
     </li>
     <ul>
-        <li>It will be disabled (<img src="./icons/cancel-icon-disabled.png" width="12" height="12" title="Cancel icon disabled"/>) when unavailable
+        <li>It will be disabled (<img src="./icons/cancel-icon-disabled.png" width="12" height="12"
+                                      title="Cancel icon disabled"/>) when unavailable
         </li>
     </ul>
     <li>Toolbar is available with different actions
         <ul>
+            <li>* this action will set highlight color immediately
+                <ul>
+                    <li>Chosen color will be applied as background to the item</li>
+                    <li>Highlight color will be applied in Results tab and occurrences table</li>
+                    <li>New color will be stored as part of configuration and reapplied on restart</li>
+                    <li>Each color is displayed as background of menu item and each menu item has shortcuts.
+                        For image see <a href="#introduction">Introduction</a> section
+                    </li>
+                </ul>
+            </li>
             <li>+ this action will increase font size by 1, maximum allowed size 28</li>
             <li>- this action will decrease font size by 1, minimum allowed size 8</li>
             <li>✔ this action will reset font size to 12</li>
@@ -100,7 +151,9 @@
             <li>? this action will show help. Color of this text changes every 10 sec to 8 different colors</li>
         </ul>
     </li>
-    <li>Exit button icon (<img src="./icons/exit-icon.png" width="12" height="12" title="Exit icon"/>) will exit from application</li>
+    <li>Exit button icon (<img src="./icons/exit-icon.png" width="12" height="12" title="Exit icon"/>) will exit from
+        application
+    </li>
     <li>Information bar that represent different actions.
         <ul>
             <li>Font of this bar changes every 10 minutes.</li>
