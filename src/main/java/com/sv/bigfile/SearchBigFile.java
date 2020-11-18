@@ -94,13 +94,14 @@ public class SearchBigFile extends AppFrame {
     private JComboBox<Integer> cbLastN;
 
     private final Color[][] HELP_COLORS = {
+            // color and selection color
             {Color.white, Color.yellow},
-            {Color.pink, Color.orange},
-            {Color.green, Color.yellow},
+            {Color.pink, Color.yellow},
+            {Color.green, Color.orange},
             {Color.yellow, new Color(217, 248, 228)},
             {Color.orange, new Color(192, 218, 255)},
             {new Color(217, 248, 228), Color.cyan},
-            {new Color(192, 218, 255), Color.pink},
+            {new Color(192, 218, 255), Color.green},
             {Color.cyan, Color.pink}
     };
 
