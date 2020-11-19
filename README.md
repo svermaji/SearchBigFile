@@ -25,6 +25,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
     * No occurrences' message also present. 
     * All occurrences table is inside split pane to resize it any time. 
     * Multiple colors available for match, selected and selected background. 
+    * Color combination can be seen in the tooltip of each menuitem. 
 * Tabs present for help and results. 
 * Help button text color changes to 6 different colors every 30sec. 
 * After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 

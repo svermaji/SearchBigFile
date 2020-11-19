@@ -645,13 +645,19 @@ public class SearchBigFile extends AppFrame {
                 // ignoring white
                 continue;
             }
-            char ch = (char) i;
-            JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + "Set this as highlighter");
-            mi.setMnemonic(i++);
+            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Set this as highlighter", i++);
             mi.addActionListener(e -> setHighlightColor(mi.getBackground(), c[1], c[2]));
             mi.setBackground(c[0]);
+            mi.setToolTipText(prepareToolTip(c));
             menuColors.add(mi);
         }
+    }
+
+    private String prepareToolTip(Color[] c) {
+        return HTML_STR +
+                "Sample: " + SwingUtils.htmlBGColor(c[0], "Highlight text") + BR +
+                "and " + SwingUtils.htmlBGColor(c[1], c[2],"Selected text") +
+                HTML_END;
     }
 
     private void setHighlightColor(Color color, Color selColor, Color selTextColor) {
@@ -659,10 +665,7 @@ public class SearchBigFile extends AppFrame {
         selectionColor = selColor;
         selectionTextColor = selTextColor;
         mbColor.setBackground(highlightColor);
-        int r = highlightColor.getRed();
-        int g = highlightColor.getGreen();
-        int b = highlightColor.getBlue();
-        highlightColorStr = FONT_PREFIX + String.format("rgb(%s, %s, %s)", r, g, b) + FONT_PREFIX_END;
+        highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
         painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
         if (timeTaken != null) {
             findWordInResult();
