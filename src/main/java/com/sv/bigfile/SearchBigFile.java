@@ -50,7 +50,7 @@ public class SearchBigFile extends AppFrame {
      * e.g. if enum is Xyz then when storing getXyz will be called
      */
     enum Configs {
-        RecentFiles, HighlightColor, SelectionColor, FilePath, SearchString, RecentSearches,
+        RecentFiles, HighlightColor, SelectionColor, SelectionTextColor, FilePath, SearchString, RecentSearches,
         LastN, FontSize, MatchCase, WholeWord, DebugEnabled
     }
 
@@ -94,15 +94,15 @@ public class SearchBigFile extends AppFrame {
     private JComboBox<Integer> cbLastN;
 
     private final Color[][] HELP_COLORS = {
-            // color and selection color
-            {Color.white, Color.yellow},
-            {Color.pink, Color.yellow},
-            {Color.green, Color.orange},
-            {Color.yellow, new Color(217, 248, 228)},
-            {Color.orange, new Color(192, 218, 255)},
-            {new Color(217, 248, 228), Color.cyan},
-            {new Color(192, 218, 255), Color.green},
-            {Color.cyan, Color.pink}
+            // color, selection BG color, selection FG color
+            {Color.white, Color.yellow, Color.black},
+            {Color.pink, Color.red, Color.white},
+            {Color.green, Color.orange, Color.black},
+            {Color.yellow, Color.black, Color.green},
+            {Color.orange, new Color(192, 218, 255), Color.blue},
+            {new Color(217, 248, 228), Color.cyan, Color.BLACK},
+            {new Color(192, 218, 255), Color.black, Color.red},
+            {Color.cyan, Color.darkGray, Color.white}
     };
 
     private static FILE_OPR operation;
@@ -126,7 +126,7 @@ public class SearchBigFile extends AppFrame {
     private long linesTillNow;
 
     private JMenuBar mbColor;
-    private static Color highlightColor, selectionColor;
+    private static Color highlightColor, selectionColor, selectionTextColor;
     private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
 
@@ -163,6 +163,7 @@ public class SearchBigFile extends AppFrame {
         lineOffsets = new HashMap<>();
         highlightColor = getHlColorFromCfg();
         selectionColor = getSelColorFromCfg();
+        selectionTextColor = getSelTextColorFromCfg();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -383,6 +384,11 @@ public class SearchBigFile extends AppFrame {
             public Color getSelectionColor() {
                 return selectionColor;
             }
+
+            @Override
+            public Color getSelectedTextColor() {
+                return selectionTextColor;
+            }
         };
         highlighter = epResults.getHighlighter();
         epResults.setEditable(false);
@@ -433,7 +439,7 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
         setControlsToEnable();
-        setHighlightColor(highlightColor, selectionColor);
+        setHighlightColor(highlightColor, selectionColor, selectionTextColor);
         setupHelp();
         resetForNewSearch();
         enableControls();
@@ -457,6 +463,14 @@ public class SearchBigFile extends AppFrame {
 
     private Color getSelColorFromCfg() {
         String cfg = getCfg(Configs.SelectionColor);
+        String[] cfgArr = cfg.split(COMMA);
+        return new Color(Integer.parseInt(cfgArr[0]),
+                Integer.parseInt(cfgArr[1]),
+                Integer.parseInt(cfgArr[2]));
+    }
+
+    private Color getSelTextColorFromCfg() {
+        String cfg = getCfg(Configs.SelectionTextColor);
         String[] cfgArr = cfg.split(COMMA);
         return new Color(Integer.parseInt(cfgArr[0]),
                 Integer.parseInt(cfgArr[1]),
@@ -634,15 +648,16 @@ public class SearchBigFile extends AppFrame {
             char ch = (char) i;
             JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + "Set this as highlighter");
             mi.setMnemonic(i++);
-            mi.addActionListener(e -> setHighlightColor(mi.getBackground(), c[1]));
+            mi.addActionListener(e -> setHighlightColor(mi.getBackground(), c[1], c[2]));
             mi.setBackground(c[0]);
             menuColors.add(mi);
         }
     }
 
-    private void setHighlightColor(Color color, Color selColor) {
+    private void setHighlightColor(Color color, Color selColor, Color selTextColor) {
         highlightColor = color;
         selectionColor = selColor;
+        selectionTextColor = selTextColor;
         mbColor.setBackground(highlightColor);
         int r = highlightColor.getRed();
         int g = highlightColor.getGreen();
@@ -1315,6 +1330,11 @@ public class SearchBigFile extends AppFrame {
     public String getSelectionColor() {
         return String.format("%s,%s,%s",
                 selectionColor.getRed(), selectionColor.getGreen(), selectionColor.getBlue());
+    }
+
+    public String getSelectionTextColor() {
+        return String.format("%s,%s,%s",
+                selectionTextColor.getRed(), selectionTextColor.getGreen(), selectionTextColor.getBlue());
     }
 
     public String getDebugEnabled() {
