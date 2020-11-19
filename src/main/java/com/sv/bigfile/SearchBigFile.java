@@ -98,10 +98,10 @@ public class SearchBigFile extends AppFrame {
             {Color.white, Color.yellow, Color.black},
             {Color.pink, Color.red, Color.white},
             {Color.green, Color.orange, Color.black},
-            {Color.yellow, Color.black, Color.green},
-            {Color.orange, new Color(192, 218, 255), Color.blue},
-            {new Color(217, 248, 228), Color.cyan, Color.BLACK},
-            {new Color(192, 218, 255), Color.black, Color.red},
+            {Color.yellow, new Color(51, 143, 255), Color.white},
+            {Color.orange, Color.MAGENTA, Color.white},
+            {new Color(166, 241, 195), Color.cyan, Color.BLACK},
+            {new Color(173, 209, 255), Color.black, Color.green},
             {Color.cyan, Color.darkGray, Color.white}
     };
 
