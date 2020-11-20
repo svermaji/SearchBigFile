@@ -95,8 +95,5 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Filter recent values<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-filter.png)
 
-* Highlight Colors<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/highlight-colors.png)
-
 * Highlight/Selected Colors tooltip sample<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-tips.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-tooltips.png)
