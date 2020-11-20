@@ -651,10 +651,31 @@ public class SearchBigFile extends AppFrame {
                 // ignoring white
                 continue;
             }
-            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Set this as highlighter", i++);
-            mi.addActionListener(e -> setHighlightColor(mi.getBackground(), c[1], c[2]));
-            mi.setBackground(c[0]);
+            //JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Set this as highlighter", i++);
+            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Select this", i++){
+                @Override
+                public Dimension getPreferredSize() {
+                    Dimension d = super.getPreferredSize();
+                    d.width = Math.max(d.width, 300); // set minimums
+                    d.height = Math.max(d.height, 30);
+                    return d;
+                }
+            };
+            mi.addActionListener(e -> setHighlightColor(c[0], c[1], c[2]));
+            mi.setLayout(new GridLayout(1, 3));
+            mi.add(new JLabel(""));
             mi.setToolTipText(prepareToolTip(c));
+            JLabel h = new JLabel("Highlight Text");
+            h.setHorizontalAlignment(JLabel.CENTER);
+            h.setOpaque(true);
+            h.setBackground(c[0]);
+            mi.add(h);
+            JLabel s = new JLabel("Selected Text");
+            s.setOpaque(true);
+            s.setBackground(c[1]);
+            s.setHorizontalAlignment(JLabel.CENTER);
+            s.setForeground(c[2]);
+            mi.add(s);
             menuColors.add(mi);
         }
     }

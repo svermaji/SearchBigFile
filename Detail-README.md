@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 20-Nov-2020
+* Updated with better picture of colors for highlighting and selected text 
+
 #### On 19-Nov-2020
 * Different colors available for highlight and selected text.
 * Sample can be see as tooltip 
