@@ -22,10 +22,7 @@ import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
 import java.util.Queue;
@@ -398,6 +395,15 @@ public class SearchBigFile extends AppFrame {
         epResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         htmlDoc = new HTMLDocument();
         epResults.setDocument(htmlDoc);
+        epResults.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                if (!Utils.hasValue(epResults.getSelectedText())) {
+                    highlightLastSelectedItem();
+                }
+            }
+        });
         epResults.addFocusListener(new FocusAdapter() {
 
             @Override
@@ -656,7 +662,7 @@ public class SearchBigFile extends AppFrame {
     private String prepareToolTip(Color[] c) {
         return HTML_STR +
                 "Sample: " + SwingUtils.htmlBGColor(c[0], "Highlight text") + BR +
-                "and " + SwingUtils.htmlBGColor(c[1], c[2],"Selected text") +
+                "and " + SwingUtils.htmlBGColor(c[1], c[2], "Selected text") +
                 HTML_END;
     }
 
