@@ -21,6 +21,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Description
 * Program stores the last searched file and search string. 
 * Added a button to change cases in search box - Upper, Lower, Title and Invert case. 
+* Settings menu added to set change color of highlights and fonts for message bar automatically. 
 * Added all occurrences table to search occurrences quicker with highlighted text.  
     * No occurrences' message also present. 
     * All occurrences table is inside split pane to resize it any time. 
@@ -54,7 +55,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 #### Images of different stages of development/features since day 1
 * Application Present Image<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-settings.png)
 
 * First cut<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png)
@@ -97,3 +98,12 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 * Highlight/Selected Colors tooltip sample<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-tooltips.png)
+
+* Settings menu<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-settings-menu.png)
+
+* Settings -> Fonts menu<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-fonts.png)
+
+* Settings -> Highlight menu<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-menu.png)

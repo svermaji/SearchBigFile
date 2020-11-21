@@ -48,7 +48,7 @@ public class SearchBigFile extends AppFrame {
      */
     enum Configs {
         RecentFiles, HighlightColor, SelectionColor, SelectionTextColor, FilePath, SearchString, RecentSearches,
-        LastN, FontSize, MatchCase, WholeWord, DebugEnabled
+        LastN, FontSize, FontName, ChangeFontAuto, ChangeHighlightAuto, MatchCase, WholeWord, DebugEnabled
     }
 
     enum Status {
@@ -73,7 +73,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel bottomPanel;
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
-    private JMenu menuRFiles, menuRSearches, menuColors;
+    private JMenu menuRFiles, menuRSearches, menuColors, menuSettings, menuFonts;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll;
@@ -88,6 +88,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
+    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights;
     private JComboBox<Integer> cbLastN;
 
     private final Color[][] HELP_COLORS = {
@@ -111,6 +112,7 @@ public class SearchBigFile extends AppFrame {
     private static String timeTaken;
     private static long lineNums;
     private static int fontIdx = 0;
+    private static String fontName = "";
 
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
@@ -367,8 +369,21 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_SHOWALL;
         btnShowAll = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnShowAll.addActionListener(e -> showAllOccr());
+        uin = UIName.MNU_SETTINGS;
+        JMenuBar jmbSettings = new JMenuBar();
+        menuSettings = new JMenu();
+        menuSettings.setIcon(new ImageIcon("./icons/settings-icon.png"));
+        menuSettings.setMnemonic(uin.mnemonic);
+        menuSettings.setToolTipText(uin.tip + " Shortcut: Alt+" + uin.mnemonic);
+        prepareSettingsMenu();
+        jmbSettings.add(menuSettings);
+        JPanel jpSettings = new JPanel();
+        jpSettings.add(jmbSettings);
+        jpSettings.add(btnShowAll);
         msgPanel.add(lblMsg, BorderLayout.CENTER);
-        msgPanel.add(btnShowAll, BorderLayout.LINE_END);
+//        msgPanel.add(btnShowAll, BorderLayout.LINE_END);
+//        msgPanel.add(jmbSettings, BorderLayout.LINE_START);
+        msgPanel.add(jpSettings, BorderLayout.LINE_END);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
 
@@ -458,6 +473,41 @@ public class SearchBigFile extends AppFrame {
 
         menuRFiles.grabFocus();
         menuRFiles.requestFocus();
+    }
+
+    private void prepareSettingsMenu() {
+        jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
+        jcbmiFonts.setMnemonic('F');
+        jcbmiFonts.setToolTipText("Changes font for information bar every 10 minutes");
+        jcbmiHighlights = new JCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
+        jcbmiHighlights.setMnemonic('H');
+        jcbmiHighlights.setToolTipText("Changes colors of highlighted text, selected-text and selected background every 10 minutes");
+
+        menuSettings.add(jcbmiFonts);
+        fontName = getCfg(Configs.FontName);
+        menuFonts = new JMenu("Fonts " + Utils.addBraces(fontName));
+        menuFonts.setMnemonic('o');
+        int i = 'a';
+        for (ColorsNFonts cnf : ColorsNFonts.values()) {
+            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + cnf.getFont());
+            mi.setMnemonic(i++);
+            Font f = mi.getFont();
+            Font nf = getNewFont(f, cnf.getFont());
+            mi.setFont(nf);
+            mi.addActionListener(e -> setMsgFont(nf));
+            menuFonts.add(mi);
+        }
+        menuSettings.add(menuFonts);
+        menuSettings.addSeparator();
+        menuSettings.add(jcbmiHighlights);
+        JMenu menuHighlights = new JMenu("Highlights");
+        menuFonts.setMnemonic('g');
+        JMenuItem mi = new JMenuItem("Please refer menu " + UIName.MNU_COLOR.name + " in Controls section.");
+        menuHighlights.add(mi);
+        menuSettings.add(menuHighlights);
+
+        // setting font from config
+        setMsgFont(getNewFont(lblMsg.getFont(), fontName));
     }
 
     private Color getHlColorFromCfg() {
@@ -942,13 +992,21 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    private Font getNewFont(Font font, String name) {
+        return getNewFont(name, font.getStyle(), font.getSize());
+    }
+
     private Font getNewFont(Font font, int size) {
         return getNewFont(font, font.getStyle(), size);
     }
 
     private Font getNewFont(Font font, int style, int size) {
-        log("Returning font as " + font.getName() + ", style " + (font.isBold() ? "bold" : "plain") + ", of size " + size);
-        return new Font(font.getName(), style, size);
+        return getNewFont(font.getName(), style, size);
+    }
+
+    private Font getNewFont(String name, int style, int size) {
+        log("Returning font as " + name + ", style " + (style == Font.BOLD ? "bold" : "plain") + ", of size " + size);
+        return new Font(name, style, size);
     }
 
     private void showListRF() {
@@ -1342,6 +1400,18 @@ public class SearchBigFile extends AppFrame {
         return epResults.getFont().getSize() + "";
     }
 
+    public String getFontName() {
+        return fontName + "";
+    }
+
+    public String getChangeHighlightAuto() {
+        return jcbmiHighlights.isSelected() + "";
+    }
+
+    public String getChangeFontAuto() {
+        return jcbmiFonts.isSelected() + "";
+    }
+
     public String getSearchString() {
         return txtSearch.getText();
     }
@@ -1687,18 +1757,32 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void changeMsgFont() {
-        Font f = lblMsg.getFont();
-        f = new Font(getNextFont(), f.getStyle(), f.getSize());
+        if (Boolean.parseBoolean(getChangeFontAuto())) {
+            Font f = lblMsg.getFont();
+            f = new Font(getNextFont(), f.getStyle(), f.getSize());
+            setMsgFont(f);
+        }
+
+        if (Boolean.parseBoolean(getChangeHighlightAuto())) {
+            changeHighlightColor();
+        }
+    }
+
+    public void setMsgFont(Font f) {
+        fontName = f.getFontName();
+        menuFonts.setText("Fonts " + Utils.addBraces(fontName));
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
-        String tip = HTML_STR + "Font for this bar [" + msg + "], changes every [" + TEN + "min]. " + BR + getInitialMsg() + HTML_END;
+        String tip = HTML_STR
+                + "Font for this bar [" + msg + "], changes every [" + TEN + "min] if chosen - see 'Settings' menu. "
+                + BR
+                + "Highlight/Selected color changes every [" + TEN + "min] if chosen - see 'Settings' menu. "
+                + BR +
+                getInitialMsg() + HTML_END;
         lblMsg.setToolTipText(tip);
         //msgPanel.setToolTipText(tip);
         showMsgAsInfo(msg);
         debug(msg);
-
-        // change highlight color also
-        changeHighlightColor();
     }
 
     private String escString(String str) {

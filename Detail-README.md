@@ -15,6 +15,10 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 21-Nov-2020
+* Settings menu added 
+* Now font and highlight color will be changed automatically if settings are ON  
+
 #### On 20-Nov-2020
 * Updated with better picture of colors for highlighting and selected text 
 

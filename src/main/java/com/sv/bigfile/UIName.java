@@ -26,6 +26,7 @@ public enum UIName {
     LBL_LASTN("Last N", 'N'),
     BTN_LASTN("Read", 'e', "Read last N lines and highlight."),
     LBL_RSEARCHES("Recent", 't', "Recently used search-patterns list."),
+    MNU_SETTINGS("", 'g', "Settings"),
     MNU_COLOR("*", 'b', "Change highlight color and selected text & background, present highlight color is shown as background."),
     BTN_LISTRS("", 'I', "Search recently used search-patterns list."),
     BTN_CANCEL("", 'C', "Cancel/Stop Search/Read");
