@@ -124,6 +124,7 @@ public class SearchBigFile extends AppFrame {
 
     private JMenuBar mbColor;
     private static Color highlightColor, selectionColor, selectionTextColor;
+    private static int highlightColorIdx;
     private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
 
@@ -652,7 +653,7 @@ public class SearchBigFile extends AppFrame {
                 continue;
             }
             //JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Set this as highlighter", i++);
-            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Select this", i++){
+            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Select this", i++) {
                 @Override
                 public Dimension getPreferredSize() {
                     Dimension d = super.getPreferredSize();
@@ -685,6 +686,19 @@ public class SearchBigFile extends AppFrame {
                 "Sample: " + SwingUtils.htmlBGColor(c[0], "Highlight text") + BR +
                 "and " + SwingUtils.htmlBGColor(c[1], c[2], "Selected text") +
                 HTML_END;
+    }
+
+    private void changeHighlightColor() {
+        highlightColorIdx++;
+        if (highlightColorIdx == HELP_COLORS.length) {
+            highlightColorIdx = 0;
+        }
+        if (HELP_COLORS[highlightColorIdx][0] == Color.white) {
+            highlightColorIdx++;
+        }
+        Color[] cls = HELP_COLORS[highlightColorIdx];
+        setHighlightColor(cls[0], cls[1], cls[2]);
+        logger.debug("Setting highlight color with index " + Utils.addBraces(highlightColorIdx));
     }
 
     private void setHighlightColor(Color color, Color selColor, Color selTextColor) {
@@ -1682,6 +1696,9 @@ public class SearchBigFile extends AppFrame {
         //msgPanel.setToolTipText(tip);
         showMsgAsInfo(msg);
         debug(msg);
+
+        // change highlight color also
+        changeHighlightColor();
     }
 
     private String escString(String str) {
