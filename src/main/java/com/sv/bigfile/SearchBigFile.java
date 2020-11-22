@@ -1162,7 +1162,7 @@ public class SearchBigFile extends AppFrame {
         if (!isErrorState()) {
             showMsg("Search cancelled.", MsgType.ERROR);
         }
-        if (status == Status.READING) {
+        if (isReading()) {
             logger.warn("Search cancelled by user.");
             status = Status.CANCELLED;
         }
@@ -1962,7 +1962,7 @@ public class SearchBigFile extends AppFrame {
             long timeElapse = 0;
             do {
                 // Due to multi threading, separate if is imposed
-                if (status == Status.READING) {
+                if (isReading()) {
                     timeElapse = Utils.getTimeDiffSec(startTime);
                     timeTillNow = timeElapse;
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
@@ -1975,13 +1975,13 @@ public class SearchBigFile extends AppFrame {
                         sbf.logger.warn("Stopping forcefully.");
                         cancelSearch();
                     }
-                    if (status == Status.READING) {
+                    if (isReading()) {
                         sbf.updateTitle(msg);
                     }
                     logger.debug("Timer callable sleeping now for a second");
                     Utils.sleep(1000, sbf.logger);
                 }
-            } while (status == Status.READING);
+            } while (isReading());
 
             logger.log("Timer stopped after " + timeElapse + " sec");
             return true;
