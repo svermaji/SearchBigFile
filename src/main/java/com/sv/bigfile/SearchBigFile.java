@@ -274,7 +274,7 @@ public class SearchBigFile extends AppFrame {
         mbColor = new JMenuBar();
         menuColors = new JMenu(uin.name);
         menuColors.setMnemonic(uin.mnemonic);
-        menuColors.setToolTipText(uin.tip + " Shortcut: Alt+" + uin.mnemonic);
+        menuColors.setToolTipText(uin.tip + SHORTCUT + uin.mnemonic);
         mbColor.add(menuColors);
         updateColorMenu();
 
@@ -374,7 +374,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings = new JMenu();
         menuSettings.setIcon(new ImageIcon("./icons/settings-icon.png"));
         menuSettings.setMnemonic(uin.mnemonic);
-        menuSettings.setToolTipText(uin.tip + " Shortcut: Alt+" + uin.mnemonic);
+        menuSettings.setToolTipText(uin.tip + SHORTCUT + uin.mnemonic);
         prepareSettingsMenu();
         jmbSettings.add(menuSettings);
         JPanel jpSettings = new JPanel();
@@ -548,7 +548,8 @@ public class SearchBigFile extends AppFrame {
 
     private AppTable createAllOccrTable() {
         modelAllOccr = SwingUtils.getTableModel(
-                new String[]{"#", "All occurrences - Double click or Enter (Show/Hide this panel using Alt+" + (Character.toString(((char) btnShowAll.getMnemonic())).toLowerCase()) + ")"});
+                new String[]{"#", "All occurrences - Double click or Enter (Show/Hide this panel. "
+                        + SHORTCUT + (Character.toLowerCase(btnShowAll.getMnemonic())) + ")"});
         tblAllOccr = new AppTable(modelAllOccr);
         tblAllOccr.addEnterOnRow(new AllOccrEnterAction(tblAllOccr, this));
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
