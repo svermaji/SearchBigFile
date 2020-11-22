@@ -47,8 +47,8 @@ public class SearchBigFile extends AppFrame {
      * e.g. if enum is Xyz then when storing getXyz will be called
      */
     enum Configs {
-        RecentFiles, HighlightColor, SelectionColor, SelectionTextColor, FilePath, SearchString, RecentSearches,
-        LastN, FontSize, FontName, ChangeFontAuto, ChangeHighlightAuto, MatchCase, WholeWord, DebugEnabled
+        RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
+        ColorIndex, ChangeFontAuto, ChangeHighlightAuto, MatchCase, WholeWord, DebugEnabled
     }
 
     enum Status {
@@ -112,7 +112,7 @@ public class SearchBigFile extends AppFrame {
     private static String timeTaken;
     private static long lineNums;
     private static int fontIdx = 0;
-    private static String fontName = "";
+    private static int colorIdx = 0;
 
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
@@ -126,7 +126,6 @@ public class SearchBigFile extends AppFrame {
 
     private JMenuBar mbColor;
     private static Color highlightColor, selectionColor, selectionTextColor;
-    private static int highlightColorIdx;
     private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
 
@@ -161,9 +160,9 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new HashMap<>();
-        highlightColor = getHlColorFromCfg();
-        selectionColor = getSelColorFromCfg();
-        selectionTextColor = getSelTextColorFromCfg();
+        colorIdx = getIntCfg(Configs.ColorIndex);
+        fontIdx = getIntCfg(Configs.FontIndex);
+        setColorFromIdx();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
         msgCallable = new AppendMsgCallable(this);
@@ -461,7 +460,7 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
         setControlsToEnable();
-        setHighlightColor(highlightColor, selectionColor, selectionTextColor);
+        setHighlightColor();
         setupHelp();
         resetForNewSearch();
         enableControls();
@@ -475,6 +474,13 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.requestFocus();
     }
 
+    private void setColorFromIdx() {
+        Color[] c = HELP_COLORS[colorIdx];
+        highlightColor = c[0];
+        selectionColor = c[1];
+        selectionTextColor = c[2];
+    }
+
     private void prepareSettingsMenu() {
         jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
         jcbmiFonts.setMnemonic('F');
@@ -484,18 +490,23 @@ public class SearchBigFile extends AppFrame {
         jcbmiHighlights.setToolTipText("Changes colors of highlighted text, selected-text and selected background every 10 minutes");
 
         menuSettings.add(jcbmiFonts);
-        fontName = getCfg(Configs.FontName);
-        menuFonts = new JMenu("Fonts " + Utils.addBraces(fontName));
+        menuFonts = new JMenu("Fonts " + Utils.addBraces(getFontFromEnum()));
         menuFonts.setMnemonic('o');
         int i = 'a';
+        int x = 0;
         for (ColorsNFonts cnf : ColorsNFonts.values()) {
             JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + cnf.getFont());
             mi.setMnemonic(i++);
             Font f = mi.getFont();
             Font nf = getNewFont(f, cnf.getFont());
             mi.setFont(nf);
-            mi.addActionListener(e -> setMsgFont(nf));
+            int finalX = x;
+            mi.addActionListener(e -> {
+                fontIdx = finalX;
+                setMsgFont(nf);
+            });
             menuFonts.add(mi);
+            x++;
         }
         menuSettings.add(menuFonts);
         menuSettings.addSeparator();
@@ -507,31 +518,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(menuHighlights);
 
         // setting font from config
-        setMsgFont(getNewFont(lblMsg.getFont(), fontName));
-    }
-
-    private Color getHlColorFromCfg() {
-        String hlcfg = getCfg(Configs.HighlightColor);
-        String[] hlcfgArr = hlcfg.split(COMMA);
-        return new Color(Integer.parseInt(hlcfgArr[0]),
-                Integer.parseInt(hlcfgArr[1]),
-                Integer.parseInt(hlcfgArr[2]));
-    }
-
-    private Color getSelColorFromCfg() {
-        String cfg = getCfg(Configs.SelectionColor);
-        String[] cfgArr = cfg.split(COMMA);
-        return new Color(Integer.parseInt(cfgArr[0]),
-                Integer.parseInt(cfgArr[1]),
-                Integer.parseInt(cfgArr[2]));
-    }
-
-    private Color getSelTextColorFromCfg() {
-        String cfg = getCfg(Configs.SelectionTextColor);
-        String[] cfgArr = cfg.split(COMMA);
-        return new Color(Integer.parseInt(cfgArr[0]),
-                Integer.parseInt(cfgArr[1]),
-                Integer.parseInt(cfgArr[2]));
+        setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
     }
 
     private void setSplitPaneLoc() {
@@ -698,12 +685,14 @@ public class SearchBigFile extends AppFrame {
 
     private void updateColorMenu() {
         int i = 'a';
+        int x = -1;
         for (Color[] c : HELP_COLORS) {
+            x++;
             if (c[0] == Color.white) {
                 // ignoring white
                 continue;
             }
-            //JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Set this as highlighter", i++);
+
             JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Select this", i++) {
                 @Override
                 public Dimension getPreferredSize() {
@@ -713,7 +702,11 @@ public class SearchBigFile extends AppFrame {
                     return d;
                 }
             };
-            mi.addActionListener(e -> setHighlightColor(c[0], c[1], c[2]));
+            int finalX = x;
+            mi.addActionListener(e -> {
+                colorIdx = finalX;
+                setHighlightColor();
+            });
             mi.setLayout(new GridLayout(1, 3));
             mi.add(new JLabel(""));
             mi.setToolTipText(prepareToolTip(c));
@@ -740,22 +733,19 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void changeHighlightColor() {
-        highlightColorIdx++;
-        if (highlightColorIdx == HELP_COLORS.length) {
-            highlightColorIdx = 0;
+        colorIdx++;
+        if (colorIdx == HELP_COLORS.length) {
+            colorIdx = 0;
         }
-        if (HELP_COLORS[highlightColorIdx][0] == Color.white) {
-            highlightColorIdx++;
+        if (HELP_COLORS[colorIdx][0] == Color.white) {
+            colorIdx++;
         }
-        Color[] cls = HELP_COLORS[highlightColorIdx];
-        setHighlightColor(cls[0], cls[1], cls[2]);
-        logger.debug("Setting highlight color with index " + Utils.addBraces(highlightColorIdx));
+        setHighlightColor();
+        logger.debug("Setting highlight color with index " + Utils.addBraces(colorIdx));
     }
 
-    private void setHighlightColor(Color color, Color selColor, Color selTextColor) {
-        highlightColor = color;
-        selectionColor = selColor;
-        selectionTextColor = selTextColor;
+    private void setHighlightColor() {
+        setColorFromIdx();
         mbColor.setBackground(highlightColor);
         highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
         painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
@@ -1401,8 +1391,12 @@ public class SearchBigFile extends AppFrame {
         return epResults.getFont().getSize() + "";
     }
 
-    public String getFontName() {
-        return fontName + "";
+    public String getFontIndex() {
+        return fontIdx + "";
+    }
+
+    public String getColorIndex() {
+        return colorIdx + "";
     }
 
     public String getChangeHighlightAuto() {
@@ -1435,21 +1429,6 @@ public class SearchBigFile extends AppFrame {
 
     public String getRecentFiles() {
         return recentFilesStr;
-    }
-
-    public String getHighlightColor() {
-        return String.format("%s,%s,%s",
-                highlightColor.getRed(), highlightColor.getGreen(), highlightColor.getBlue());
-    }
-
-    public String getSelectionColor() {
-        return String.format("%s,%s,%s",
-                selectionColor.getRed(), selectionColor.getGreen(), selectionColor.getBlue());
-    }
-
-    public String getSelectionTextColor() {
-        return String.format("%s,%s,%s",
-                selectionTextColor.getRed(), selectionTextColor.getGreen(), selectionTextColor.getBlue());
     }
 
     public String getDebugEnabled() {
@@ -1744,10 +1723,15 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getNextFont() {
+        fontIdx++;
         if (fontIdx == ColorsNFonts.values().length) {
             fontIdx = 0;
         }
-        return ColorsNFonts.values()[fontIdx++].getFont();
+        return getFontFromEnum();
+    }
+
+    private String getFontFromEnum() {
+        return ColorsNFonts.values()[fontIdx].getFont();
     }
 
     public void changeHelpColor() {
@@ -1770,8 +1754,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void setMsgFont(Font f) {
-        fontName = f.getFontName();
-        menuFonts.setText("Fonts " + Utils.addBraces(fontName));
+        menuFonts.setText("Fonts " + Utils.addBraces(getFontFromEnum()));
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
         String tip = HTML_STR

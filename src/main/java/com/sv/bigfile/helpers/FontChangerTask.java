@@ -14,6 +14,7 @@ public class FontChangerTask extends TimerTask {
 
     @Override
     public void run() {
+        sbf.debug("Running font changer task");
         sbf.changeMsgFont();
     }
 }
