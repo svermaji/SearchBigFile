@@ -55,10 +55,10 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 #### Images of different stages of development/features since day 1
 * Application Present Image<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-settings.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-22-nov.png)
 
 * First cut<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-first-cut.png)
 
 * Test result on 1GB file with Buffered Reader<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-result-BR.png)
@@ -96,14 +96,11 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Filter recent values<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-recent-filter.png)
 
-* Highlight/Selected Colors tooltip sample<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-tooltips.png)
-
 * Settings menu<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-settings-menu.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-settings.png)
 
 * Settings -> Fonts menu<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-fonts.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-fonts-menu.png)
 
 * Settings -> Highlight menu<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-menu.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-highlight-colors.png)

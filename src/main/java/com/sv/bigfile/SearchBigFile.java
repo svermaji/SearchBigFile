@@ -73,7 +73,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel bottomPanel;
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
-    private JMenu menuRFiles, menuRSearches, menuColors, menuSettings, menuFonts;
+    private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll;
@@ -124,7 +124,7 @@ public class SearchBigFile extends AppFrame {
     private long occrTillNow;
     private long linesTillNow;
 
-    private JMenuBar mbColor;
+    private JMenuBar mbSettings;
     private static Color highlightColor, selectionColor, selectionTextColor;
     private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
@@ -269,13 +269,13 @@ public class SearchBigFile extends AppFrame {
         mbar.add(menuRSearches);
         updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
 
-        uin = UIName.MNU_COLOR;
-        mbColor = new JMenuBar();
-        menuColors = new JMenu(uin.name);
-        menuColors.setMnemonic(uin.mnemonic);
-        menuColors.setToolTipText(uin.tip + SHORTCUT + uin.mnemonic);
-        mbColor.add(menuColors);
-        updateColorMenu();
+        uin = UIName.MNU_SETTINGS;
+        mbSettings = new JMenuBar();
+        menuSettings = new JMenu(uin.name);
+        menuSettings.setMnemonic(uin.mnemonic);
+        menuSettings.setToolTipText(uin.tip + SHORTCUT + uin.mnemonic);
+        mbSettings.add(menuSettings);
+        // populating settings menu at end so font can be applied to lblMsg
 
         uin = UIName.BTN_CANCEL;
         btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
@@ -337,7 +337,7 @@ public class SearchBigFile extends AppFrame {
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
         controlPanel.add(jtbActions);
-        jtbActions.add(mbColor);
+        jtbActions.add(mbSettings);
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
@@ -368,21 +368,9 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_SHOWALL;
         btnShowAll = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnShowAll.addActionListener(e -> showAllOccr());
-        uin = UIName.MNU_SETTINGS;
-        JMenuBar jmbSettings = new JMenuBar();
-        menuSettings = new JMenu();
-        menuSettings.setIcon(new ImageIcon("./icons/settings-icon.png"));
-        menuSettings.setMnemonic(uin.mnemonic);
-        menuSettings.setToolTipText(uin.tip + SHORTCUT + uin.mnemonic);
-        prepareSettingsMenu();
-        jmbSettings.add(menuSettings);
-        JPanel jpSettings = new JPanel();
-        jpSettings.add(jmbSettings);
-        jpSettings.add(btnShowAll);
+
         msgPanel.add(lblMsg, BorderLayout.CENTER);
-//        msgPanel.add(btnShowAll, BorderLayout.LINE_END);
-//        msgPanel.add(jmbSettings, BorderLayout.LINE_START);
-        msgPanel.add(jpSettings, BorderLayout.LINE_END);
+        msgPanel.add(btnShowAll, BorderLayout.LINE_END);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
         resetShowWarning();
 
@@ -456,6 +444,8 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
         menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
 
+        prepareSettingsMenu();
+
         new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
@@ -512,9 +502,8 @@ public class SearchBigFile extends AppFrame {
         menuSettings.addSeparator();
         menuSettings.add(jcbmiHighlights);
         JMenu menuHighlights = new JMenu("Highlights");
-        menuFonts.setMnemonic('g');
-        JMenuItem mi = new JMenuItem("Please refer menu " + UIName.MNU_COLOR.name + " in Controls section.");
-        menuHighlights.add(mi);
+        menuHighlights.setMnemonic('g');
+        updateColorMenu(menuHighlights);
         menuSettings.add(menuHighlights);
 
         // setting font from config
@@ -672,7 +661,8 @@ public class SearchBigFile extends AppFrame {
                 txtFilePath, txtSearch, btnSearch, btnLastN,
                 menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
-                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind
+                btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind,
+                menuSettings, btnShowAll,
         };
         setComponentToEnable(components);
         setComponentContrastToEnable(new Component[]{btnCancel});
@@ -683,7 +673,7 @@ public class SearchBigFile extends AppFrame {
         log("Debug enabled " + Utils.addBraces(logger.isDebug()));
     }
 
-    private void updateColorMenu() {
+    private void updateColorMenu(JMenu hlmenu) {
         int i = 'a';
         int x = -1;
         for (Color[] c : HELP_COLORS) {
@@ -721,7 +711,7 @@ public class SearchBigFile extends AppFrame {
             s.setHorizontalAlignment(JLabel.CENTER);
             s.setForeground(c[2]);
             mi.add(s);
-            menuColors.add(mi);
+            hlmenu.add(mi);
         }
     }
 
@@ -746,7 +736,7 @@ public class SearchBigFile extends AppFrame {
 
     private void setHighlightColor() {
         setColorFromIdx();
-        mbColor.setBackground(highlightColor);
+        mbSettings.setBackground(highlightColor);
         highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
         painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
         if (timeTaken != null) {
