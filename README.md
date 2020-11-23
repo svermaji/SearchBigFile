@@ -29,6 +29,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
     * Color combination can be seen in the tooltip of each menuitem. 
 * Tabs present for help and results. 
 * Help button text color changes to 6 different colors every 30sec. 
+* Help can be seen in browser with button click. 
 * After 'Read' operation is performed Search pattern box can be used to find any string in existing result. 
 * At start of program detail help will be displayed. 
 * Warning and Info indicator will change font every 10 min.  Font details will be in tooptip. 
