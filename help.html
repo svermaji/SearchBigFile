@@ -47,13 +47,13 @@
         <td><a href="./app-images/app-image-help.png" target="_blank">Help Tab</a></td>
     </tr>
     <tr>
-        <td><a href="./app-images/app-image-recent.png" target="_blank">Recent Menu</a></td>
-        <td><a href="./app-images/app-image-recent-filter.png" target="_blank">Filter recent values</a></td>
-    </tr>
-    <tr>
         <td><a href="./app-images/app-image-settings.png" target="_blank">Settings Menu</a></td>
         <td><a href="./app-images/app-image-fonts-menu.png" target="_blank">Font Menu</a></td>
         <td><a href="./app-images/app-image-highlight-colors.png" target="_blank">Highlight Menu</a></td>
+    </tr>
+    <tr>
+        <td><a href="./app-images/app-image-recent.png" target="_blank">Recent Menu</a></td>
+        <td><a href="./app-images/app-image-recent-filter.png" target="_blank">Filter recent values</a></td>
     </tr>
     <tr>
         <td colspan="3"><a href="./app-images/app-image-first-cut.png" target="_blank">First cut</a></td>
@@ -130,14 +130,30 @@
     </ul>
     <li>Toolbar is available with different actions
         <ul>
-            <li>* this action will set highlight color immediately
+            <li>Settings menu '*' can be used for below:
+                this action will set highlight color immediately
                 <ul>
-                    <li>Chosen color will be applied as background to the item</li>
-                    <li>Highlight color will be applied in Results tab and occurrences table</li>
-                    <li>New color will be stored as part of configuration and reapplied on restart</li>
-                    <li>Each color is displayed as background of menu item and each menu item has shortcuts.
-                        For image see <a href="#introduction">Introduction</a> section
-                    </li>
+                    <li>To change fonts automatically for information bar by checking checkbox.</li>
+                    <li>Change fonts manually by selecting font from submenu.</li>
+                    <ul>
+                        <li>Each item will be in the font style of mentioned font name</li>
+                        <li>Selected font will be shown in the name of submenu</li>
+                    </ul>
+                    <li>To change highlight colors in search/read automatically by checking checkbox.</li>
+                    <li>Change highlight color manually by selecting color from submenu.</li>
+                    <ul>
+                        <li>Chosen color will be applied as background of the menu</li>
+                        <li>Highlight color will be applied in Results tab and occurrences table</li>
+                        <li>New color will be stored as part of configuration and reapplied on restart</li>
+                        <li>For image see <a href="#introduction">Introduction</a> section</li>
+                        <li>Each menu item has shortcuts. And each item shows sample of:
+                            <ul>
+                                <li>highlight color of matches from search/result</li>
+                                <li>selected text</li>
+                                <li>selected background</li>
+                            </ul>
+                        </li>
+                    </ul>
                 </ul>
             </li>
             <li>+ this action will increase font size by 1, maximum allowed size 28</li>
@@ -181,18 +197,6 @@
             <li>Shows font or font size change action.</li>
             <li>Shows results.</li>
             <li>Shows validations etc.</li>
-        </ul>
-    </li>
-    <li>Settings menu (<img src="./icons/settings-icon.png" width="12" height="12" title="Settings menu icon"/>) can be used
-        for below:
-        <ul>
-            <li>To change fonts automatically for information bar by checking checkbox.</li>
-            <li>Change fonts manually by selecting font from submenu.</li>
-            <ul>
-                <li>Selected font will be shown in the name of submenu</li>
-            </ul>
-            <li>To change highlight colors in search/read automatically by checking checkbox.</li>
-            <li>Highlight colors submenu gives message to refer highlight menu in Control section.</li>
         </ul>
     </li>
     <li>Button "Show/Hide All" on bar can be used to show/hide all occurrences table</li>
