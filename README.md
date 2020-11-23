@@ -55,7 +55,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 #### Images of different stages of development/features since day 1
 * Application Present Image<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-22-nov.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-23-nov.png)
 
 * First cut<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-first-cut.png)

@@ -327,12 +327,15 @@ public class SearchBigFile extends AppFrame {
         btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnHelp.setToolTipText(btnHelp.getToolTipText()
                 + ". Color changes to [" + HELP_COLORS.length + "] different colors, every [" + HELP_COLOR_CHANGE_SEC + "sec].");
-
         btnHelp.addActionListener(e -> showHelp());
+
+        uin = UIName.BTN_HBROWSER;
+        JButton btnHelpBrowser = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnHelpBrowser.addActionListener(e -> showHelpInBrowser());
 
         setBkColors(new JButton[]{
                 btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnGoTop,
-                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp});
+                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser});
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
@@ -347,6 +350,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnPreOccr);
         jtbActions.add(btnNextOccr);
         jtbActions.add(btnFind);
+        jtbActions.add(btnHelpBrowser);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
         controlPanel.setBorder(new TitledBorder("Controls"));
@@ -769,6 +773,14 @@ public class SearchBigFile extends AppFrame {
 
     private void showHelp() {
         selectTab(true);
+    }
+
+    private void showHelpInBrowser() {
+        try {
+            Runtime.getRuntime().exec("./show-help.bat");
+        } catch (IOException e) {
+            logger.error(e);
+        }
     }
 
     private void hideHelp() {
