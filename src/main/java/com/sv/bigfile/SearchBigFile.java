@@ -491,7 +491,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiHighlights);
 
         menuSettings.add(SwingUtils.getColorsMenu("Highlights", 'g', "Highlight colors",
-                true, false, true, this, logger));
+                true, false, true, false, true, this, logger));
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
