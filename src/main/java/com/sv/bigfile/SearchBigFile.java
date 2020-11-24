@@ -91,18 +91,6 @@ public class SearchBigFile extends AppFrame {
     private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights;
     private JComboBox<Integer> cbLastN;
 
-    private final Color[][] HELP_COLORS = {
-            // color, selection BG color, selection FG color
-            {Color.white, Color.yellow, Color.black},
-            {Color.pink, Color.red, Color.white},
-            {Color.green, Color.orange, Color.black},
-            {Color.yellow, new Color(51, 143, 255), Color.white},
-            {Color.orange, Color.MAGENTA, Color.white},
-            {new Color(166, 241, 195), Color.cyan, Color.BLACK},
-            {new Color(173, 209, 255), Color.black, Color.green},
-            {Color.cyan, Color.darkGray, Color.white}
-    };
-
     private static FILE_OPR operation;
 
     private static boolean showWarning = false;
@@ -326,7 +314,7 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_HELP;
         btnHelp = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnHelp.setToolTipText(btnHelp.getToolTipText()
-                + ". Color changes to [" + HELP_COLORS.length + "] different colors, every [" + HELP_COLOR_CHANGE_SEC + "sec].");
+                + ". Color changes to [" + ColorsNFonts.values().length + "] different colors, every [" + HELP_COLOR_CHANGE_SEC + "sec].");
         btnHelp.addActionListener(e -> showHelp());
 
         uin = UIName.BTN_HBROWSER;
@@ -469,10 +457,10 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setColorFromIdx() {
-        Color[] c = HELP_COLORS[colorIdx];
-        highlightColor = c[0];
-        selectionColor = c[1];
-        selectionTextColor = c[2];
+        ColorsNFonts c = ColorsNFonts.values()[colorIdx];
+        highlightColor = c.getBk();
+        selectionColor = c.getSelbk();
+        selectionTextColor = c.getSelfg();
     }
 
     private void prepareSettingsMenu() {
@@ -680,9 +668,9 @@ public class SearchBigFile extends AppFrame {
     private void updateColorMenu(JMenu hlmenu) {
         int i = 'a';
         int x = -1;
-        for (Color[] c : HELP_COLORS) {
+        for (ColorsNFonts c : ColorsNFonts.values()) {
             x++;
-            if (c[0] == Color.white) {
+            if (c.getBk() == Color.white || c.getBk() == Color.black) {
                 // ignoring white
                 continue;
             }
@@ -703,17 +691,17 @@ public class SearchBigFile extends AppFrame {
             });
             mi.setLayout(new GridLayout(1, 3));
             mi.add(new JLabel(""));
-            mi.setToolTipText(prepareToolTip(c));
+            mi.setToolTipText(prepareToolTip(new Color[]{c.getBk(), c.getSelbk(), c.getSelfg()}));
             JLabel h = new JLabel("Highlight Text");
             h.setHorizontalAlignment(JLabel.CENTER);
             h.setOpaque(true);
-            h.setBackground(c[0]);
+            h.setBackground(c.getBk());
             mi.add(h);
             JLabel s = new JLabel("Selected Text");
             s.setOpaque(true);
-            s.setBackground(c[1]);
+            s.setBackground(c.getSelbk());
             s.setHorizontalAlignment(JLabel.CENTER);
-            s.setForeground(c[2]);
+            s.setForeground(c.getSelfg());
             mi.add(s);
             hlmenu.add(mi);
         }
@@ -728,10 +716,10 @@ public class SearchBigFile extends AppFrame {
 
     private void changeHighlightColor() {
         colorIdx++;
-        if (colorIdx == HELP_COLORS.length) {
+        if (colorIdx == ColorsNFonts.values().length) {
             colorIdx = 0;
         }
-        if (HELP_COLORS[colorIdx][0] == Color.white) {
+        if (ColorsNFonts.values()[colorIdx].getBk() == Color.white) {
             colorIdx++;
         }
         setHighlightColor();
@@ -1737,8 +1725,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void changeHelpColor() {
-        for (Color[] c : HELP_COLORS) {
-            btnHelp.setForeground(c[0]);
+        for (ColorsNFonts c : ColorsNFonts.values()) {
+            btnHelp.setForeground(c.getBk());
             Utils.sleep(500);
         }
     }
