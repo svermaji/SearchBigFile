@@ -456,6 +456,18 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.requestFocus();
     }
 
+    // This will be called by reflection from SwingUI jar
+    public void colorChange(Integer x) {
+        colorIdx = x;
+        setHighlightColor();
+    }
+
+    // This will be called by reflection from SwingUI jar
+    public void fontChange(Font f, Integer x) {
+        fontIdx = x;
+        setMsgFont(f);
+    }
+
     private void setColorFromIdx() {
         ColorsNFonts c = ColorsNFonts.values()[colorIdx];
         highlightColor = c.getBk();
@@ -472,31 +484,14 @@ public class SearchBigFile extends AppFrame {
         jcbmiHighlights.setToolTipText("Changes colors of highlighted text, selected-text and selected background every 10 minutes");
 
         menuSettings.add(jcbmiFonts);
-        menuFonts = new JMenu("Fonts " + Utils.addBraces(getFontFromEnum()));
-        menuFonts.setMnemonic('o');
-        int i = 'a';
-        int x = 0;
-        for (ColorsNFonts cnf : ColorsNFonts.values()) {
-            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + cnf.getFont());
-            mi.setMnemonic(i++);
-            Font f = mi.getFont();
-            Font nf = getNewFont(f, cnf.getFont());
-            mi.setFont(nf);
-            int finalX = x;
-            mi.addActionListener(e -> {
-                fontIdx = finalX;
-                setMsgFont(nf);
-            });
-            menuFonts.add(mi);
-            x++;
-        }
+        menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
+                Utils.addBraces(getFontFromEnum()), this, logger);
         menuSettings.add(menuFonts);
         menuSettings.addSeparator();
         menuSettings.add(jcbmiHighlights);
-        JMenu menuHighlights = new JMenu("Highlights");
-        menuHighlights.setMnemonic('g');
-        updateColorMenu(menuHighlights);
-        menuSettings.add(menuHighlights);
+
+        menuSettings.add(SwingUtils.getColorsMenu("Highlights", 'g', "Highlight colors",
+                true, false, true, this, logger));
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -663,48 +658,6 @@ public class SearchBigFile extends AppFrame {
 
     private void printConfigs() {
         log("Debug enabled " + Utils.addBraces(logger.isDebug()));
-    }
-
-    private void updateColorMenu(JMenu hlmenu) {
-        int i = 'a';
-        int x = -1;
-        for (ColorsNFonts c : ColorsNFonts.values()) {
-            x++;
-            if (c.getBk() == Color.white || c.getBk() == Color.black) {
-                // ignoring white
-                continue;
-            }
-
-            JMenuItem mi = new JMenuItem((char) i + SP_DASH_SP + "Select this", i++) {
-                @Override
-                public Dimension getPreferredSize() {
-                    Dimension d = super.getPreferredSize();
-                    d.width = Math.max(d.width, 300); // set minimums
-                    d.height = Math.max(d.height, 30);
-                    return d;
-                }
-            };
-            int finalX = x;
-            mi.addActionListener(e -> {
-                colorIdx = finalX;
-                setHighlightColor();
-            });
-            mi.setLayout(new GridLayout(1, 3));
-            mi.add(new JLabel(""));
-            mi.setToolTipText(prepareToolTip(new Color[]{c.getBk(), c.getSelbk(), c.getSelfg()}));
-            JLabel h = new JLabel("Highlight Text");
-            h.setHorizontalAlignment(JLabel.CENTER);
-            h.setOpaque(true);
-            h.setBackground(c.getBk());
-            mi.add(h);
-            JLabel s = new JLabel("Selected Text");
-            s.setOpaque(true);
-            s.setBackground(c.getSelbk());
-            s.setHorizontalAlignment(JLabel.CENTER);
-            s.setForeground(c.getSelfg());
-            mi.add(s);
-            hlmenu.add(mi);
-        }
     }
 
     private String prepareToolTip(Color[] c) {
