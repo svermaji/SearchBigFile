@@ -93,6 +93,8 @@ public class SearchBigFile extends AppFrame {
 
     private static FILE_OPR operation;
 
+    private static ColorsNFonts[] appColors;
+    private static boolean ignoreBlackAndWhite = true;
     private static boolean showWarning = false;
     private static long insertCounter = 0;
     private static long readCounter = 0;
@@ -145,6 +147,8 @@ public class SearchBigFile extends AppFrame {
         debugAllowed = getBooleanCfg(Configs.DebugEnabled);
         logger.setDebug(debugAllowed);
         printConfigs();
+
+        appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new HashMap<>();
@@ -469,7 +473,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setColorFromIdx() {
-        ColorsNFonts c = ColorsNFonts.values()[colorIdx];
+        ColorsNFonts c = appColors[colorIdx];
         highlightColor = c.getBk();
         selectionColor = c.getSelbk();
         selectionTextColor = c.getSelfg();
@@ -491,7 +495,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiHighlights);
 
         menuSettings.add(SwingUtils.getColorsMenu("Highlights", 'g', "Highlight colors",
-                true, false, true, false, true, this, logger));
+                true, false, true, false, ignoreBlackAndWhite, this, logger));
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -669,10 +673,10 @@ public class SearchBigFile extends AppFrame {
 
     private void changeHighlightColor() {
         colorIdx++;
-        if (colorIdx == ColorsNFonts.values().length) {
+        if (colorIdx == appColors.length) {
             colorIdx = 0;
         }
-        if (ColorsNFonts.values()[colorIdx].getBk() == Color.white) {
+        if (appColors[colorIdx].getBk() == Color.white) {
             colorIdx++;
         }
         setHighlightColor();
