@@ -122,7 +122,7 @@ public class SearchBigFile extends AppFrame {
     // indexed structure to maintain line indexing
     private static Map<Long, String> idxMsgsToAppend;
     private static Map<Integer, OffsetInfo> lineOffsets;
-    private static int lineOffsetsIdx, lastLineOffsetsIdx = -1;
+    private static int lastSelectedRow = -1, lineOffsetsIdx, lastLineOffsetsIdx = -1;
     private static int globalCharIdx;
 
     // LIFO
@@ -509,8 +509,10 @@ public class SearchBigFile extends AppFrame {
 
     public void dblClickOffset(AppTable table, Object[] params) {
         // -1 as row number starts from 1
-        lineOffsetsIdx = Integer.parseInt(table.getValueAt(table.getSelectedRow(), 0).toString()) - 1;
+        int selRow = table.getSelectedRow();
+        lineOffsetsIdx = Integer.parseInt(table.getValueAt(selRow, 0).toString()) - 1;
         gotoOccr(lineOffsetsIdx);
+        lastSelectedRow = selRow;
     }
 
     private AppTable createAllOccrTable() {
@@ -579,8 +581,12 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (sz > 0) {
-            // select first row
-            tblAllOccr.changeSelection(0, 0, false, false);
+            // select first row or last selected
+            int r = 0;
+            if (lastSelectedRow != -1 && lastSelectedRow < sz) {
+                r = lastSelectedRow;
+            }
+            tblAllOccr.changeSelection(r, 0, false, false);
         }
 
         // refresh column name change with result count
@@ -1570,6 +1576,7 @@ public class SearchBigFile extends AppFrame {
                     }
                     createAllOccrRows();
                     highlightSearch();
+                    dblClickOffset(tblAllOccr, null);
                     //debug("All offsets are " + lineOffsets);
                 } catch (BadLocationException e) {
                     logger.error("Unable to get document text");
