@@ -586,6 +586,7 @@ public class SearchBigFile extends AppFrame {
             if (lastSelectedRow != -1 && lastSelectedRow < sz) {
                 r = lastSelectedRow;
             }
+            logger.debug("Selecting row number " + Utils.addBraces(r));
             tblAllOccr.changeSelection(r, 0, false, false);
         }
 
@@ -696,6 +697,9 @@ public class SearchBigFile extends AppFrame {
         painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
         if (timeTaken != null) {
             findWordInResult();
+        }
+        if (tblAllOccr != null && tblAllOccr.getRowCount() != 0) {
+            dblClickOffset(tblAllOccr, null);
         }
     }
 
@@ -1576,14 +1580,13 @@ public class SearchBigFile extends AppFrame {
                     }
                     createAllOccrRows();
                     highlightSearch();
-                    dblClickOffset(tblAllOccr, null);
                     //debug("All offsets are " + lineOffsets);
                 } catch (BadLocationException e) {
                     logger.error("Unable to get document text");
                 }
             }
         } else {
-            debug("No need to update offsets");
+            debug("No need to update offsets, selecting row now");
         }
     }
 
