@@ -822,8 +822,6 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
-            //int ix = lineOffsets.get(idx).getSIdx();
-            //selectAndGoToIndex(ix, ix + searchStr.length());
             selectAndGoToIndex(lineOffsets.get(idx).getSIdx(), lineOffsets.get(idx).getEIdx());
             showMsgAsInfo("Going occurrences of [" + searchStr + "] # " + (idx + 1) + "/" + lineOffsets.size());
             lastLineOffsetsIdx = idx;
@@ -1522,6 +1520,9 @@ public class SearchBigFile extends AppFrame {
 
     private void repaintLastItem() {
         if (lineOffsetsIdx != -1) {
+            if (lineOffsetsIdx == lineOffsets.size()) {
+                lineOffsetsIdx--;
+            }
             highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
         }
         if (lineOffsetsIdx != lastLineOffsetsIdx) {
