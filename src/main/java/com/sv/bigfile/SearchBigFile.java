@@ -735,8 +735,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void exportResults() {
-        // Will get html document which will be easy to process
-        searchUtils.exportResults (epResults.getText());
+        // Will get get text and NOT html document which will be easy to process
+        searchUtils.exportResults(epResults.getText());
     }
 
     private void showHelpInBrowser() {

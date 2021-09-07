@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 07-Sep-2021
+* Added export button to transfer results into a timestamp based file  
+
 #### On 21-Nov-2020
 * Settings menu added 
 * Now font and highlight color will be changed automatically if settings are ON  

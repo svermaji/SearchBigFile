@@ -11,6 +11,8 @@ import java.nio.file.Files;
 public class SearchUtils {
 
     private final MyLogger logger;
+    private final String BODY_S = "<body>";
+    private final String BODY_E = "</body>";
 
     public SearchUtils(MyLogger logger) {
         this.logger = logger;
@@ -24,7 +26,6 @@ public class SearchUtils {
 
     public boolean exportResults (String text) {
         String fn = getExportName();
-        logger.log(text);
         text = removeHtml(text);
         boolean result = true;
         try {
@@ -37,29 +38,20 @@ public class SearchUtils {
     }
 
     private String removeHtml(String text) {
-        String BODY_S = "<body>";
-        String BODY_E = "</body>";
-        text = unescape(text);
-        text = text.replace("<span><font color=\"blue\">", "");
-        text = text.replace("</font></span>", "");
-        text = text.replace("&#160;", Utils.HtmlEsc.SP.getCh());
-        text = text.replace("<br>", System.lineSeparator());
+        // need to check this
+        text = text.replaceAll(" {4}", "");
+        text = Utils.unescape(text);
+        text = text.replaceAll("([\\r\\n])", "");
+        text = text.replaceAll("<span><font color=\"blue\">", "");
+        text = text.replaceAll("</font></span>", "");
+        text = text.replaceAll("&#160;", Utils.HtmlEsc.SP.getCh());
+        text = text.replaceAll("<br>", System.lineSeparator());
 
         if (text.contains(BODY_S) && text.contains(BODY_E)) {
             text = text.substring(text.indexOf(BODY_S) + BODY_S.length(), text.indexOf(BODY_E));
         }
-        
-        return text;
-    }
 
-    /**
-     * This method is reverse of escape
-     *
-     * @param data String
-     * @return escaped string
-     */
-    private String unescape(String data) {
-        return data.replaceAll(Utils.HtmlEsc.SP.getEscStr(), Utils.HtmlEsc.SP.getCh());
+        return text;
     }
 
     /**
