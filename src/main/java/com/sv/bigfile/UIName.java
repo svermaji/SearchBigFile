@@ -20,6 +20,7 @@ public enum UIName {
     BTN_FIND("¤", 'z', "Set new word from Search box to see occurrences without highlighting."),
     BTN_HELP("?", '/', "Application help."),
     BTN_HBROWSER("O", ';', "Open help in browser."),
+    BTN_EXPORT("×", '9', "Export result."),
     JCB_MATCHCASE("Aa", 'a', "Match case."),
     JCB_WHOLEWORD("W", 'w', "Whole word."),
     LBL_SEARCH("Search", 'H'),

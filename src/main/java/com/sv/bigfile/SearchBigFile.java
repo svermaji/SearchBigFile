@@ -63,6 +63,7 @@ public class SearchBigFile extends AppFrame {
         SEARCH, READ, FIND
     }
 
+    private SearchUtils searchUtils;
     private MyLogger logger;
     private DefaultConfigs configs;
 
@@ -143,6 +144,7 @@ public class SearchBigFile extends AppFrame {
      */
     private void initComponents() {
         logger = MyLogger.createLogger(getClass());
+        searchUtils = new SearchUtils(logger);
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         debugAllowed = getBooleanCfg(Configs.DebugEnabled);
         logger.setDebug(debugAllowed);
@@ -325,9 +327,15 @@ public class SearchBigFile extends AppFrame {
         JButton btnHelpBrowser = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnHelpBrowser.addActionListener(e -> showHelpInBrowser());
 
+        uin = UIName.BTN_EXPORT;
+        JButton btnExport = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnExport.addActionListener(e -> exportResults());
+
         setBkColors(new JButton[]{
                 btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnGoTop,
-                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser});
+                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
+                btnExport
+        });
 
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
@@ -342,6 +350,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnPreOccr);
         jtbActions.add(btnNextOccr);
         jtbActions.add(btnFind);
+        jtbActions.add(btnExport);
         jtbActions.add(btnHelpBrowser);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
@@ -567,12 +576,7 @@ public class SearchBigFile extends AppFrame {
         lblNoRow.setVisible(sz == 0);
 
         if (sz > 0) {
-            String htmlDocText;
-            try {
-                htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
-            } catch (BadLocationException e) {
-                throw new AppException("Unable to create offset rows");
-            }
+            String htmlDocText = getResultsTextAsHtml();
             for (int i = 0; i < sz; i++) {
                 modelAllOccr.addRow(new String[]{(i + 1) + "",
                         formatValueAsHtml(getOccrExcerpt(getSearchString(),
@@ -611,16 +615,16 @@ public class SearchBigFile extends AppFrame {
             if (sIdx == 0) {
                 str = htmlDocText.substring(0, htmlDocLen);
                 return highlightColorStr
-                        + htmlEsc(str.substring(0, searchLen))
+                        + searchUtils.htmlEsc(str.substring(0, searchLen))
                         + FONT_SUFFIX
-                        + htmlEsc(str.substring(searchLen));
+                        + searchUtils.htmlEsc(str.substring(searchLen));
             } else if (sIdx > halfLimit && htmlDocLen > searchIdx + halfLimit) {
                 str = htmlDocText.substring(sIdx - halfLimit, searchIdx + halfLimit);
-                return htmlEsc(str.substring(0, halfLimit))
+                return searchUtils.htmlEsc(str.substring(0, halfLimit))
                         + highlightColorStr
-                        + htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
+                        + searchUtils.htmlEsc(str.substring(halfLimit, halfLimit + searchLen))
                         + FONT_SUFFIX
-                        + htmlEsc(str.substring(halfLimit + searchLen));
+                        + searchUtils.htmlEsc(str.substring(halfLimit + searchLen));
             }
 
             if (limit <= searchLen * 2) {
@@ -728,6 +732,10 @@ public class SearchBigFile extends AppFrame {
 
     private void showHelp() {
         selectTab(true);
+    }
+
+    private void exportResults() {
+        searchUtils.exportResults (epResults.getText());
     }
 
     private void showHelpInBrowser() {
@@ -1246,10 +1254,6 @@ public class SearchBigFile extends AppFrame {
         return jcbWholeWord.isSelected();
     }
 
-    private String htmlEsc(String str) {
-        return str.replaceAll(Utils.HtmlEsc.LT.getCh(), Utils.HtmlEsc.LT.getEscStr());
-    }
-
     private String regexEsc(String str) {
         str = str.replaceAll("\\(", "\\\\(");
         //str = str.replaceAll("\\.", "\\\\.");
@@ -1299,28 +1303,6 @@ public class SearchBigFile extends AppFrame {
             }
         }
         return body;
-    }
-
-    /**
-     * This method only converts spaces to &nbsp; till
-     * first char comes
-     *
-     * @param data String
-     * @return escaped string
-     */
-    private String escLSpaces(String data) {
-        StringBuilder sb = new StringBuilder();
-        int idx = 0;
-        char[] arr = data.toCharArray();
-        for (char c : arr) {
-            if (Character.isWhitespace(c)) {
-                sb.append("&nbsp;");
-                idx++;
-            } else {
-                break;
-            }
-        }
-        return sb.toString() + data.substring(idx);
     }
 
     private void emptyResults() {
@@ -1501,7 +1483,7 @@ public class SearchBigFile extends AppFrame {
         }
         // Go to end
         selectAndGoToIndex(htmlDoc.getLength());
-        lineOffsetsIdx = lineOffsets.size();
+        lineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() : -1;
     }
 
     public void selectAndGoToIndex(int idx) {
@@ -1525,7 +1507,7 @@ public class SearchBigFile extends AppFrame {
             }
             highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
         }
-        if (lineOffsetsIdx != lastLineOffsetsIdx) {
+        if (lineOffsetsIdx != lastLineOffsetsIdx && lineOffsetsIdx > -1) {
             highlightLastSelectedItem();
         }
     }
@@ -1556,39 +1538,44 @@ public class SearchBigFile extends AppFrame {
         if (offsetsNeedUpdate()) {
             lineOffsets.clear();
             if (!isSearchStrEmpty()) {
-                try {
-                    String strToSearch = processPattern();
-                    int strToSearchLen = strToSearch.length();
-                    debug("Starting search for string [" + strToSearch + "]");
+                String strToSearch = processPattern();
+                int strToSearchLen = strToSearch.length();
+                debug("Starting search for string [" + strToSearch + "]");
 
-                    String htmlDocText = htmlDoc.getText(0, htmlDoc.getLength());
-                    if (!isMatchCase()) {
-                        htmlDocText = htmlDocText.toLowerCase();
-                    }
-                    log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
-                    //debug(htmlDocText);
-
-                    int idx = 0, x = 0;
-                    while (idx != -1) {
-                        // Let create offsets for all occurrences even if
-                        // those are slightly higher then error due to in-line processing
-                        // This is because count will be mismatched if break is applied
-                        idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
-                        globalCharIdx = idx + strToSearchLen;
-                        if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
-                            lineOffsets.put(x++, new OffsetInfo(null, idx, globalCharIdx));
-                        }
-                    }
-                    createAllOccrRows();
-                    highlightSearch();
-                    //debug("All offsets are " + lineOffsets);
-                } catch (BadLocationException e) {
-                    logger.error("Unable to get document text");
+                String htmlDocText = getResultsTextAsHtml();
+                if (!isMatchCase()) {
+                    htmlDocText = htmlDocText.toLowerCase();
                 }
+                log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
+                //debug(htmlDocText);
+
+                int idx = 0, x = 0;
+                while (idx != -1) {
+                    // Let create offsets for all occurrences even if
+                    // those are slightly higher then error due to in-line processing
+                    // This is because count will be mismatched if break is applied
+                    idx = htmlDocText.indexOf(strToSearch, globalCharIdx);
+                    globalCharIdx = idx + strToSearchLen;
+                    if (idx != -1 && checkForWholeWord(strToSearch, htmlDocText, idx)) {
+                        lineOffsets.put(x++, new OffsetInfo(null, idx, globalCharIdx));
+                    }
+                }
+                createAllOccrRows();
+                highlightSearch();
+                //debug("All offsets are " + lineOffsets);
             }
         } else {
             debug("No need to update offsets, selecting row now");
         }
+    }
+
+    public String getResultsTextAsHtml() {
+        try {
+            return htmlDoc.getText(0, htmlDoc.getLength());
+        } catch (BadLocationException e) {
+            logger.error("Unable to get results.  Details: ", e);
+        }
+        return "";
     }
 
     // made public for test, will check later
@@ -1727,12 +1714,8 @@ public class SearchBigFile extends AppFrame {
         debug(msg);
     }
 
-    private String escString(String str) {
-        return htmlEsc(escLSpaces(str));
-    }
-
     private String addLineNumAndEsc(long lineNum, String str) {
-        return getLineNumStr(lineNum) + escString(str) + BR;
+        return getLineNumStr(lineNum) + searchUtils.escString(str) + BR;
     }
 
     private String addLineEnd(String str) {

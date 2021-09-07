@@ -6,6 +6,9 @@
 /target
 /out
 
+# export file
+export_*.txt
+
 # Log file
 *.log
 
