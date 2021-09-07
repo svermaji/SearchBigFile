@@ -735,6 +735,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void exportResults() {
+        // Will get html document which will be easy to process
         searchUtils.exportResults (epResults.getText());
     }
 

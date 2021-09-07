@@ -25,7 +25,7 @@ public class SearchUtils {
     public boolean exportResults (String text) {
         String fn = getExportName();
         logger.log(text);
-        text = unescape(text);
+        text = removeHtml(text);
         boolean result = true;
         try {
             Files.write(Utils.createPath(fn), text.getBytes(StandardCharsets.UTF_8));
@@ -34,6 +34,22 @@ public class SearchUtils {
             logger.error("Unable to create file " + Utils.addBraces(fn), e);
         }
         return result;
+    }
+
+    private String removeHtml(String text) {
+        String BODY_S = "<body>";
+        String BODY_E = "</body>";
+        text = unescape(text);
+        text = text.replace("<span><font color=\"blue\">", "");
+        text = text.replace("</font></span>", "");
+        text = text.replace("&#160;", Utils.HtmlEsc.SP.getCh());
+        text = text.replace("<br>", System.lineSeparator());
+
+        if (text.contains(BODY_S) && text.contains(BODY_E)) {
+            text = text.substring(text.indexOf(BODY_S) + BODY_S.length(), text.indexOf(BODY_E));
+        }
+        
+        return text;
     }
 
     /**
