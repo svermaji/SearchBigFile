@@ -20,7 +20,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 ## Description
 * Program stores the last searched file and search string. 
-* Added export button. 
+* Added export button and old export cleanup button. 
 * Settings menu added to set change color of highlights and fonts for message bar automatically. 
 * Added all occurrences table to search occurrences quicker with highlighted text.  
     * No occurrences' message also present. 

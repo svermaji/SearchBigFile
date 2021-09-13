@@ -1,9 +1,9 @@
 package com.sv.bigfile;
 
 import com.sv.bigfile.helpers.*;
+import com.sv.core.Constants;
 import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
-import com.sv.core.exception.AppException;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.swingui.SwingUtils;
@@ -56,7 +56,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     enum FONT_OPR {
-        INCREASE, DECREASE, RESET
+        INCREASE, DECREASE, RESET, NONE
     }
 
     enum FILE_OPR {
@@ -78,7 +78,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll;
-    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo;
+    private JButton btnPlusFont, btnMinusFont, btnResetFont;
     private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
@@ -300,8 +300,6 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_RESETFONT;
         btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
-        btnFontInfo = new JButton();
-        btnFontInfo.setToolTipText("Present font size for results area.");
         uin = UIName.BTN_GOTOP;
         btnGoTop = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnGoTop.addActionListener(e -> goToFirst());
@@ -331,10 +329,14 @@ public class SearchBigFile extends AppFrame {
         JButton btnExport = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnExport.addActionListener(e -> exportResults());
 
+        uin = UIName.BTN_CLEANEXPORT;
+        JButton btnCleanExport = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnCleanExport.addActionListener(e -> cleanOldExportResults());
+
         setBkColors(new JButton[]{
-                btnPlusFont, btnMinusFont, btnResetFont, btnFontInfo, btnGoTop,
+                btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
                 btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
-                btnExport
+                btnExport, btnCleanExport
         });
 
         JPanel controlPanel = new JPanel();
@@ -344,13 +346,13 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnPlusFont);
         jtbActions.add(btnMinusFont);
         jtbActions.add(btnResetFont);
-        jtbActions.add(btnFontInfo);
         jtbActions.add(btnGoTop);
         jtbActions.add(btnGoBottom);
         jtbActions.add(btnPreOccr);
         jtbActions.add(btnNextOccr);
         jtbActions.add(btnFind);
         jtbActions.add(btnExport);
+        jtbActions.add(btnCleanExport);
         jtbActions.add(btnHelpBrowser);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
@@ -445,7 +447,6 @@ public class SearchBigFile extends AppFrame {
             }
         });
 
-        btnFontInfo.setText(getFontSize());
         menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
         menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
 
@@ -454,6 +455,7 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
+        setFontSize(FONT_OPR.NONE);
         setControlsToEnable();
         setHighlightColor();
         setupHelp();
@@ -734,9 +736,34 @@ public class SearchBigFile extends AppFrame {
         selectTab(true);
     }
 
+    private void cleanOldExportResults() {
+        int retry = 1;
+        while (retry <= MAX_RETRY_EXPORT_DEL) {
+            if (searchUtils.cleanOldExportResults()) {
+                showMsgAsInfo("Old exported files deleted successfully.");
+                break;
+            } else {
+                showMsg("Failed to delete all export results. Retrying " + Utils.addBraces(retry), MsgType.WARN);
+                retry++;
+            }
+        }
+    }
+
     private void exportResults() {
         // Will get get text and NOT html document which will be easy to process
-        searchUtils.exportResults(epResults.getText());
+        String resultsText = epResults.getText();
+        String resultsTextNoNewLine = resultsText.replaceAll("([\\r\\n])", "");
+
+        if (Utils.hasValue(resultsText) &&
+                !resultsTextNoNewLine.equalsIgnoreCase(AppConstants.EMPTY_RESULT_TEXT)) {
+            if (searchUtils.exportResults(resultsText)) {
+                showMsgAsInfo("Result exported to file successfully.");
+            } else {
+                showMsg("Failed to export result to file.", MsgType.ERROR);
+            }
+        } else {
+            showMsg("No text to export.", MsgType.WARN);
+        }
     }
 
     private void showHelpInBrowser() {
@@ -934,16 +961,18 @@ public class SearchBigFile extends AppFrame {
                     changed = true;
                 }
                 break;
+            default:
+                changed = true;
         }
 
         if (changed) {
             String m = "Applying new font as " + getFontDetail(font);
             logger.log(m);
             epResults.setFont(font);
-            btnFontInfo.setText(getFontSize());
+            btnResetFont.setText(getFontSize());
             showMsgAsInfo(m);
         } else {
-            logger.log("Ignoring request for " + opr + "font. Present " + getFontDetail(font));
+            logger.log("Ignoring request for " + opr + " font. Present " + getFontDetail(font));
         }
     }
 
@@ -1390,7 +1419,7 @@ public class SearchBigFile extends AppFrame {
             }
             msgPanel.setBackground(b);
             lblMsg.setForeground(f);
-            lblMsg.setText(msg);
+            lblMsg.setText(Utils.getTimeGlobal() + Constants.SP_DASH_SP + msg);
         }
     }
 
@@ -1506,7 +1535,9 @@ public class SearchBigFile extends AppFrame {
             if (lineOffsetsIdx == lineOffsets.size()) {
                 lineOffsetsIdx--;
             }
-            highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
+            if (lineOffsets.size() > 0) {
+                highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
+            }
         }
         if (lineOffsetsIdx != lastLineOffsetsIdx && lineOffsetsIdx > -1) {
             highlightLastSelectedItem();
@@ -1518,6 +1549,7 @@ public class SearchBigFile extends AppFrame {
         epResults.grabFocus();
         repaintLastItem();
         epResults.select(sIdx, eIdx);
+        highlightLastSelectedItem();
     }
 
     public void finishAction() {

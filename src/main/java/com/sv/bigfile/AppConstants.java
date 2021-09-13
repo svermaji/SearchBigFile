@@ -1,9 +1,7 @@
 package com.sv.bigfile;
 
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import java.awt.*;
+import com.sv.core.Constants;
+
 import java.util.concurrent.TimeUnit;
 
 public final class AppConstants {
@@ -24,4 +22,9 @@ public final class AppConstants {
     public static final int WARN_LIMIT_OCCR = 100;
     public static final int ERROR_LIMIT_OCCR = 500;
     public static final int APPEND_MSG_CHUNK = 100;
+
+    public static final int MAX_RETRY_EXPORT_DEL = 3;
+    public static final String EXPORT_FILE_PREFIX = "export_";
+    public static final String EXPORT_FILE_EXTN = ".txt";
+    public static final String EMPTY_RESULT_TEXT = "<html>  <head>  </head>  <body>    <p style=\"margin-top: 0\">          </p>  </body></html>";
 }

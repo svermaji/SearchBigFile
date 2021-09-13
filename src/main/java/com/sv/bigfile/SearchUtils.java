@@ -4,6 +4,7 @@ import com.sv.core.Constants;
 import com.sv.core.Utils;
 import com.sv.core.logger.MyLogger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,13 +19,37 @@ public class SearchUtils {
         this.logger = logger;
     }
 
-    public String getExportName () {
+    public String getExportName() {
         String dt = Utils.getFormattedDate();
         dt = dt.replaceAll(Constants.COLON, Constants.DOT);
-        return "./export_" + dt + ".txt";
+        return AppConstants.EXPORT_FILE_PREFIX + dt + AppConstants.EXPORT_FILE_EXTN;
     }
 
-    public boolean exportResults (String text) {
+    public boolean cleanOldExportResults() {
+        File folder = new File(".");
+        String[] exportFiles = folder.list(
+                (dir, fn) -> fn.startsWith(AppConstants.EXPORT_FILE_PREFIX)
+                        && fn.endsWith(AppConstants.EXPORT_FILE_EXTN)
+        );
+
+        boolean result = true;
+        if (exportFiles != null) {
+            for (String exportFile : exportFiles) {
+                try {
+                    Files.deleteIfExists(Utils.createPath(exportFile));
+                } catch (IOException e) {
+                    if (result) {
+                        result = false;
+                    }
+                    logger.error("Unable to delete file " + Utils.addBraces(exportFile), e);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public boolean exportResults(String text) {
         String fn = getExportName();
         text = removeHtml(text);
         boolean result = true;
