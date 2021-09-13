@@ -166,7 +166,7 @@ public class SearchBigFile extends AppFrame {
 
         JPanel filePanel = new JPanel();
 
-        final int TXT_COLS = 15;
+        final int TXT_COLS = 12;
         UIName uin = UIName.LBL_FILE;
         txtFilePath = new AppTextField(getCfg(Configs.FilePath), TXT_COLS, getFiles());
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
@@ -212,7 +212,7 @@ public class SearchBigFile extends AppFrame {
 
         JPanel searchPanel = new JPanel();
 
-        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 8, getSearches());
+        txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 6, getSearches());
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         uin = UIName.BTN_SEARCH;
