@@ -6,6 +6,7 @@ import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
+import com.sv.runcmd.RunCommand;
 import com.sv.swingui.SwingUtils;
 import com.sv.swingui.UIConstants.*;
 import com.sv.swingui.component.*;
@@ -767,6 +768,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showHelpInBrowser() {
+        new RunCommand(new String[]{"./show-help.bat " + Utils.getCurrentDir()}, logger);
         try {
             Runtime.getRuntime().exec("./show-help.bat");
         } catch (IOException e) {
