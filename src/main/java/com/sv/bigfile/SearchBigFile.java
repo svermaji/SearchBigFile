@@ -508,7 +508,7 @@ public class SearchBigFile extends AppFrame {
 
     private void addBindings() {
 
-        Action doSearch = new AbstractAction() {
+        Action actionTxtSearch = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 logger.log("action...");
                 txtSearch.requestFocus();
@@ -516,9 +516,27 @@ public class SearchBigFile extends AppFrame {
             }
         };
 
-        KeyStroke key = KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK);
+        Action actionF3 = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                nextOccr();
+            }
+        };
+
+        Action actionShiftF3 = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                preOccr();
+            }
+        };
+
+        KeyStroke keyCtrlF = KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK);
         JComponent[] addBindingsTo = {epResults, tpHelp, lblMsg, btnShowAll, msgPanel};
-        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(key, doSearch));
+        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyCtrlF, actionTxtSearch));
+
+        KeyStroke keyShiftF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK);
+        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyShiftF3, actionShiftF3));
+
+        KeyStroke keyF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0);
+        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyF3, actionF3));
     }
 
     // This will be called by reflection from SwingUI jar
