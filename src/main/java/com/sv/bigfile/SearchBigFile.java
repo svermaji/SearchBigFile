@@ -115,6 +115,7 @@ public class SearchBigFile extends AppFrame {
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
     private final int MAX_READ_CHAR_LIMIT = 5000;
+    private static int maxReadCharTimes = 0;
     private boolean debugAllowed;
     private String searchStr, recentFilesStr, recentSearchesStr;
     private long timeTillNow;
@@ -1145,6 +1146,7 @@ public class SearchBigFile extends AppFrame {
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
+        maxReadCharTimes = 0;
         disableControls();
         resetShowWarning();
         emptyResults();
@@ -1874,7 +1876,7 @@ public class SearchBigFile extends AppFrame {
                     // break when end of the line
                     boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
                     if (maxReadCharLimitReached) {
-                        logger.log("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached, processing...");
+                        maxReadCharTimes++;
                     }
                     if (c == '\n' || maxReadCharLimitReached) {
 
@@ -1902,6 +1904,11 @@ public class SearchBigFile extends AppFrame {
                     }
                     fileLength = fileLength - pointer;
                 }
+                if (maxReadCharTimes > 0) {
+                    logger.log("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
+                            + Utils.addBraces(maxReadCharTimes) + " times, processing...");
+                }
+
                 log("File read complete in " + Utils.getTimeDiffSecStr(time));
                 if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
@@ -2123,7 +2130,7 @@ public class SearchBigFile extends AppFrame {
                     sb.append(c);
                     boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
                     if (maxReadCharLimitReached) {
-                        logger.log("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached, processing...");
+                        maxReadCharTimes++;
                     }
 
                     if (c == '\n' || maxReadCharLimitReached) {
@@ -2148,7 +2155,10 @@ public class SearchBigFile extends AppFrame {
                         }
                     }
                 }
-
+                if (maxReadCharTimes > 0) {
+                    logger.log("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
+                            + Utils.addBraces(maxReadCharTimes) + " times, processing...");
+                }
                 logger.log("File read in " + Utils.getTimeDiffSecStr(time));
 
                 if (!isCancelled()) {
