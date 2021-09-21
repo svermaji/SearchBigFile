@@ -110,6 +110,7 @@ public class SearchBigFile extends AppFrame {
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
+    private final int MAX_READ_CHAR_LIMIT = 2000;
     private boolean debugAllowed;
     private String searchStr, recentFilesStr, recentSearchesStr;
     private long timeTillNow;
@@ -1750,7 +1751,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String addLineNumAndEsc(long lineNum, String str) {
-        return getLineNumStr(lineNum) + searchUtils.escString(str) + BR;
+        return getLineNumStr(lineNum) + escString(str) + BR;
+    }
+
+    private String escString(String str) {
+        return searchUtils.escString(str);
     }
 
     private String addLineEnd(String str) {
@@ -1800,17 +1805,23 @@ public class SearchBigFile extends AppFrame {
                     // read from the last, one char at the time
                     c = (char) randomAccessFile.read();
                     // break when end of the line
-                    if (c == '\n') {
+                    boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
+                    if (maxReadCharLimitReached) {
+                        logger.log("max read char limit reached, processing...");
+                    }
+                    if (c == '\n' || maxReadCharLimitReached) {
 
                         if (Utils.hasValue(sb.toString())) {
                             sb.reverse();
                         }
 
                         occr += calculateOccr(sb.toString(), searchPattern);
-                        processForRead(readLines, sb.toString(), occr);
+                        processForRead(readLines, sb.toString(), occr, !maxReadCharLimitReached);
 
                         sb = new StringBuilder();
-                        readLines++;
+                        if (!maxReadCharLimitReached) {
+                            readLines++;
+                        }
                         // Last line will be printed after loop
                         if (readLines == LIMIT - 1) {
                             break;
@@ -1828,7 +1839,7 @@ public class SearchBigFile extends AppFrame {
                 if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
                 }
-                processForRead(readLines, sb.toString(), occr, true);
+                processForRead(readLines, sb.toString(), occr, true, true);
                 readLines++;
             } catch (IOException e) {
                 catchForRead(e);
@@ -1864,12 +1875,17 @@ public class SearchBigFile extends AppFrame {
             sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MsgType.ERROR);
         }
 
-        private void processForRead(int line, String str, int occr) {
-            processForRead(line, str, occr, false);
+        private void processForRead(int line, String str, int occr, boolean appendLineNum) {
+            processForRead(line, str, occr, appendLineNum, false);
         }
 
-        private void processForRead(int line, String str, int occr, boolean bypass) {
-            String strToAppend = addLineNumAndEsc(line + 1, str);
+        private void processForRead(int line, String str, int occr, boolean appendLineNum, boolean bypass) {
+            String strToAppend = "";
+            if (appendLineNum) {
+                strToAppend = addLineNumAndEsc(line + 1, str);
+            } else {
+                strToAppend = escString(str);
+            }
             synchronized (SearchBigFile.class) {
                 // emptying stack to Q
                 stack.push(strToAppend);
@@ -1892,7 +1908,7 @@ public class SearchBigFile extends AppFrame {
     // To avoid async order of lines this cannot be worker
     class SearchData {
 
-        final int LINES_TO_INFORM = 500000;
+        private final int LINES_TO_INFORM = 5_00_000;
         private final SearchStats stats;
 
         SearchData(SearchStats stats) {
@@ -1907,6 +1923,12 @@ public class SearchBigFile extends AppFrame {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
                 if (occr > 0) {
                     stats.setOccurrences(stats.getOccurrences() + occr);
+                    sb.append(
+                            stats.isCompleteLine() ?
+                                    sb.append(addLineNumAndEsc(lineNum, stats.getLine()))
+                                    : sb.append(escString(stats.getLine()))
+                    );
+
                     sb.append(addLineNumAndEsc(lineNum, stats.getLine()));
                     qMsgsToAppend.add(sb.toString());
                 }
@@ -2028,22 +2050,38 @@ public class SearchBigFile extends AppFrame {
                 SearchData searchData = new SearchData(stats);
 
                 String line;
-                while ((line = br.readLine()) != null) {
-                    stats.setLine(line);
-                    stats.setMatch(sbf.hasOccr(line, searchPattern));
+                char c;
+                int i;
+                StringBuilder sb = new StringBuilder();
+                while ((i = br.read()) != -1) {
 
-                    if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
-                        searchData.process();
-                        if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
-                            startThread(msgCallable);
-                        }
+                    c = (char) i;
+                    sb.append(c);
+                    boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
+                    if (maxReadCharLimitReached) {
+                        logger.log("search: max read char limit reached, processing...");
                     }
-                    if (isCancelled()) {
-                        String msg = "---xxx--- Search cancelled ---xxx---";
-                        debug(msg);
-                        qMsgsToAppend.add(addLineEnd(msg));
-                        startThread(msgCallable);
-                        break;
+
+                    if (c == '\n' || maxReadCharLimitReached) {
+                        stats.setCompleteLine(!maxReadCharLimitReached);
+                        line = sb.toString();
+                        sb = new StringBuilder();
+                        stats.setLine(line);
+                        stats.setMatch(sbf.hasOccr(line, searchPattern));
+
+                        if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
+                            searchData.process();
+                            if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                                startThread(msgCallable);
+                            }
+                        }
+                        if (isCancelled()) {
+                            String msg = "---xxx--- Search cancelled ---xxx---";
+                            debug(msg);
+                            qMsgsToAppend.add(addLineEnd(msg));
+                            startThread(msgCallable);
+                            break;
+                        }
                     }
                 }
 

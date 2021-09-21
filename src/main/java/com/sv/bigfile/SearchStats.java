@@ -4,7 +4,7 @@ public class SearchStats {
 
     private long lineNum, occurrences;
     private String line;
-    private boolean match;
+    private boolean match, completeLine;
     private final String searchPattern;
 
     public SearchStats(long lineNum, long occurrences, String line, String searchPattern) {
@@ -50,12 +50,21 @@ public class SearchStats {
         return searchPattern;
     }
 
+    public boolean isCompleteLine() {
+        return completeLine;
+    }
+
+    public void setCompleteLine(boolean completeLine) {
+        this.completeLine = completeLine;
+    }
+
     @Override
     public String toString() {
         return "SearchStats{" +
                 "lineNum=" + lineNum +
                 ", occurrences=" + occurrences +
                 ", match=" + match +
+                ", completeLine=" + completeLine +
                 ", searchPattern='" + searchPattern + '\'' +
                 '}';
     }
