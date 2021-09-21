@@ -270,7 +270,7 @@ public class SearchBigFile extends AppFrame {
         jtbSearch.addSeparator();
         jtbSearch.add(btnIC);
 
-        //TODO: If single line is around 30mb in one file as json response?
+        //Supports if single line is around 30mb in one file as json response
         uin = UIName.LBL_RSEARCHES;
         JMenuBar mbar = new JMenuBar();
         menuRSearches = new JMenu(uin.name);
@@ -512,7 +512,7 @@ public class SearchBigFile extends AppFrame {
 
         Action actionTxtSearch = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                logger.log("action...");
+                logger.info("action...");
                 txtSearch.requestFocus();
                 txtSearch.grabFocus();
             }
@@ -923,17 +923,17 @@ public class SearchBigFile extends AppFrame {
 
     private void gotoOccr(int idx) {
 
-        debug("Going to occurrence with index " + idx);
+        debug("Going to index " + Utils.addBraces(idx));
         if (offsetsNeedUpdate()) {
             updateOffsets();
         }
 
         if (lineOffsets.size() != 0 && lineOffsets.size() > idx) {
             selectAndGoToIndex(lineOffsets.get(idx).getSIdx(), lineOffsets.get(idx).getEIdx());
-            showMsgAsInfo("Going occurrences of [" + searchStr + "] # " + (idx + 1) + "/" + lineOffsets.size());
+            showMsgAsInfo("Going occurrences for " + Utils.addBraces(searchStr) + " # " + (idx + 1) + "/" + lineOffsets.size());
             lastLineOffsetsIdx = idx;
         } else {
-            showMsg("No occurrences of [" + searchStr + "] to show", MsgType.WARN);
+            showMsg("No occurrences for " + Utils.addBraces(searchStr) + " to show", MsgType.WARN);
         }
 
     }
@@ -987,12 +987,12 @@ public class SearchBigFile extends AppFrame {
 
     private Font getFontForEditor(String sizeStr) {
         Font retVal = SwingUtils.getPlainCalibriFont(Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE);
-        logger.log("Returning " + getFontDetail(retVal));
+        logger.info("Returning " + getFontDetail(retVal));
         return retVal;
     }
 
     private String getFontDetail(Font f) {
-        return String.format("Font: %s/%s/%s", f.getName(), (f.isBold() ? "bold" : "plain"), f.getSize());
+        return Utils.addBraces(String.format("Font: %s/%s/%s", f.getName(), (f.isBold() ? "bold" : "plain"), f.getSize()));
     }
 
     private void increaseFontSize() {
@@ -1038,12 +1038,12 @@ public class SearchBigFile extends AppFrame {
 
         if (changed) {
             String m = "Applying new font as " + getFontDetail(font);
-            logger.log(m);
+            logger.info(m);
             epResults.setFont(font);
             btnResetFont.setText(getFontSize());
             showMsgAsInfo(m);
         } else {
-            logger.log("Ignoring request for " + opr + " font. Present " + getFontDetail(font));
+            logger.info("Ignoring request for " + opr + " font. Present " + getFontDetail(font));
         }
     }
 
@@ -1156,7 +1156,7 @@ public class SearchBigFile extends AppFrame {
         globalCharIdx = 0;
         resetOffsets();
         setSearchStrings();
-        logger.log(getSearchDetails());
+        logger.info(getSearchDetails());
         startTime = System.currentTimeMillis();
         status = Status.READING;
     }
@@ -1287,7 +1287,7 @@ public class SearchBigFile extends AppFrame {
         }
 
         if (!result) {
-            logger.log("Validation failed !!");
+            logger.info("Validation failed !!");
         }
 
         return result;
@@ -1530,7 +1530,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void printCounters() {
-        logger.log("insertCounter [" + insertCounter
+        logger.info("insertCounter [" + insertCounter
                 + "], readCounter [" + readCounter
                 + "], qMsgsToAppend size [" + qMsgsToAppend.size()
                 + "], idxMsgsToAppend size [" + idxMsgsToAppend.size()
@@ -1548,7 +1548,7 @@ public class SearchBigFile extends AppFrame {
                         lineNum,
                         occurrences);
 
-        logger.log(result);
+        logger.info(result);
         return result;
     }
 
@@ -1557,7 +1557,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void log(String s) {
-        logger.log(s);
+        logger.info(s);
     }
 
     public void goToFirst() {
@@ -1586,6 +1586,9 @@ public class SearchBigFile extends AppFrame {
         // Go to end
         selectAndGoToIndex(htmlDoc.getLength());
         lineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() : -1;
+        if (lastLineOffsetsIdx == -1) {
+            lastLineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() : -1;
+        }
     }
 
     public void selectAndGoToIndex(int idx) {
@@ -1607,11 +1610,15 @@ public class SearchBigFile extends AppFrame {
             if (lineOffsetsIdx == lineOffsets.size()) {
                 lineOffsetsIdx--;
             }
+            // check if this required out of if
+            /*if (lineOffsets.size() > 0) {
+                highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
+            }*/
+        }
+        if (lineOffsetsIdx != lastLineOffsetsIdx && lineOffsetsIdx > -1) {
             if (lineOffsets.size() > 0) {
                 highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
             }
-        }
-        if (lineOffsetsIdx != lastLineOffsetsIdx && lineOffsetsIdx > -1) {
             highlightLastSelectedItem();
         }
     }
@@ -1638,7 +1645,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void updateOffsets() {
-        debug("Offsets size " + lineOffsets.size());
+        debug("Offsets size " + Utils.addBraces(lineOffsets.size()));
         timeTillNow = 0;
         if (offsetsNeedUpdate()) {
             lineOffsets.clear();
@@ -1808,7 +1815,7 @@ public class SearchBigFile extends AppFrame {
         lblMsg.setFont(f);
         String msg = getFontDetail(f);
         String tip = HTML_STR
-                + "Font for this bar [" + msg + "], changes every [" + TEN + "min] if chosen - see 'Settings' menu. "
+                + "Font for this bar " + msg + ", changes every [" + TEN + "min] if chosen - see 'Settings' menu. "
                 + BR
                 + "Highlight/Selected color changes every [" + TEN + "min] if chosen - see 'Settings' menu. "
                 + BR +
@@ -1858,7 +1865,7 @@ public class SearchBigFile extends AppFrame {
             File file = new File(fn);
 
             updateTitle("Reading last " + LIMIT + " lines");
-            logger.log("Loading last [" + LIMIT + "] lines from [" + Utils.addBraces(fn));
+            logger.info("Loading last [" + LIMIT + "] lines from [" + Utils.addBraces(fn));
             // FIFO
             stack.removeAllElements();
 
@@ -1905,7 +1912,7 @@ public class SearchBigFile extends AppFrame {
                     fileLength = fileLength - pointer;
                 }
                 if (maxReadCharTimes > 0) {
-                    logger.log("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
+                    logger.info("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
                             + Utils.addBraces(maxReadCharTimes) + " times, processing...");
                 }
 
@@ -2007,7 +2014,7 @@ public class SearchBigFile extends AppFrame {
             }
 
             if (lineNum % LINES_TO_INFORM == 0) {
-                logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
+                logger.info("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
             }
 
             occrTillNow = stats.getOccurrences();
@@ -2052,7 +2059,7 @@ public class SearchBigFile extends AppFrame {
                 }
             } while (isReading());
 
-            logger.log("Timer stopped after " + timeElapse + " sec");
+            logger.info("Timer stopped after " + Utils.addBraces(timeElapse) + " sec");
             return true;
         }
     }
@@ -2156,10 +2163,10 @@ public class SearchBigFile extends AppFrame {
                     }
                 }
                 if (maxReadCharTimes > 0) {
-                    logger.log("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
+                    logger.info("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
                             + Utils.addBraces(maxReadCharTimes) + " times, processing...");
                 }
-                logger.log("File read in " + Utils.getTimeDiffSecStr(time));
+                logger.info("File read in " + Utils.getTimeDiffSecStr(time));
 
                 if (!isCancelled()) {
                     time = System.currentTimeMillis();
@@ -2173,7 +2180,7 @@ public class SearchBigFile extends AppFrame {
                         Utils.sleep(200, sbf.logger);
                     }
                     idxMsgsToAppend.clear();
-                    logger.log("Time in waiting all message to append is " + Utils.getTimeDiffSecStr(time));
+                    logger.info("Time in waiting all message to append is " + Utils.getTimeDiffSecStr(time));
                 }
                 timeTaken = Utils.getTimeDiffSecStr(startTime);
                 lineNums = stats.getLineNum();
