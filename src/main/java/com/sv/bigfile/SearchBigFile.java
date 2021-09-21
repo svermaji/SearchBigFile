@@ -114,7 +114,7 @@ public class SearchBigFile extends AppFrame {
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
-    private final int MAX_READ_CHAR_LIMIT = 2000;
+    private final int MAX_READ_CHAR_LIMIT = 5000;
     private boolean debugAllowed;
     private String searchStr, recentFilesStr, recentSearchesStr;
     private long timeTillNow;
@@ -1874,7 +1874,7 @@ public class SearchBigFile extends AppFrame {
                     // break when end of the line
                     boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
                     if (maxReadCharLimitReached) {
-                        logger.log("max read char limit reached, processing...");
+                        logger.log("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached, processing...");
                     }
                     if (c == '\n' || maxReadCharLimitReached) {
 
@@ -1990,17 +1990,14 @@ public class SearchBigFile extends AppFrame {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
                 if (occr > 0) {
                     stats.setOccurrences(stats.getOccurrences() + occr);
-                    sb.append(
-                            stats.isCompleteLine() ?
-                                    sb.append(addLineNumAndEsc(lineNum, stats.getLine()))
-                                    : sb.append(escString(stats.getLine()))
-                    );
-
-                    sb.append(addLineNumAndEsc(lineNum, stats.getLine()));
+                    sb.append(stats.isCompleteLine() ? addLineNumAndEsc(lineNum, stats.getLine())
+                            : escString(stats.getLine()));
                     qMsgsToAppend.add(sb.toString());
                 }
             }
-            stats.setLineNum(lineNum + 1);
+            if (stats.isCompleteLine()) {
+                stats.setLineNum(lineNum + 1);
+            }
 
             if (lineNum % LINES_TO_INFORM == 0) {
                 logger.log("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
@@ -2126,7 +2123,7 @@ public class SearchBigFile extends AppFrame {
                     sb.append(c);
                     boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
                     if (maxReadCharLimitReached) {
-                        logger.log("search: max read char limit reached, processing...");
+                        logger.log("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached, processing...");
                     }
 
                     if (c == '\n' || maxReadCharLimitReached) {
