@@ -8,7 +8,6 @@ import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.runcmd.RunCommand;
 import com.sv.swingui.SwingUtils;
-import com.sv.swingui.UIConstants.*;
 import com.sv.swingui.component.*;
 import com.sv.swingui.component.table.AppTable;
 import com.sv.swingui.component.table.CellRendererCenterAlign;
@@ -23,9 +22,14 @@ import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.*;
 import java.io.*;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.*;
@@ -215,6 +219,16 @@ public class SearchBigFile extends AppFrame {
         JPanel searchPanel = new JPanel();
 
         txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 6, getSearches());
+        txtSearch.setToolTipText("Ctrl+F to come here and enter to perform Search");
+        txtSearch.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                super.keyPressed(e);
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    searchFile();
+                }
+            }
+        });
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         uin = UIName.BTN_SEARCH;
@@ -457,6 +471,8 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
+        setDragNDrop();
+        addBindings();
         setFontSize(FONT_OPR.NONE);
         setControlsToEnable();
         setHighlightColor();
@@ -471,6 +487,57 @@ public class SearchBigFile extends AppFrame {
 
         menuRFiles.grabFocus();
         menuRFiles.requestFocus();
+    }
+
+    private void setDragNDrop() {
+        JComponent[] addBindingsTo = {epResults, tpHelp, lblMsg, btnShowAll, msgPanel};
+        Arrays.stream(addBindingsTo).forEach(j -> {
+            // to make drag n drop specific set below method for txtFilePath
+            j.setDropTarget(new DropTarget() {
+                public synchronized void drop(DropTargetDropEvent e) {
+                    try {
+                        e.acceptDrop(DnDConstants.ACTION_COPY);
+                        List<File> droppedFiles = (List<File>) e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+                        setFileToSearch(droppedFiles.get(0).getAbsolutePath());
+                    } catch (Exception ex) {
+                        logger.error("Unable to set dragged file name. " + ex.getMessage());
+                    }
+                }
+            });
+        });
+    }
+
+    private void addBindings() {
+
+        Action actionTxtSearch = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                logger.log("action...");
+                txtSearch.requestFocus();
+                txtSearch.grabFocus();
+            }
+        };
+
+        Action actionF3 = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                nextOccr();
+            }
+        };
+
+        Action actionShiftF3 = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                preOccr();
+            }
+        };
+
+        KeyStroke keyCtrlF = KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK);
+        JComponent[] addBindingsTo = {epResults, tpHelp, lblMsg, btnShowAll, msgPanel};
+        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyCtrlF, actionTxtSearch));
+
+        KeyStroke keyShiftF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK);
+        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyShiftF3, actionShiftF3));
+
+        KeyStroke keyF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0);
+        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyF3, actionF3));
     }
 
     // This will be called by reflection from SwingUI jar

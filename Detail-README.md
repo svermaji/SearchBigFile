@@ -15,6 +15,12 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 16-Sep-2021
+* Drag n Drop file to set it in search text field.
+* Use F3/Shift-F3 to search text.
+* User can press Ctrl+F from anywhere to go to search box and hit enter to make Search.
+
+
 #### On 13-Sep-2021
 * Added old export cleaup button and display time to each action in information  
 
