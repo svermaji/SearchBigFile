@@ -486,8 +486,7 @@ public class SearchBigFile extends AppFrame {
         setToCenter();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
-        menuRFiles.grabFocus();
-        menuRFiles.requestFocus();
+        getInFocus(menuRFiles);
     }
 
     private void setDragNDrop() {
@@ -508,13 +507,16 @@ public class SearchBigFile extends AppFrame {
         });
     }
 
+    private void getInFocus(JComponent c) {
+        c.requestFocus();
+        c.grabFocus();
+    }
+
     private void addBindings() {
 
         Action actionTxtSearch = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                logger.info("action...");
-                txtSearch.requestFocus();
-                txtSearch.grabFocus();
+                getInFocus(txtSearch);
             }
         };
 
@@ -1587,7 +1589,7 @@ public class SearchBigFile extends AppFrame {
         selectAndGoToIndex(htmlDoc.getLength());
         lineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() : -1;
         if (lastLineOffsetsIdx == -1) {
-            lastLineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() : -1;
+            lastLineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() - 1 : -1;
         }
     }
 
@@ -1596,11 +1598,14 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void highlightLastSelectedItem() {
-        if (lastLineOffsetsIdx != -1) {
-            OffsetInfo offsetInfo = lineOffsets.get(lastLineOffsetsIdx);
-            if (offsetInfo != null) {
-                highlighter.removeHighlight(offsetInfo.getObj());
-                offsetInfo.setObj(highLightInResult(offsetInfo.getSIdx(), offsetInfo.getEIdx()));
+        // as called on lost focus
+        synchronized (SearchBigFile.class) {
+            if (lastLineOffsetsIdx != -1) {
+                OffsetInfo offsetInfo = lineOffsets.get(lastLineOffsetsIdx);
+                if (offsetInfo != null) {
+                    highlighter.removeHighlight(offsetInfo.getObj());
+                    offsetInfo.setObj(highLightInResult(offsetInfo.getSIdx(), offsetInfo.getEIdx()));
+                }
             }
         }
     }
