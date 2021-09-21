@@ -1588,9 +1588,7 @@ public class SearchBigFile extends AppFrame {
         // Go to end
         selectAndGoToIndex(htmlDoc.getLength());
         lineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() : -1;
-        if (lastLineOffsetsIdx == -1) {
-            lastLineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() - 1 : -1;
-        }
+        lastLineOffsetsIdx = lineOffsets.size() > 0 ? lineOffsets.size() - 1 : -1;
     }
 
     public void selectAndGoToIndex(int idx) {
@@ -1615,12 +1613,9 @@ public class SearchBigFile extends AppFrame {
             if (lineOffsetsIdx == lineOffsets.size()) {
                 lineOffsetsIdx--;
             }
-            // check if this required out of if
-            /*if (lineOffsets.size() > 0) {
-                highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
-            }*/
         }
-        if (lineOffsetsIdx != lastLineOffsetsIdx && lineOffsetsIdx > -1) {
+        //if (lineOffsetsIdx != lastLineOffsetsIdx && lineOffsetsIdx > -1) {
+        if (lineOffsetsIdx > -1) {
             if (lineOffsets.size() > 0) {
                 highlighter.removeHighlight(lineOffsets.get(lineOffsetsIdx).getObj());
             }
