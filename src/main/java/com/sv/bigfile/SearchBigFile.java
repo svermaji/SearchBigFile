@@ -325,9 +325,11 @@ public class SearchBigFile extends AppFrame {
         btnGoBottom.addActionListener(e -> goToEnd());
         uin = UIName.BTN_NEXTOCCR;
         btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnNextOccr.setToolTipText(btnNextOccr.getToolTipText() + " or F3");
         btnNextOccr.addActionListener(e -> nextOccr());
         uin = UIName.BTN_PREOCCR;
         btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnPreOccr.setToolTipText(btnPreOccr.getToolTipText() + " or Shift+F3");
         btnPreOccr.addActionListener(e -> preOccr());
         uin = UIName.BTN_FIND;
         btnFind = new AppButton(uin.name, uin.mnemonic, uin.tip);
@@ -1916,7 +1918,7 @@ public class SearchBigFile extends AppFrame {
                             + Utils.addBraces(maxReadCharTimes) + " times, processing...");
                 }
 
-                log("File read complete in " + Utils.getTimeDiffSecStr(time));
+                log("File read complete in " + Utils.getTimeDiffSecMilliStr(time));
                 if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
                 }
@@ -1932,7 +1934,7 @@ public class SearchBigFile extends AppFrame {
             occr += calculateOccr(sb.toString(), searchPattern);
             occrTillNow = occr;
             if (!hasError) {
-                timeTaken = Utils.getTimeDiffSecStr(startTime);
+                timeTaken = Utils.getTimeDiffSecMilliStr(startTime);
                 lineNums = readLines;
                 String result = getSearchResult(
                         fn,
@@ -2166,7 +2168,7 @@ public class SearchBigFile extends AppFrame {
                     logger.info("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
                             + Utils.addBraces(maxReadCharTimes) + " times, processing...");
                 }
-                logger.info("File read in " + Utils.getTimeDiffSecStr(time));
+                logger.info("File read in " + Utils.getTimeDiffSecMilliStr(time));
 
                 if (!isCancelled()) {
                     time = System.currentTimeMillis();
@@ -2180,9 +2182,9 @@ public class SearchBigFile extends AppFrame {
                         Utils.sleep(200, sbf.logger);
                     }
                     idxMsgsToAppend.clear();
-                    logger.info("Time in waiting all message to append is " + Utils.getTimeDiffSecStr(time));
+                    logger.info("Time in waiting all message to append is " + Utils.getTimeDiffSecMilliStr(time));
                 }
-                timeTaken = Utils.getTimeDiffSecStr(startTime);
+                timeTaken = Utils.getTimeDiffSecMilliStr(startTime);
                 lineNums = stats.getLineNum();
                 String result = getSearchResult(path, timeTaken, lineNums, stats.getOccurrences());
                 if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
