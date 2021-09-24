@@ -122,6 +122,7 @@ public class SearchBigFile extends AppFrame {
     private long occrTillNow;
     private long linesTillNow;
 
+    private JComponent[] bkColorComponents;
     private JMenuBar mbSettings;
     private static Color highlightColor, selectionColor, selectionTextColor;
     private static String highlightColorStr;
@@ -350,12 +351,6 @@ public class SearchBigFile extends AppFrame {
         JButton btnCleanExport = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnCleanExport.addActionListener(e -> cleanOldExportResults());
 
-        setBkColors(new JButton[]{
-                btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
-                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
-                btnExport, btnCleanExport
-        });
-
         JPanel controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
         controlPanel.add(jtbActions);
@@ -471,6 +466,12 @@ public class SearchBigFile extends AppFrame {
 
         new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
+
+        bkColorComponents = new JButton[]{
+                btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
+                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
+                btnExport, btnCleanExport
+        };
 
         setDragNDrop();
         addBindings();
@@ -795,6 +796,8 @@ public class SearchBigFile extends AppFrame {
         if (tblAllOccr != null && tblAllOccr.getRowCount() != 0) {
             dblClickOffset(tblAllOccr, null);
         }
+
+        setBkColors(bkColorComponents);
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -996,11 +999,8 @@ public class SearchBigFile extends AppFrame {
         return classloader.getResource(path).toString();
     }
 
-    private void setBkColors(JButton[] btns) {
-        for (JButton b : btns) {
-            b.setBackground(Color.gray);
-            b.setForeground(Color.white);
-        }
+    private void setBkColors(JComponent[] c) {
+        SwingUtils.setComponentColor(c, Color.white, Color.gray, selectionTextColor, selectionColor);
     }
 
     private Font getFontForEditor(String sizeStr) {
