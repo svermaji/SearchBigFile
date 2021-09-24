@@ -318,18 +318,16 @@ public class SearchBigFile extends AppFrame {
         btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
         uin = UIName.BTN_GOTOP;
-        btnGoTop = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnGoTop = new AppButton(uin.name, uin.keys, uin.tip);
         btnGoTop.addActionListener(e -> goToFirst());
         uin = UIName.BTN_GOBOTTOM;
-        btnGoBottom = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnGoBottom = new AppButton(uin.name, uin.keys, uin.tip);
         btnGoBottom.addActionListener(e -> goToEnd());
         uin = UIName.BTN_NEXTOCCR;
-        btnNextOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnNextOccr.setToolTipText(btnNextOccr.getToolTipText() + " or F3");
+        btnNextOccr = new AppButton(uin.name, uin.keys, uin.tip);
         btnNextOccr.addActionListener(e -> nextOccr());
         uin = UIName.BTN_PREOCCR;
-        btnPreOccr = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnPreOccr.setToolTipText(btnPreOccr.getToolTipText() + " or Shift+F3");
+        btnPreOccr = new AppButton(uin.name, uin.keys, uin.tip);
         btnPreOccr.addActionListener(e -> preOccr());
         uin = UIName.BTN_FIND;
         btnFind = new AppButton(uin.name, uin.mnemonic, uin.tip);
@@ -534,15 +532,31 @@ public class SearchBigFile extends AppFrame {
             }
         };
 
-        KeyStroke keyCtrlF = KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK);
-        JComponent[] addBindingsTo = {epResults, tpHelp, lblMsg, btnShowAll, msgPanel};
-        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyCtrlF, actionTxtSearch));
+        Action actionCtrlHome = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                goToFirst();
+            }
+        };
 
-        KeyStroke keyShiftF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK);
-        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyShiftF3, actionShiftF3));
+        Action actionCtrlEnd = new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                goToEnd();
+            }
+        };
 
-        KeyStroke keyF3 = KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0);
-        Arrays.stream(addBindingsTo).forEach(j -> j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyF3, actionF3));
+        List<KeyActionDetails> keyActionDetails = new ArrayList<>();
+        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK, actionTxtSearch));
+        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK, actionShiftF3));
+        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_F3, 0, actionF3));
+        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_HOME, InputEvent.CTRL_DOWN_MASK, actionCtrlHome));
+        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_END, InputEvent.CTRL_DOWN_MASK, actionCtrlEnd));
+
+        final JComponent[] addBindingsTo = {epResults, tpHelp, lblMsg, btnShowAll, msgPanel};
+        keyActionDetails.forEach(ka -> {
+            KeyStroke keyS = KeyStroke.getKeyStroke(ka.getKeyEvent(), ka.getInputEvent());
+            Arrays.stream(addBindingsTo).forEach(j ->
+                    j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyS, ka.getAction()));
+        });
     }
 
     // This will be called by reflection from SwingUI jar
