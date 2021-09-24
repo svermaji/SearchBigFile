@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 24-Sep-2021
+* Theme color comes on hover of tool buttons.
+
 #### On 16-Sep-2021
 * Drag n Drop file to set it in search text field.
 * Use F3/Shift-F3 to search text.

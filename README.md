@@ -21,6 +21,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 ## Description
 * Program stores the last searched file and search string. 
 * Added export button and old export cleanup button. 
+* Theme color comes on hover of tool buttons.
 * Drag n Drop file to set it in search text field.
 * Use F3/Shift-F3 to search text.
 * User can press Ctrl+F from anywhere to go to search box and hit enter to make Search. 
