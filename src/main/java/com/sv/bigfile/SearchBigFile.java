@@ -14,7 +14,6 @@ import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.text.*;
@@ -102,6 +101,7 @@ public class SearchBigFile extends AppFrame {
 
     private static FILE_OPR operation;
 
+    private static final Color ORIG_COLOR = new Color(238, 238, 238);
     private static ColorsNFonts[] appColors;
     private static boolean ignoreBlackAndWhite = true;
     private static boolean showWarning = false;
@@ -822,39 +822,37 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void changeAppColor() {
-        if (jcbmiApplyToApp.getState()) {
+        Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
 
-            filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
-            searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
-            controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
-            msgPanel.setBorder(SwingUtils.createLineBorder(highlightColor));
+        filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
+        searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
+        controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
+        msgPanel.setBorder(SwingUtils.createLineBorder(cl));
 
-            mbRFiles.setBorder(SwingUtils.createLineBorder(selectionColor));
-            mbRSearches.setBorder(SwingUtils.createLineBorder(selectionColor));
-            mbSettings.setBorder(SwingUtils.createLineBorder(selectionColor));
+        mbRFiles.setBorder(SwingUtils.createLineBorder(selectionColor));
+        mbRSearches.setBorder(SwingUtils.createLineBorder(selectionColor));
+        mbSettings.setBorder(SwingUtils.createLineBorder(selectionColor));
 
-            // This sets foreground of scroll bar but removes background color
-            /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
-            jspResults.getVerticalScrollBar().setUI(new BasicScrollBarUI() );
-            jspHelp.getVerticalScrollBar().setUI(new BasicScrollBarUI() );*/
+        // This sets foreground of scroll bar but removes background color
+        /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
+        jspResults.getVerticalScrollBar().setUI(new BasicScrollBarUI() );
+        jspHelp.getVerticalScrollBar().setUI(new BasicScrollBarUI() );*/
 
-            JScrollPane[] panes = {jspResults, jspHelp}; // jspContactMe has no scroll bar
-            Arrays.stream(panes).forEach(p -> {
-                //p.getViewport().setBackground(highlightColor);
-                p.getVerticalScrollBar().setBackground(highlightColor);
-                p.getHorizontalScrollBar().setBackground(highlightColor);
-            });
+        JScrollPane[] panes = {jspResults, jspHelp}; // jspContactMe has no scroll bar
+        Arrays.stream(panes).forEach(p -> {
+            //p.getViewport().setBackground(highlightColor);
+            p.getVerticalScrollBar().setBackground(cl);
+            p.getHorizontalScrollBar().setBackground(cl);
+        });
 
-            //tabbedPane.setOpaque(true);
-            // calling it separately as making opaque is making it weird, so just changing tab color
-            tabbedPane.setBackground(highlightColor);
-            Arrays.stream(inputPanel.getComponents()).forEach(c ->
-                    SwingUtils.setComponentColor((JComponent)c, highlightColor, null));
-            JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbSearch, jtbActions};
-            Arrays.stream(ca).forEach(c -> SwingUtils.setComponentColor(c, highlightColor, null));
+        // calling it separately as making opaque is making it weird, so just changing tab color
+        tabbedPane.setBackground(cl);
+        Arrays.stream(inputPanel.getComponents()).forEach(c ->
+                SwingUtils.setComponentColor((JComponent) c, cl, null));
+        JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbSearch, jtbActions};
+        Arrays.stream(ca).forEach(c -> SwingUtils.setComponentColor(c, cl, null));
 
-            setBkColors(bkColorComponents);
-        }
+        setBkColors(bkColorComponents);
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -1067,7 +1065,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setBkColors(JComponent[] c) {
-        SwingUtils.setComponentColor(c, highlightColor, highlightTextColor, selectionColor, selectionTextColor);
+        Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
+        SwingUtils.setComponentColor(c, cl, highlightTextColor, selectionColor, selectionTextColor);
     }
 
     private Font getFontForEditor(String sizeStr) {
@@ -1203,7 +1202,8 @@ public class SearchBigFile extends AppFrame {
         frame.setToCenter();
 
         // as this is dynamic not taking to setAppColor method
-        table.getTableHeader().setBackground(highlightColor);
+        Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
+        table.getTableHeader().setBackground(cl);
         SwingUtils.addEscKeyAction(frame);
     }
 
@@ -1572,7 +1572,8 @@ public class SearchBigFile extends AppFrame {
     public void showMsg(String msg, MyLogger.MsgType type) {
         if (Utils.hasValue(msg)) {
             Color b = Color.white;
-            Color f = highlightColor;
+            Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
+            Color f = cl;
             if (type == MyLogger.MsgType.ERROR) {
                 b = Color.red;
                 f = Color.white;
