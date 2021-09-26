@@ -82,11 +82,12 @@ public class SearchBigFile extends AppFrame {
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
+    private JToolBar jtbFile, jtbSearch, jtbActions;
     private JPanel msgPanel;
     private JLabel lblMsg;
-    private JButton btnShowAll;
+    private JButton btnShowAll, btnListRS, btnListRF;
     private JButton btnPlusFont, btnMinusFont, btnResetFont;
-    private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
+    private JButton btnFileOpen, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JEditorPane epResults, tpHelp, tpContactMe;
@@ -125,7 +126,7 @@ public class SearchBigFile extends AppFrame {
     private long linesTillNow;
 
     private JComponent[] bkColorComponents;
-    private JMenuBar mbSettings;
+    private JMenuBar mbSettings, mbRSearches, mbRFiles;
     private static Color highlightColor, highlightTextColor, selectionColor, selectionTextColor;
     private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
@@ -185,11 +186,11 @@ public class SearchBigFile extends AppFrame {
         txtFilePath = new AppTextField(getCfg(Configs.FilePath), TXT_COLS, getFiles());
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         uin = UIName.BTN_FILE;
-        JButton btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip);// no need as image //, "", true);
         btnFileOpen.addActionListener(e -> openFile());
 
         uin = UIName.BTN_LISTRF;
-        JButton btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/recent-icon.png");
+        btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnListRF.addActionListener(e -> showListRF());
         uin = UIName.JCB_MATCHCASE;
         jcbMatchCase = new JCheckBox(uin.name, getBooleanCfg(Configs.MatchCase));
@@ -202,27 +203,28 @@ public class SearchBigFile extends AppFrame {
 
         filePanel.setLayout(new FlowLayout());
         filePanel.add(lblFilePath);
-        JToolBar jtbFile = new JToolBar();
+
+        uin = UIName.LBL_RFILES;
+        mbRFiles = new JMenuBar();
+        menuRFiles = new JMenu(uin.name);
+        menuRFiles.setMnemonic(uin.mnemonic);
+        menuRFiles.setToolTipText(uin.tip);
+        mbRFiles.add(menuRFiles);
+        updateRecentMenu(menuRFiles, getFiles(), txtFilePath, TXT_F_MAP_KEY);
+
+        jtbFile = new JToolBar();
         jtbFile.setFloatable(false);
         jtbFile.setRollover(false);
         jtbFile.add(txtFilePath);
         jtbFile.add(btnFileOpen);
-
-        uin = UIName.LBL_RFILES;
-        JMenuBar mb = new JMenuBar();
-        menuRFiles = new JMenu(uin.name);
-        mb.setBackground(Color.lightGray);
-        menuRFiles.setMnemonic(uin.mnemonic);
-        menuRFiles.setToolTipText(uin.tip);
-        mb.add(menuRFiles);
-        updateRecentMenu(menuRFiles, getFiles(), txtFilePath, TXT_F_MAP_KEY);
+        jtbFile.add(btnListRF);
+        jtbFile.add(btnListRF);
+        jtbFile.add(mbRFiles);
+        jtbFile.add(jcbMatchCase);
+        jtbFile.add(jcbWholeWord);
 
         filePanel.add(jtbFile);
-        filePanel.add(btnListRF);
-        filePanel.add(mb);
-        filePanel.add(jcbMatchCase);
-        filePanel.add(jcbWholeWord);
-        filePanel.setBorder(new TitledBorder(filePanelHeading));
+        filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightColor));
 
         searchPanel = new JPanel();
 
@@ -250,42 +252,42 @@ public class SearchBigFile extends AppFrame {
         btnLastN = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLastN.addActionListener(evt -> readFile());
         uin = UIName.BTN_LISTRS;
-        JButton btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/recent-icon.png");
+        btnListRS = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnListRS.addActionListener(e -> showListRS());
 
         uin = UIName.BTN_UC;
-        AppButton btnUC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        AppButton btnUC = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnUC.addActionListener(e -> changeCase(CaseType.UPPER));
         uin = UIName.BTN_LC;
-        AppButton btnLC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        AppButton btnLC = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLC.addActionListener(e -> changeCase(CaseType.LOWER));
         uin = UIName.BTN_TC;
-        AppButton btnTC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        AppButton btnTC = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnTC.addActionListener(e -> changeCase(CaseType.TITLE));
         uin = UIName.BTN_IC;
-        AppButton btnIC = new AppButton(uin.name, uin.mnemonic, uin.tip, "", true);
+        AppButton btnIC = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnIC.addActionListener(e -> changeCase(CaseType.INVERT));
-        JToolBar jtbSearch = new JToolBar();
-        jtbSearch.setFloatable(false);
-        jtbSearch.setRollover(false);
-        jtbSearch.add(txtSearch);
-        jtbSearch.add(btnUC);
-        jtbSearch.addSeparator();
-        jtbSearch.add(btnLC);
-        jtbSearch.addSeparator();
-        jtbSearch.add(btnTC);
-        jtbSearch.addSeparator();
-        jtbSearch.add(btnIC);
 
         //Supports if single line is around 30mb in one file as json response
         uin = UIName.LBL_RSEARCHES;
-        JMenuBar mbar = new JMenuBar();
+        mbRSearches = new JMenuBar();
         menuRSearches = new JMenu(uin.name);
-        mbar.setBackground(Color.lightGray);
         menuRSearches.setMnemonic(uin.mnemonic);
         menuRSearches.setToolTipText(uin.tip);
-        mbar.add(menuRSearches);
+        mbRSearches.add(menuRSearches);
+        mbRSearches.setBorder(SwingUtils.createLineBorder(highlightColor));
         updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
+
+        jtbSearch = new JToolBar();
+        jtbSearch.setFloatable(false);
+        jtbSearch.setRollover(true);
+        jtbSearch.add(txtSearch);
+        jtbSearch.add(btnUC);
+        jtbSearch.add(btnLC);
+        jtbSearch.add(btnTC);
+        jtbSearch.add(btnIC);
+        jtbSearch.add(btnListRS);
+        jtbSearch.add(mbRSearches);
 
         uin = UIName.MNU_SETTINGS;
         mbSettings = new JMenuBar();
@@ -303,16 +305,14 @@ public class SearchBigFile extends AppFrame {
         searchPanel.setLayout(new FlowLayout());
         searchPanel.add(lblSearch);
         searchPanel.add(jtbSearch);
-        searchPanel.add(btnListRS);
-        searchPanel.add(mbar);
         searchPanel.add(btnSearch);
         searchPanel.add(lblLastN);
         searchPanel.add(cbLastN);
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
-        searchPanel.setBorder(new TitledBorder(searchPanelHeading));
+        searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightColor));
 
-        JToolBar jtbActions = new JToolBar();
+        jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
         jtbActions.setRollover(false);
         uin = UIName.BTN_PLUSFONT;
@@ -374,7 +374,7 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnHelpBrowser);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
-        controlPanel.setBorder(new TitledBorder(controlPanelHeading));
+        controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightColor));
 
         inputPanel = new JPanel();
         inputPanel.setOpaque(true);
@@ -474,8 +474,10 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
         menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
 
-        bkColorComponents = new JButton[]{
-                btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
+        bkColorComponents = new JComponent[]{
+                menuSettings, menuRFiles, menuRSearches,
+                btnListRS, btnListRF, btnUC, btnLC, btnTC, btnIC,
+                btnFileOpen, btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
                 btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
                 btnExport, btnCleanExport
         };
@@ -638,6 +640,7 @@ public class SearchBigFile extends AppFrame {
                 new String[]{"#", "All occurrences - Double click or Enter (Show/Hide this panel. "
                         + SHORTCUT + (Character.toLowerCase((char) btnShowAll.getMnemonic())) + ")"});
         tblAllOccr = new AppTable(modelAllOccr);
+        tblAllOccr.setOpaque(true);
         tblAllOccr.addEnterOnRow(new AllOccrEnterAction(tblAllOccr, this));
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
         tblAllOccr.getColumnModel().getColumn(0).setMaxWidth(100);
@@ -805,7 +808,7 @@ public class SearchBigFile extends AppFrame {
 
     private void setHighlightColor() {
         setColorFromIdx();
-        mbSettings.setBackground(highlightColor);
+        //mbSettings.setBackground(highlightColor);
         highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
         painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
         if (timeTaken != null) {
@@ -820,9 +823,15 @@ public class SearchBigFile extends AppFrame {
 
     private void changeAppColor() {
         if (jcbmiApplyToApp.getState()) {
+
             filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
             searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
             controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
+            msgPanel.setBorder(SwingUtils.createLineBorder(highlightColor));
+
+            mbRFiles.setBorder(SwingUtils.createLineBorder(selectionColor));
+            mbRSearches.setBorder(SwingUtils.createLineBorder(selectionColor));
+            mbSettings.setBorder(SwingUtils.createLineBorder(selectionColor));
 
             // This sets foreground of scroll bar but removes background color
             /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
@@ -836,18 +845,14 @@ public class SearchBigFile extends AppFrame {
                 p.getHorizontalScrollBar().setBackground(highlightColor);
             });
 
+            //tabbedPane.setOpaque(true);
+            // calling it separately as making opaque is making it weird, so just changing tab color
             tabbedPane.setBackground(highlightColor);
-            //tabbedPane.getSelectedComponent().setBackground(highlightColor);
-            tblAllOccr.setOpaque(true);
-            tblAllOccr.getTableHeader().setBackground(highlightColor);
-            splitAllOccr.setOpaque(true);
-            splitAllOccr.setBackground(highlightColor);
-            splitAllOccr.setForeground(highlightColor);
-
-            msgPanel.setBorder(SwingUtils.createLineBorder(highlightColor));
-            SwingUtils.setComponentColor(inputPanel, highlightColor, highlightTextColor);
             Arrays.stream(inputPanel.getComponents()).forEach(c ->
-                    SwingUtils.setComponentColor((JComponent) c, highlightColor, highlightTextColor));
+                    SwingUtils.setComponentColor((JComponent)c, highlightColor, null));
+            JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbSearch, jtbActions};
+            Arrays.stream(ca).forEach(c -> SwingUtils.setComponentColor(c, highlightColor, null));
+
             setBkColors(bkColorComponents);
         }
     }
@@ -1062,9 +1067,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setBkColors(JComponent[] c) {
-        synchronized (SearchBigFile.class) {
-            SwingUtils.setComponentColor(c, highlightColor, highlightTextColor, selectionColor, selectionTextColor);
-        }
+        SwingUtils.setComponentColor(c, highlightColor, highlightTextColor, selectionColor, selectionTextColor);
     }
 
     private Font getFontForEditor(String sizeStr) {
@@ -1199,6 +1202,8 @@ public class SearchBigFile extends AppFrame {
         frame.setAlwaysOnTop(true);
         frame.setToCenter();
 
+        // as this is dynamic not taking to setAppColor method
+        table.getTableHeader().setBackground(highlightColor);
         SwingUtils.addEscKeyAction(frame);
     }
 
@@ -1567,7 +1572,7 @@ public class SearchBigFile extends AppFrame {
     public void showMsg(String msg, MyLogger.MsgType type) {
         if (Utils.hasValue(msg)) {
             Color b = Color.white;
-            Color f = Color.blue;
+            Color f = highlightColor;
             if (type == MyLogger.MsgType.ERROR) {
                 b = Color.red;
                 f = Color.white;

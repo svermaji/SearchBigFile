@@ -14,7 +14,7 @@ public enum UIName {
     BTN_LC("L", 'y', "Make search string to lower case."),
     BTN_TC("T", 'p', "Make search string to title case."),
     BTN_IC("V", 'k', "Invert case of search string."),
-    BTN_LISTRF("", 'L', "Search recently used file list."),
+    BTN_LISTRF("Ý", 'L', "Search recently used file list."),
     BTN_PLUSFONT("+", '=', "Increase font size for results, max [" + AppConstants.MAX_FONT_SIZE + "]."),
     BTN_MINUSFONT("—", '-', "Decrease font size for results, min [" + AppConstants.MIN_FONT_SIZE + "]."),
     BTN_RESETFONT("", '0', "Text shows present font size of Results.  Click to reset to [" + AppConstants.DEFAULT_FONT_SIZE + "]."),
@@ -35,7 +35,7 @@ public enum UIName {
     BTN_LASTN("Read", 'e', "Read last N lines and highlight."),
     LBL_RSEARCHES("Recent", 't', "Recently used search-patterns list."),
     MNU_SETTINGS("*", 'b', "Settings, present highlight color is shown as background."),
-    BTN_LISTRS("", 'I', "Search recently used search-patterns list."),
+    BTN_LISTRS("Ý", 'I', "Search recently used search-patterns list."),
     BTN_CANCEL("", 'C', "Cancel/Stop Search/Read");
 
     String name, tip;
