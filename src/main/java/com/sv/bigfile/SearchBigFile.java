@@ -53,7 +53,8 @@ public class SearchBigFile extends AppFrame {
      */
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
-        ColorIndex, ChangeFontAuto, ChangeHighlightAuto, MatchCase, WholeWord, DebugEnabled
+        ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp,
+        MatchCase, WholeWord, DebugEnabled
     }
 
     enum Status {
@@ -76,7 +77,8 @@ public class SearchBigFile extends AppFrame {
     private DefaultTableModel modelAllOccr;
     private JLabel lblNoRow;
     private AppTable tblAllOccr;
-    private JPanel bottomPanel;
+    private JPanel bottomPanel, inputPanel, filePanel, searchPanel, controlPanel;
+    private String filePanelHeading, searchPanelHeading, controlPanelHeading;
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
@@ -87,14 +89,14 @@ public class SearchBigFile extends AppFrame {
     private JButton btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
-    private JEditorPane epResults, tpHelp;
+    private JEditorPane epResults, tpHelp, tpContactMe;
     private Highlighter.HighlightPainter painter;
     private Highlighter highlighter;
-    private JScrollPane jspResults, jspHelp;
+    private JScrollPane jspResults, jspHelp, jspContactMe;
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights;
+    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -124,7 +126,7 @@ public class SearchBigFile extends AppFrame {
 
     private JComponent[] bkColorComponents;
     private JMenuBar mbSettings;
-    private static Color highlightColor, selectionColor, selectionTextColor;
+    private static Color highlightColor, highlightTextColor, selectionColor, selectionTextColor;
     private static String highlightColorStr;
     private static Status status = Status.NOT_STARTED;
 
@@ -172,7 +174,11 @@ public class SearchBigFile extends AppFrame {
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
 
-        JPanel filePanel = new JPanel();
+        filePanelHeading = "File to search";
+        searchPanelHeading = "Pattern to search";
+        controlPanelHeading = "Controls";
+
+        filePanel = new JPanel();
 
         final int TXT_COLS = 12;
         UIName uin = UIName.LBL_FILE;
@@ -216,9 +222,9 @@ public class SearchBigFile extends AppFrame {
         filePanel.add(mb);
         filePanel.add(jcbMatchCase);
         filePanel.add(jcbWholeWord);
-        filePanel.setBorder(new TitledBorder("File to search"));
+        filePanel.setBorder(new TitledBorder(filePanelHeading));
 
-        JPanel searchPanel = new JPanel();
+        searchPanel = new JPanel();
 
         txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 6, getSearches());
         txtSearch.setToolTipText("Ctrl+F to come here and enter to perform Search");
@@ -304,7 +310,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(cbLastN);
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
-        searchPanel.setBorder(new TitledBorder("Pattern to search"));
+        searchPanel.setBorder(new TitledBorder(searchPanelHeading));
 
         JToolBar jtbActions = new JToolBar();
         jtbActions.setFloatable(false);
@@ -351,7 +357,7 @@ public class SearchBigFile extends AppFrame {
         JButton btnCleanExport = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnCleanExport.addActionListener(e -> cleanOldExportResults());
 
-        JPanel controlPanel = new JPanel();
+        controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
         controlPanel.add(jtbActions);
         jtbActions.add(mbSettings);
@@ -368,9 +374,10 @@ public class SearchBigFile extends AppFrame {
         jtbActions.add(btnHelpBrowser);
         jtbActions.add(btnHelp);
         controlPanel.add(btnExit);
-        controlPanel.setBorder(new TitledBorder("Controls"));
+        controlPanel.setBorder(new TitledBorder(controlPanelHeading));
 
-        JPanel inputPanel = new JPanel();
+        inputPanel = new JPanel();
+        inputPanel.setOpaque(true);
         inputPanel.setLayout(new GridBagLayout());
         inputPanel.add(filePanel);
         inputPanel.add(searchPanel);
@@ -380,7 +387,6 @@ public class SearchBigFile extends AppFrame {
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
         msgPanel = new JPanel(new BorderLayout());
-        msgPanel.setBorder(BLUE_BORDER);
         lblMsg = new JLabel(getInitialMsg());
         lblMsg.setHorizontalAlignment(SwingConstants.CENTER);
         lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
@@ -396,6 +402,10 @@ public class SearchBigFile extends AppFrame {
         tpHelp = new JEditorPane();
         tpHelp.setEditable(false);
         tpHelp.setContentType("text/html");
+
+        tpContactMe = new JEditorPane();
+        tpContactMe.setEditable(false);
+        tpContactMe.setContentType("text/html");
 
         painter = new DefaultHighlighter.DefaultHighlightPainter(Color.yellow);
         epResults = new JEditorPane() {
@@ -436,6 +446,7 @@ public class SearchBigFile extends AppFrame {
         kit = new HTMLEditorKit();
         jspResults = new JScrollPane(epResults);
         jspHelp = new JScrollPane(tpHelp);
+        jspContactMe = new JScrollPane(tpContactMe);
         jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jspResults.setBorder(EMPTY_BORDER);
 
@@ -443,6 +454,7 @@ public class SearchBigFile extends AppFrame {
         tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
+        tabbedPane.addTab("Contact Me", null, jspContactMe, "Displays my information");
 
         bottomPanel = new JPanel(new BorderLayout());
         jspAllOccr = new JScrollPane(createAllOccrTable());
@@ -462,23 +474,23 @@ public class SearchBigFile extends AppFrame {
         menuRFiles.setSize(menuRFiles.getWidth(), btnSearch.getHeight());
         menuRSearches.setSize(menuRSearches.getWidth(), btnSearch.getHeight());
 
-        prepareSettingsMenu();
-
-        new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
-        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
-
         bkColorComponents = new JButton[]{
                 btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
                 btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
                 btnExport, btnCleanExport
         };
 
+        prepareSettingsMenu();
+
+        new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
+        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
+
         setDragNDrop();
         addBindings();
         setFontSize(FONT_OPR.NONE);
         setControlsToEnable();
-        setHighlightColor();
         setupHelp();
+        setupContactMe();
         resetForNewSearch();
         enableControls();
         showHelp();
@@ -488,6 +500,7 @@ public class SearchBigFile extends AppFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         getInFocus(menuRFiles);
+        setHighlightColor();
     }
 
     private void setDragNDrop() {
@@ -575,6 +588,7 @@ public class SearchBigFile extends AppFrame {
     private void setColorFromIdx() {
         ColorsNFonts c = appColors[colorIdx];
         highlightColor = c.getBk();
+        highlightTextColor = Color.black; // foreground not working with highlighter //c.getFg();
         selectionColor = c.getSelbk();
         selectionTextColor = c.getSelfg();
     }
@@ -586,6 +600,9 @@ public class SearchBigFile extends AppFrame {
         jcbmiHighlights = new JCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
         jcbmiHighlights.setMnemonic('H');
         jcbmiHighlights.setToolTipText("Changes colors of highlighted text, selected-text and selected background every 10 minutes");
+        jcbmiApplyToApp = new JCheckBoxMenuItem("Apply color to App", null, getBooleanCfg(Configs.ApplyColorToApp));
+        jcbmiApplyToApp.setMnemonic('y');
+        jcbmiApplyToApp.setToolTipText("Changes colors of complete application whenever highlight color changes");
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -593,9 +610,10 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(menuFonts);
         menuSettings.addSeparator();
         menuSettings.add(jcbmiHighlights);
-
         menuSettings.add(SwingUtils.getColorsMenu("Highlights", 'g', "Highlight colors",
                 true, false, true, false, ignoreBlackAndWhite, this, logger));
+        menuSettings.addSeparator();
+        menuSettings.add(jcbmiApplyToApp);
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -618,7 +636,7 @@ public class SearchBigFile extends AppFrame {
     private AppTable createAllOccrTable() {
         modelAllOccr = SwingUtils.getTableModel(
                 new String[]{"#", "All occurrences - Double click or Enter (Show/Hide this panel. "
-                        + SHORTCUT + (Character.toLowerCase(btnShowAll.getMnemonic())) + ")"});
+                        + SHORTCUT + (Character.toLowerCase((char) btnShowAll.getMnemonic())) + ")"});
         tblAllOccr = new AppTable(modelAllOccr);
         tblAllOccr.addEnterOnRow(new AllOccrEnterAction(tblAllOccr, this));
         tblAllOccr.addDblClickOnRow(this, new Object[]{}, "dblClickOffset");
@@ -797,7 +815,41 @@ public class SearchBigFile extends AppFrame {
             dblClickOffset(tblAllOccr, null);
         }
 
-        setBkColors(bkColorComponents);
+        changeAppColor();
+    }
+
+    private void changeAppColor() {
+        if (jcbmiApplyToApp.getState()) {
+            filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
+            searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
+            controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
+
+            // This sets foreground of scroll bar but removes background color
+            /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
+            jspResults.getVerticalScrollBar().setUI(new BasicScrollBarUI() );
+            jspHelp.getVerticalScrollBar().setUI(new BasicScrollBarUI() );*/
+
+            JScrollPane[] panes = {jspResults, jspHelp}; // jspContactMe has no scroll bar
+            Arrays.stream(panes).forEach(p -> {
+                //p.getViewport().setBackground(highlightColor);
+                p.getVerticalScrollBar().setBackground(highlightColor);
+                p.getHorizontalScrollBar().setBackground(highlightColor);
+            });
+
+            tabbedPane.setBackground(highlightColor);
+            //tabbedPane.getSelectedComponent().setBackground(highlightColor);
+            tblAllOccr.setOpaque(true);
+            tblAllOccr.getTableHeader().setBackground(highlightColor);
+            splitAllOccr.setOpaque(true);
+            splitAllOccr.setBackground(highlightColor);
+            splitAllOccr.setForeground(highlightColor);
+
+            msgPanel.setBorder(SwingUtils.createLineBorder(highlightColor));
+            SwingUtils.setComponentColor(inputPanel, highlightColor, highlightTextColor);
+            Arrays.stream(inputPanel.getComponents()).forEach(c ->
+                    SwingUtils.setComponentColor((JComponent) c, highlightColor, highlightTextColor));
+            setBkColors(bkColorComponents);
+        }
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -880,8 +932,18 @@ public class SearchBigFile extends AppFrame {
         try {
             tpHelp.setPage(file.toURI().toURL());
         } catch (IOException e) {
-            logger.error("Unable to dispaly help");
-            updateTitleAndMsg("Unable to dispaly help", MsgType.ERROR);
+            logger.error("Unable to display help");
+            updateTitleAndMsg("Unable to display help", MsgType.ERROR);
+        }
+    }
+
+    private void setupContactMe() {
+        File file = new File("./contact-me.html");
+        try {
+            tpContactMe.setPage(file.toURI().toURL());
+        } catch (IOException e) {
+            logger.error("Unable to display contact information");
+            updateTitleAndMsg("Unable to display contact information", MsgType.ERROR);
         }
     }
 
@@ -1000,7 +1062,9 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setBkColors(JComponent[] c) {
-        SwingUtils.setComponentColor(c, Color.white, Color.gray, selectionTextColor, selectionColor);
+        synchronized (SearchBigFile.class) {
+            SwingUtils.setComponentColor(c, highlightColor, highlightTextColor, selectionColor, selectionTextColor);
+        }
     }
 
     private Font getFontForEditor(String sizeStr) {
@@ -1458,6 +1522,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getChangeHighlightAuto() {
         return jcbmiHighlights.isSelected() + "";
+    }
+
+    public String getApplyColorToApp() {
+        return jcbmiApplyToApp.isSelected() + "";
     }
 
     public String getChangeFontAuto() {
