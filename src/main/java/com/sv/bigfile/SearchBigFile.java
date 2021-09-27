@@ -1,6 +1,7 @@
 package com.sv.bigfile;
 
 import com.sv.bigfile.helpers.*;
+import com.sv.bigfile.html.WrapHtmlKit;
 import com.sv.core.Constants;
 import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
@@ -441,7 +442,8 @@ public class SearchBigFile extends AppFrame {
                 highlightLastSelectedItem();
             }
         });
-        kit = new HTMLEditorKit();
+        //kit = new HTMLEditorKit();
+        kit = new WrapHtmlKit();
         jspResults = new JScrollPane(epResults);
         jspHelp = new JScrollPane(tpHelp);
         jspContactMe = new JScrollPane(tpContactMe);
