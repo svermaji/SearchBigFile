@@ -485,7 +485,6 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
-        resetShowWarning();
         setDragNDrop();
         addBindings();
         setFontSize(FONT_OPR.NONE);
@@ -828,6 +827,9 @@ public class SearchBigFile extends AppFrame {
         msgPanel.setBorder(SwingUtils.createLineBorder(selectionColor));
         lblMsg.setForeground(selectionColor);
 
+        //TODO: debug at startup .... all proper vars
+        // Highlight with text color
+        // wordwrap
         mbRFiles.setBorder(SwingUtils.createLineBorder(selectionColor));
         mbRSearches.setBorder(SwingUtils.createLineBorder(selectionColor));
         mbSettings.setBorder(SwingUtils.createLineBorder(selectionColor));
