@@ -397,7 +397,6 @@ public class SearchBigFile extends AppFrame {
         msgPanel.add(lblMsg, BorderLayout.CENTER);
         msgPanel.add(btnShowAll, BorderLayout.LINE_END);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
-        resetShowWarning();
 
         tpHelp = new JEditorPane();
         tpHelp.setEditable(false);
@@ -487,6 +486,7 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
 
+        resetShowWarning();
         setDragNDrop();
         addBindings();
         setFontSize(FONT_OPR.NONE);
