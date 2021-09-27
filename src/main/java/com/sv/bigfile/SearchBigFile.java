@@ -275,7 +275,6 @@ public class SearchBigFile extends AppFrame {
         menuRSearches.setMnemonic(uin.mnemonic);
         menuRSearches.setToolTipText(uin.tip);
         mbRSearches.add(menuRSearches);
-        mbRSearches.setBorder(SwingUtils.createLineBorder(highlightColor));
         updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
 
         jtbSearch = new JToolBar();
@@ -808,7 +807,6 @@ public class SearchBigFile extends AppFrame {
 
     private void setHighlightColor() {
         setColorFromIdx();
-        //mbSettings.setBackground(highlightColor);
         highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
         painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
         if (timeTaken != null) {
@@ -827,7 +825,8 @@ public class SearchBigFile extends AppFrame {
         filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
         searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
         controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
-        msgPanel.setBorder(SwingUtils.createLineBorder(cl));
+        msgPanel.setBorder(SwingUtils.createLineBorder(selectionColor));
+        lblMsg.setForeground(selectionColor);
 
         mbRFiles.setBorder(SwingUtils.createLineBorder(selectionColor));
         mbRSearches.setBorder(SwingUtils.createLineBorder(selectionColor));
@@ -1572,8 +1571,7 @@ public class SearchBigFile extends AppFrame {
     public void showMsg(String msg, MyLogger.MsgType type) {
         if (Utils.hasValue(msg)) {
             Color b = Color.white;
-            Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
-            Color f = cl;
+            Color f = selectionColor;
             if (type == MyLogger.MsgType.ERROR) {
                 b = Color.red;
                 f = Color.white;
