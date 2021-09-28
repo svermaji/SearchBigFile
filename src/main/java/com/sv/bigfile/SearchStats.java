@@ -4,7 +4,7 @@ public class SearchStats {
 
     private long lineNum, occurrences;
     private String line;
-    private boolean match, completeLine;
+    private boolean match, eofLine, sofFile = true;
     private final String searchPattern;
 
     public SearchStats(long lineNum, long occurrences, String line, String searchPattern) {
@@ -50,12 +50,20 @@ public class SearchStats {
         return searchPattern;
     }
 
-    public boolean isCompleteLine() {
-        return completeLine;
+    public boolean isEofLine() {
+        return eofLine;
     }
 
-    public void setCompleteLine(boolean completeLine) {
-        this.completeLine = completeLine;
+    public void setEofLine(boolean eofLine) {
+        this.eofLine = eofLine;
+    }
+
+    public boolean isSofFile() {
+        return sofFile;
+    }
+
+    public void setSofFile(boolean sofFile) {
+        this.sofFile = sofFile;
     }
 
     @Override
@@ -63,8 +71,10 @@ public class SearchStats {
         return "SearchStats{" +
                 "lineNum=" + lineNum +
                 ", occurrences=" + occurrences +
+                ", line='" + line + '\'' +
                 ", match=" + match +
-                ", completeLine=" + completeLine +
+                ", eofLine=" + eofLine +
+                ", sofFile=" + sofFile +
                 ", searchPattern='" + searchPattern + '\'' +
                 '}';
     }
