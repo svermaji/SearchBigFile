@@ -9,6 +9,7 @@ import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.runcmd.RunCommand;
 import com.sv.swingui.SwingUtils;
+import com.sv.swingui.UIConstants;
 import com.sv.swingui.component.*;
 import com.sv.swingui.component.table.AppTable;
 import com.sv.swingui.component.table.CellRendererCenterAlign;
@@ -102,7 +103,7 @@ public class SearchBigFile extends AppFrame {
 
     private static FILE_OPR operation;
 
-    private static final Color ORIG_COLOR = new Color(238, 238, 238);
+    private static final Color ORIG_COLOR = UIConstants.ORIG_COLOR;
     private static ColorsNFonts[] appColors;
     private static boolean ignoreBlackAndWhite = true;
     private static boolean showWarning = false;
@@ -666,7 +667,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void highLightInResult(int s, int e) {
-        tpResults.getStyledDocument().setCharacterAttributes(s, e-s, highlighted, false);
+        tpResults.getStyledDocument().setCharacterAttributes(s, e - s, highlighted, false);
     }
 
     private void createAllOccrRows() {
