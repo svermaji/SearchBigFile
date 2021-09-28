@@ -908,11 +908,6 @@ public class SearchBigFile extends AppFrame {
 
     private void showHelpInBrowser() {
         new RunCommand(new String[]{"./show-help.bat " + Utils.getCurrentDir()}, logger);
-        try {
-            Runtime.getRuntime().exec("./show-help.bat");
-        } catch (IOException e) {
-            logger.error(e);
-        }
     }
 
     private void hideHelp() {
@@ -1872,7 +1867,7 @@ public class SearchBigFile extends AppFrame {
 
     public void changeHelpColor() {
         for (ColorsNFonts c : ColorsNFonts.values()) {
-            btnHelp.setForeground(c.getBk());
+            btnHelp.setForeground(c.getFg());
             Utils.sleep(500);
         }
     }
@@ -2097,22 +2092,25 @@ public class SearchBigFile extends AppFrame {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
+            boolean sof = stats.isSofFile();
+            boolean eol = stats.isEofLine();
             if (stats.isMatch()) {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
                 if (occr > 0) {
-                    if (stats.isSofFile()) {
+                    if (sof) {
                         sb.append(addOnlyLineNumAndEsc(stats.getLineNum(), ""));
                         stats.setSofFile(false);
                     }
                     stats.setOccurrences(stats.getOccurrences() + occr);
                     sb.append(escString(stats.getLine()));
-                    qMsgsToAppend.add(sb.toString());
-                    if (stats.isEofLine() && !stats.isSofFile()) {
+                    if (eol && !sof) {
                         qMsgsToAppend.add(addLineNumAndEscAtStart(stats.getLineNum(), ""));
                     }
+                    //TODO: empty lines in read opr
+                    qMsgsToAppend.add(sb.toString());
                 }
             }
-            if (stats.isEofLine()) {
+            if (sof || eol) {
                 stats.setLineNum(lineNum + 1);
             }
 
