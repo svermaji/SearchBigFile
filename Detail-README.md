@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 29-Sep-2021
+* Update color and borders.
+
 #### On 28-Sep-2021
 * Now highlighted text color will also change.  Implementation changed from HighlightPainter to SimpleAttributeSet.
 * Update pom version.

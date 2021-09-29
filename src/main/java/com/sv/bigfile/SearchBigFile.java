@@ -83,7 +83,7 @@ public class SearchBigFile extends AppFrame {
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
-    private JToolBar jtbFile, jtbSearch, jtbActions;
+    private JToolBar jtbFile, jtbSearch, jtbControls;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll, btnListRS, btnListRF;
@@ -313,9 +313,9 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(btnCancel);
         searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightColor));
 
-        jtbActions = new JToolBar();
-        jtbActions.setFloatable(false);
-        jtbActions.setRollover(false);
+        jtbControls = new JToolBar();
+        jtbControls.setFloatable(false);
+        jtbControls.setRollover(false);
         uin = UIName.BTN_PLUSFONT;
         btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPlusFont.addActionListener(e -> increaseFontSize());
@@ -360,20 +360,20 @@ public class SearchBigFile extends AppFrame {
 
         controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
-        controlPanel.add(jtbActions);
-        jtbActions.add(mbSettings);
-        jtbActions.add(btnPlusFont);
-        jtbActions.add(btnMinusFont);
-        jtbActions.add(btnResetFont);
-        jtbActions.add(btnGoTop);
-        jtbActions.add(btnGoBottom);
-        jtbActions.add(btnPreOccr);
-        jtbActions.add(btnNextOccr);
-        jtbActions.add(btnFind);
-        jtbActions.add(btnExport);
-        jtbActions.add(btnCleanExport);
-        jtbActions.add(btnHelpBrowser);
-        jtbActions.add(btnHelp);
+        controlPanel.add(jtbControls);
+        jtbControls.add(mbSettings);
+        jtbControls.add(btnPlusFont);
+        jtbControls.add(btnMinusFont);
+        jtbControls.add(btnResetFont);
+        jtbControls.add(btnGoTop);
+        jtbControls.add(btnGoBottom);
+        jtbControls.add(btnPreOccr);
+        jtbControls.add(btnNextOccr);
+        jtbControls.add(btnFind);
+        jtbControls.add(btnExport);
+        jtbControls.add(btnCleanExport);
+        jtbControls.add(btnHelpBrowser);
+        jtbControls.add(btnHelp);
         controlPanel.add(btnExit);
         controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightColor));
 
@@ -479,7 +479,8 @@ public class SearchBigFile extends AppFrame {
                 btnListRS, btnListRF, btnUC, btnLC, btnTC, btnIC,
                 btnFileOpen, btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
                 btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
-                btnExport, btnCleanExport
+                btnExport, btnCleanExport, btnSearch, btnLastN, btnShowAll,
+                btnHelp, jcbMatchCase, jcbWholeWord
         };
 
         prepareSettingsMenu();
@@ -821,14 +822,14 @@ public class SearchBigFile extends AppFrame {
         filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
         searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
         controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
-        msgPanel.setBorder(SwingUtils.createLineBorder(selectionColor));
+
         lblMsg.setForeground(selectionColor);
 
-        //TODO: search as type
-        mbRFiles.setBorder(SwingUtils.createLineBorder(selectionColor));
-        mbRSearches.setBorder(SwingUtils.createLineBorder(selectionColor));
-        mbSettings.setBorder(SwingUtils.createLineBorder(selectionColor));
+        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, mbRFiles, mbRSearches, mbSettings,
+                jtbFile, jtbSearch, jtbControls};
+        Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(selectionColor)));
 
+        //TODO: search as type
         // This sets foreground of scroll bar but removes background color
         /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
         jspResults.getVerticalScrollBar().setUI(new BasicScrollBarUI() );
@@ -842,9 +843,9 @@ public class SearchBigFile extends AppFrame {
 
         // calling it separately as making opaque is making it weird, so just changing tab color
         tabbedPane.setBackground(cl);
-        Arrays.stream(inputPanel.getComponents()).forEach(c ->
-                SwingUtils.setComponentColor((JComponent) c, cl, null));
-        JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbSearch, jtbActions};
+        Arrays.stream(inputPanel.getComponents()).forEach(c -> SwingUtils.setComponentColor((JComponent) c, cl, null));
+
+        JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbSearch, jtbControls};
         SwingUtils.setComponentColor(ca, cl, null);
 
         setBkColors(bkColorComponents);
