@@ -859,6 +859,7 @@ public class SearchBigFile extends AppFrame {
         Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(selectionColor)));
 
         //TODO: search as type
+        //TODO: ask to remove if file not found
         // This sets foreground of scroll bar but removes background color
         /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
         jspResults.getVerticalScrollBar().setUI(new BasicScrollBarUI() );
