@@ -16,6 +16,8 @@ import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.text.*;
@@ -79,6 +81,7 @@ public class SearchBigFile extends AppFrame {
     private JLabel lblNoRow;
     private AppTable tblAllOccr;
     private JPanel bottomPanel, inputPanel, filePanel, searchPanel, controlPanel;
+    private TitledBorder filePanelBorder, searchPanelBorder, controlPanelBorder;
     private String filePanelHeading, searchPanelHeading, controlPanelHeading;
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
@@ -232,8 +235,12 @@ public class SearchBigFile extends AppFrame {
         jtbFile.add(jcbMatchCase);
         jtbFile.add(jcbWholeWord);
 
+        filePanelBorder = (TitledBorder) SwingUtils.createTitledBorder(filePanelHeading, highlightColor);
+        searchPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(searchPanelHeading, highlightColor);
+        controlPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(controlPanelHeading, highlightColor);
+
         filePanel.add(jtbFile);
-        filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightColor));
+        filePanel.setBorder(filePanelBorder);
 
         searchPanel = new JPanel();
 
@@ -321,7 +328,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(cbLastN);
         searchPanel.add(btnLastN);
         searchPanel.add(btnCancel);
-        searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightColor));
+        searchPanel.setBorder(searchPanelBorder);
 
         jtbControls = new JToolBar();
         jtbControls.setFloatable(false);
@@ -385,7 +392,7 @@ public class SearchBigFile extends AppFrame {
         jtbControls.add(btnHelpBrowser);
         jtbControls.add(btnHelp);
         controlPanel.add(btnExit);
-        controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightColor));
+        controlPanel.setBorder(controlPanelBorder);
 
         inputPanel = new JPanel();
         inputPanel.setOpaque(true);
@@ -835,9 +842,16 @@ public class SearchBigFile extends AppFrame {
     private void changeAppColor() {
         Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
 
-        filePanel.setBorder(SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor));
-        searchPanel.setBorder(SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor));
-        controlPanel.setBorder(SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor));
+        filePanelBorder = (TitledBorder) SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor);
+        searchPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor);
+        controlPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor);
+
+        TitledBorder[] toTitleColor = {filePanelBorder, searchPanelBorder, controlPanelBorder};
+        Arrays.stream(toTitleColor).forEach(t -> t.setTitleColor(highlightTextColor));
+
+        filePanel.setBorder(filePanelBorder);
+        searchPanel.setBorder(searchPanelBorder);
+        controlPanel.setBorder(controlPanelBorder);
 
         lblMsg.setForeground(selectionColor);
 
