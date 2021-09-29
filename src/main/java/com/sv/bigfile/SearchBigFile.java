@@ -55,7 +55,7 @@ public class SearchBigFile extends AppFrame {
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp,
-        MatchCase, WholeWord, DebugEnabled
+        MatchCase, WholeWord, FixedWidth, DebugEnabled
     }
 
     enum Status {
@@ -104,9 +104,11 @@ public class SearchBigFile extends AppFrame {
     private static FILE_OPR operation;
 
     private static final Color ORIG_COLOR = UIConstants.ORIG_COLOR;
+    private static final int TXT_HEIGHT = 28;
     private static ColorsNFonts[] appColors;
     private static boolean ignoreBlackAndWhite = true;
     private static boolean showWarning = false;
+    private static boolean fixedWidth = false;
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
@@ -172,6 +174,7 @@ public class SearchBigFile extends AppFrame {
         setColorFromIdx();
         recentFilesStr = getCfg(Configs.RecentFiles);
         recentSearchesStr = getCfg(Configs.RecentSearches);
+        fixedWidth = getBooleanCfg(Configs.FixedWidth);
         msgCallable = new AppendMsgCallable(this);
 
         Container parentContainer = getContentPane();
@@ -186,6 +189,9 @@ public class SearchBigFile extends AppFrame {
         final int TXT_COLS = 12;
         UIName uin = UIName.LBL_FILE;
         txtFilePath = new AppTextField(getCfg(Configs.FilePath), TXT_COLS, getFiles());
+        if (fixedWidth) {
+            txtFilePath.setMaximumSize(new Dimension(150, TXT_HEIGHT));
+        }
         AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         uin = UIName.BTN_FILE;
         btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip);// no need as image //, "", true);
@@ -214,6 +220,7 @@ public class SearchBigFile extends AppFrame {
         mbRFiles.add(menuRFiles);
         updateRecentMenu(menuRFiles, getFiles(), txtFilePath, TXT_F_MAP_KEY);
 
+        //TODO: locked screen and all tabbed drag drop and setfile method when select from recent menu
         jtbFile = new JToolBar();
         jtbFile.setFloatable(false);
         jtbFile.setRollover(false);
@@ -231,6 +238,9 @@ public class SearchBigFile extends AppFrame {
         searchPanel = new JPanel();
 
         txtSearch = new AppTextField(getCfg(Configs.SearchString), TXT_COLS - 6, getSearches());
+        if (fixedWidth) {
+            txtSearch.setMaximumSize(new Dimension(100, TXT_HEIGHT));
+        }
         txtSearch.setToolTipText("Ctrl+F to come here and enter to perform Search");
         txtSearch.addKeyListener(new KeyAdapter() {
             @Override
@@ -485,29 +495,29 @@ public class SearchBigFile extends AppFrame {
 
         prepareSettingsMenu();
 
-        new Timer().schedule(new FontChangerTask(this), 0, MIN_10);
-        new Timer().schedule(new HelpColorChangerTask(this), 0, HELP_COLOR_CHANGE_TIME);
-
-        setDragNDrop();
-        addBindings();
         setFontSize(FONT_OPR.NONE);
         setControlsToEnable();
         setupHelp();
         setupContactMe();
+        setDragNDrop();
+        addBindings();
+
+        // Delay so window can be activated
+        new Timer().schedule(new FontChangerTask(this), SEC_1, MIN_10);
+        new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
+        setToCenter();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
         resetForNewSearch();
         enableControls();
         showHelp();
         showAllOccr();
-
-        setToCenter();
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
-
-        getInFocus(menuRFiles);
         setHighlightColor();
+        getInFocus(menuRFiles);
     }
 
     private void setDragNDrop() {
-        JComponent[] addBindingsTo = {tpResults, tpHelp, lblMsg, btnShowAll, msgPanel};
+        JComponent[] addBindingsTo = {tpContactMe, tpHelp, tpResults, lblMsg, btnShowAll, msgPanel};
         Arrays.stream(addBindingsTo).forEach(j -> {
             // to make drag n drop specific set below method for txtFilePath
             j.setDropTarget(new DropTarget() {
@@ -578,14 +588,18 @@ public class SearchBigFile extends AppFrame {
 
     // This will be called by reflection from SwingUI jar
     public void colorChange(Integer x) {
-        colorIdx = x;
-        setHighlightColor();
+        if (windowActive) {
+            colorIdx = x;
+            setHighlightColor();
+        }
     }
 
     // This will be called by reflection from SwingUI jar
     public void fontChange(Font f, Integer x) {
-        fontIdx = x;
-        setMsgFont(f);
+        if (windowActive) {
+            fontIdx = x;
+            setMsgFont(f);
+        }
     }
 
     private void setColorFromIdx() {
@@ -802,18 +816,20 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setHighlightColor() {
-        setColorFromIdx();
-        StyleConstants.setForeground(highlighted, highlightTextColor);
-        StyleConstants.setBackground(highlighted, highlightColor);
-        highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
-        if (timeTaken != null) {
-            findWordInResult();
-        }
-        if (tblAllOccr != null && tblAllOccr.getRowCount() != 0) {
-            dblClickOffset(tblAllOccr, null);
-        }
+        if (windowActive) {
+            setColorFromIdx();
+            StyleConstants.setForeground(highlighted, highlightTextColor);
+            StyleConstants.setBackground(highlighted, highlightColor);
+            highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
+            if (timeTaken != null) {
+                findWordInResult();
+            }
+            if (tblAllOccr != null && tblAllOccr.getRowCount() != 0) {
+                dblClickOffset(tblAllOccr, null);
+            }
 
-        changeAppColor();
+            changeAppColor();
+        }
     }
 
     private void changeAppColor() {
@@ -1511,6 +1527,10 @@ public class SearchBigFile extends AppFrame {
         return fontIdx + "";
     }
 
+    public String getFixedWidth() {
+        return fixedWidth + "";
+    }
+
     public String getColorIndex() {
         return colorIdx + "";
     }
@@ -1867,9 +1887,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void changeHelpColor() {
-        for (ColorsNFonts c : ColorsNFonts.values()) {
-            btnHelp.setForeground(c.getFg());
-            Utils.sleep(500);
+        if (windowActive) {
+            for (ColorsNFonts c : ColorsNFonts.values()) {
+                btnHelp.setForeground(c.getFg());
+                Utils.sleep(500);
+            }
         }
     }
 
