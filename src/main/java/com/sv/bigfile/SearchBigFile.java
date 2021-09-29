@@ -845,7 +845,7 @@ public class SearchBigFile extends AppFrame {
         tabbedPane.setBackground(cl);
         Arrays.stream(inputPanel.getComponents()).forEach(c -> SwingUtils.setComponentColor((JComponent) c, cl, null));
 
-        JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbSearch, jtbControls};
+        JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbFile, jtbSearch, jtbControls};
         SwingUtils.setComponentColor(ca, cl, null);
 
         setBkColors(bkColorComponents);
