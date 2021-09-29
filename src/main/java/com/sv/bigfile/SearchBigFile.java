@@ -825,8 +825,7 @@ public class SearchBigFile extends AppFrame {
 
         lblMsg.setForeground(selectionColor);
 
-        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, mbRFiles, mbRSearches, mbSettings,
-                jtbFile, jtbSearch, jtbControls};
+        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, mbRFiles, mbRSearches, mbSettings};
         Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(selectionColor)));
 
         //TODO: search as type
