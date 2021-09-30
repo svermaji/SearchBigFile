@@ -16,6 +16,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
 
 ## Recent Changes<br>
 #### On 29-Sep-2021
+* Clipboard popup will appear to set file name.
+
+#### On 29-Sep-2021
 * Update color and borders.
 * Font/Colors will change only if window is active.
 
