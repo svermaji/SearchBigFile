@@ -168,6 +168,9 @@ public class SearchBigFile extends AppFrame {
         logger.setDebug(debugAllowed);
         printConfigs();
 
+        applyWindowActiveCheck(new WindowChecks[]{
+                WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
+
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
@@ -520,7 +523,7 @@ public class SearchBigFile extends AppFrame {
         showHelp();
         showAllOccr();
         setHighlightColor();
-        getInFocus(menuRFiles);
+        SwingUtils.getInFocus(menuRFiles);
     }
 
     private void setDragNDrop() {
@@ -541,16 +544,24 @@ public class SearchBigFile extends AppFrame {
         });
     }
 
-    private void getInFocus(JComponent c) {
-        c.requestFocus();
-        c.grabFocus();
+    @Override
+    public void startClipboardAction() {
+        copyClipboard(logger);
+    }
+
+    public void copyClipboardSuccess(String data) {
+        setFileToSearch(data);
+    }
+
+    public void copyClipboardFailed() {
+        // no need to take any action
     }
 
     private void addBindings() {
 
         Action actionTxtSearch = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                getInFocus(txtSearch);
+                SwingUtils.getInFocus(txtSearch);
             }
         };
 
@@ -873,8 +884,10 @@ public class SearchBigFile extends AppFrame {
 
         // calling it separately as making opaque is making it weird, so just changing tab color
         tabbedPane.setBackground(cl);
+        tabbedPane.setForeground(highlightTextColor);
         Arrays.stream(inputPanel.getComponents()).forEach(c -> SwingUtils.setComponentColor((JComponent) c, cl, null));
 
+        // memory info bar
         JComponent[] ca = {tblAllOccr.getTableHeader(), inputPanel, jtbFile, jtbSearch, jtbControls};
         SwingUtils.setComponentColor(ca, cl, null);
 
