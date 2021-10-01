@@ -90,7 +90,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll, btnListRS, btnListRF;
-    private JButton btnPlusFont, btnMinusFont, btnResetFont;
+    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnLock, btnChangePwd;
     private JButton btnFileOpen, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
@@ -171,6 +171,7 @@ public class SearchBigFile extends AppFrame {
         applyWindowActiveCheck(new WindowChecks[]{
                 WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
         addLockScreen();
+        super.setLogger(logger);
 
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
         qMsgsToAppend = new LinkedBlockingQueue<>();
@@ -346,6 +347,12 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_RESETFONT;
         btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
+        uin = UIName.BTN_LOCK;
+        btnLock = new AppButton(uin.name, uin.mnemonic);
+        btnLock.addActionListener(evt -> showLockScreen(highlightColor));
+        uin = UIName.BTN_CHNG_PWD;
+        btnChangePwd = new AppButton(uin.name, uin.mnemonic);
+        btnChangePwd.addActionListener(evt -> showChangePwdScreen(highlightColor));
         uin = UIName.BTN_GOTOP;
         btnGoTop = new AppButton(uin.name, uin.keys, uin.tip);
         btnGoTop.addActionListener(e -> goToFirst());
@@ -391,6 +398,8 @@ public class SearchBigFile extends AppFrame {
         jtbControls.add(btnPreOccr);
         jtbControls.add(btnNextOccr);
         jtbControls.add(btnFind);
+        jtbControls.add(btnLock);
+        jtbControls.add(btnChangePwd);
         jtbControls.add(btnExport);
         jtbControls.add(btnCleanExport);
         jtbControls.add(btnHelpBrowser);
@@ -499,9 +508,9 @@ public class SearchBigFile extends AppFrame {
                 menuSettings, menuRFiles, menuRSearches,
                 btnListRS, btnListRF, btnUC, btnLC, btnTC, btnIC,
                 btnFileOpen, btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
-                btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp, btnHelpBrowser,
-                btnExport, btnCleanExport, btnSearch, btnLastN, btnShowAll,
-                btnHelp, jcbMatchCase, jcbWholeWord
+                btnGoBottom, btnNextOccr, btnLock, btnChangePwd, btnPreOccr, btnFind,
+                btnHelp, btnHelpBrowser, btnExport, btnCleanExport, btnSearch,
+                btnLastN, btnShowAll, btnHelp, jcbMatchCase, jcbWholeWord
         };
 
         prepareSettingsMenu();
@@ -513,9 +522,6 @@ public class SearchBigFile extends AppFrame {
         setDragNDrop();
         addBindings();
 
-        // Delay so window can be activated
-        new Timer().schedule(new FontChangerTask(this), SEC_1, MIN_10);
-        new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
         setToCenter();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
@@ -525,6 +531,10 @@ public class SearchBigFile extends AppFrame {
         showAllOccr();
         setHighlightColor();
         SwingUtils.getInFocus(menuRFiles);
+
+        // Delay so window can be activated
+        new Timer().schedule(new FontChangerTask(this), SEC_1, MIN_10);
+        new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
     }
 
     private void setDragNDrop() {
@@ -545,13 +555,24 @@ public class SearchBigFile extends AppFrame {
         });
     }
 
+    public MyLogger getLogger () {
+        return logger;
+    }
+
     @Override
     public void startClipboardAction() {
-        copyClipboard(logger);
+        new Timer().schedule(new StartClipboardTask(this), SEC_1);
     }
 
     public void copyClipboardSuccess(String data) {
         setFileToSearch(data);
+    }
+
+    @Override
+    public void pwdChangedStatus(boolean pwdChanged) {
+        if (pwdChanged) {
+            updateTitleAndMsg("Password changed", MsgType.INFO);
+        }
     }
 
     public void copyClipboardFailed() {
@@ -852,7 +873,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void changeAppColor() {
-        showLockScreen();
         Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
 
         filePanelBorder = (TitledBorder) SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor);
