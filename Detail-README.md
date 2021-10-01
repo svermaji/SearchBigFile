@@ -15,6 +15,9 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 1-Oct-2021
+* Lock and Change password screen added
+
 #### On 29-Sep-2021
 * Clipboard popup will appear to set file name.
 

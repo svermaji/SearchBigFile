@@ -20,6 +20,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 ## Description
 * Program stores the last searched file and search string. 
+* User can lock screen with password and change password
 * Added export button and cleanup button for old exports. 
 * Clipboard popup will appear to set file name.
 * Fonts/Colors will change only if window is active.
@@ -63,10 +64,19 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 #### Images of different stages of development/features since day 1
 * Application Present Image<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-23-nov.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-1-oct-2021.png)
 
 * First cut<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-first-cut.png)
+
+* Colored screen<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-colored-1-oct-2021.png)
+
+* Locked screen<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-lock-1-oct-2021.png)
+
+* Change password screen<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-change-pwd-1-oct-2021.png)
 
 * Test result on 1GB file with Buffered Reader<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-test-result-BR.png)
