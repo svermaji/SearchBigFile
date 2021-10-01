@@ -170,6 +170,7 @@ public class SearchBigFile extends AppFrame {
 
         applyWindowActiveCheck(new WindowChecks[]{
                 WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
+        addLockScreen();
 
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
         qMsgsToAppend = new LinkedBlockingQueue<>();
@@ -851,6 +852,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void changeAppColor() {
+        showLockScreen();
         Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
 
         filePanelBorder = (TitledBorder) SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor);
