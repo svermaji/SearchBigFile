@@ -348,10 +348,10 @@ public class SearchBigFile extends AppFrame {
         btnResetFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnResetFont.addActionListener(e -> resetFontSize());
         uin = UIName.BTN_LOCK;
-        btnLock = new AppButton(uin.name, uin.mnemonic);
+        btnLock = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLock.addActionListener(evt -> showLockScreen(highlightColor));
         uin = UIName.BTN_CHNG_PWD;
-        btnChangePwd = new AppButton(uin.name, uin.mnemonic);
+        btnChangePwd = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnChangePwd.addActionListener(evt -> showChangePwdScreen(highlightColor));
         uin = UIName.BTN_GOTOP;
         btnGoTop = new AppButton(uin.name, uin.keys, uin.tip);
