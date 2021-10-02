@@ -628,7 +628,7 @@ public class SearchBigFile extends AppFrame {
 
     // This will be called by reflection from SwingUI jar
     public void colorChange(Integer x) {
-        if (windowActive) {
+        if (isWindowActive()) {
             colorIdx = x;
             setHighlightColor();
         }
@@ -636,7 +636,7 @@ public class SearchBigFile extends AppFrame {
 
     // This will be called by reflection from SwingUI jar
     public void fontChange(Font f, Integer x) {
-        if (windowActive) {
+        if (isWindowActive()) {
             fontIdx = x;
             setMsgFont(f);
         }
@@ -856,7 +856,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setHighlightColor() {
-        if (windowActive) {
+        if (isWindowActive()) {
             setColorFromIdx();
             StyleConstants.setForeground(highlighted, highlightTextColor);
             StyleConstants.setBackground(highlighted, highlightColor);
@@ -1937,7 +1937,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void changeHelpColor() {
-        if (windowActive) {
+        if (isWindowActive()) {
             for (ColorsNFonts c : ColorsNFonts.values()) {
                 btnHelp.setForeground(c.getFg());
                 Utils.sleep(500);
