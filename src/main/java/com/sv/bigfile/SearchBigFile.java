@@ -8,6 +8,7 @@ import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.runcmd.RunCommand;
+import com.sv.runcmd.RunCommandUI;
 import com.sv.swingui.SwingUtils;
 import com.sv.swingui.UIConstants;
 import com.sv.swingui.component.*;
@@ -56,7 +57,7 @@ public class SearchBigFile extends AppFrame {
      */
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
-        ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp,
+        ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
         MatchCase, WholeWord, FixedWidth, DebugEnabled
     }
 
@@ -90,7 +91,7 @@ public class SearchBigFile extends AppFrame {
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll, btnListRS, btnListRF;
-    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnLock, btnChangePwd;
+    private JButton btnPlusFont, btnMinusFont, btnResetFont, btnLock;
     private JButton btnFileOpen, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
@@ -101,7 +102,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp;
+    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -168,9 +169,6 @@ public class SearchBigFile extends AppFrame {
         logger.setDebug(debugAllowed);
         printConfigs();
 
-        applyWindowActiveCheck(new WindowChecks[]{
-                WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
-        addLockScreen();
         super.setLogger(logger);
 
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
@@ -350,9 +348,6 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_LOCK;
         btnLock = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnLock.addActionListener(evt -> showLockScreen(highlightColor));
-        uin = UIName.BTN_CHNG_PWD;
-        btnChangePwd = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnChangePwd.addActionListener(evt -> showChangePwdScreen(highlightColor));
         uin = UIName.BTN_GOTOP;
         btnGoTop = new AppButton(uin.name, uin.keys, uin.tip);
         btnGoTop.addActionListener(e -> goToFirst());
@@ -399,7 +394,6 @@ public class SearchBigFile extends AppFrame {
         jtbControls.add(btnNextOccr);
         jtbControls.add(btnFind);
         jtbControls.add(btnLock);
-        jtbControls.add(btnChangePwd);
         jtbControls.add(btnExport);
         jtbControls.add(btnCleanExport);
         jtbControls.add(btnHelpBrowser);
@@ -508,7 +502,7 @@ public class SearchBigFile extends AppFrame {
                 menuSettings, menuRFiles, menuRSearches,
                 btnListRS, btnListRF, btnUC, btnLC, btnTC, btnIC,
                 btnFileOpen, btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
-                btnGoBottom, btnNextOccr, btnLock, btnChangePwd, btnPreOccr, btnFind,
+                btnGoBottom, btnNextOccr, btnLock, btnPreOccr, btnFind,
                 btnHelp, btnHelpBrowser, btnExport, btnCleanExport, btnSearch,
                 btnLastN, btnShowAll, btnHelp, jcbMatchCase, jcbWholeWord
         };
@@ -535,6 +529,12 @@ public class SearchBigFile extends AppFrame {
         // Delay so window can be activated
         new Timer().schedule(new FontChangerTask(this), SEC_1, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
+
+        if (configs.getBooleanConfig(Configs.AutoLock.name())) {
+            applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD, WindowChecks.AUTO_LOCK});
+        } else {
+            applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
+        }
     }
 
     private void setDragNDrop() {
@@ -555,7 +555,7 @@ public class SearchBigFile extends AppFrame {
         });
     }
 
-    public MyLogger getLogger () {
+    public MyLogger getLogger() {
         return logger;
     }
 
@@ -660,6 +660,9 @@ public class SearchBigFile extends AppFrame {
         jcbmiApplyToApp = new JCheckBoxMenuItem("Apply color to App", null, getBooleanCfg(Configs.ApplyColorToApp));
         jcbmiApplyToApp.setMnemonic('y');
         jcbmiApplyToApp.setToolTipText("Changes colors of complete application whenever highlight color changes");
+        jcbmiAutoLock = new JCheckBoxMenuItem("Auto Lock", null, configs.getBooleanConfig(Configs.AutoLock.name()));
+        jcbmiAutoLock.setMnemonic('L');
+        jcbmiAutoLock.setToolTipText("Auto Lock App if idle for 10 min - change need restart");
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -671,6 +674,14 @@ public class SearchBigFile extends AppFrame {
                 true, true, true, false, ignoreBlackAndWhite, this, logger));
         menuSettings.addSeparator();
         menuSettings.add(jcbmiApplyToApp);
+        menuSettings.addSeparator();
+        JMenuItem jmiChangePwd = new JMenuItem("Change Password", 'c');
+        jmiChangePwd.addActionListener(e -> showChangePwdScreen(highlightColor));
+        JMenuItem jmiLock = new JMenuItem("Lock screen", 'o');
+        jmiLock.addActionListener(e -> showLockScreen(highlightColor));
+        menuSettings.add(jmiChangePwd);
+        menuSettings.add(jmiLock);
+        menuSettings.add(jcbmiAutoLock);
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -921,14 +932,16 @@ public class SearchBigFile extends AppFrame {
 
         int i = 'a';
         for (String a : arr) {
-            char ch = (char) i;
-            JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + a);
-            mi.addActionListener(e -> txtF.setText(a));
-            if (i <= 'z') {
-                mi.setMnemonic(i++);
-                addActionOnMenu(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
+            if (Utils.hasValue(a)) {
+                char ch = (char) i;
+                JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + a);
+                mi.addActionListener(e -> txtF.setText(a));
+                if (i <= 'z') {
+                    mi.setMnemonic(i++);
+                    addActionOnMenu(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
+                }
+                m.add(mi);
             }
-            m.add(mi);
         }
     }
 
@@ -1462,17 +1475,19 @@ public class SearchBigFile extends AppFrame {
         }
 
         String csvLC = csv.toLowerCase();
-        String ssLC = searchStr.toLowerCase();
+        String ssp = SEPARATOR + searchStr;
+        String ss = ssp + SEPARATOR;
+        String ssLC = ss.toLowerCase();
         if (csvLC.contains(ssLC)) {
             int idx = csvLC.indexOf(ssLC);
             // remove item and add it again to bring it on top
             csv = csv.substring(0, idx)
-                    + csv.substring(idx + searchStr.length() + SEPARATOR.length());
+                    + SEPARATOR + csv.substring(idx + ssLC.length());
         }
-        csv = searchStr + SEPARATOR + csv;
+        csv = ssp + csv;
 
-        if (csv.split(SEPARATOR).length >= RECENT_LIMIT) {
-            csv = csv.substring(0, csv.lastIndexOf(SEPARATOR));
+        if (csv.split(SEPARATOR).length > RECENT_LIMIT) {
+            csv = csv.substring(0, csv.lastIndexOf(SEPARATOR) + SEPARATOR.length());
         }
 
         return csv;
@@ -1591,6 +1606,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getApplyColorToApp() {
         return jcbmiApplyToApp.isSelected() + "";
+    }
+
+    public String getAutoLock() {
+        return jcbmiAutoLock.isSelected() + "";
     }
 
     public String getChangeFontAuto() {
