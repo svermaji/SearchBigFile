@@ -15,7 +15,7 @@ public enum UIName {
     BTN_SHOWALL("Show/Hide All", 'q', "Show/Hide all search occurrences."),
     BTN_LC("L", 'y', "Make search string to lower case."),
     BTN_TC("T", 'p', "Make search string to title case."),
-    BTN_IC("V", 'k', "Invert case of search string."),
+    BTN_IC("V", 'v', "Invert case of search string."),
     BTN_LISTRF("Ý", 'L', "Search recently used file list."),
     BTN_PLUSFONT("+", '=', "Increase font size for results, max [" + AppConstants.MAX_FONT_SIZE + "]."),
     BTN_MINUSFONT("—", '-', "Decrease font size for results, min [" + AppConstants.MIN_FONT_SIZE + "]."),

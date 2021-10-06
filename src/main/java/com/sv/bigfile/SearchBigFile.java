@@ -87,7 +87,7 @@ public class SearchBigFile extends AppFrame {
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
-    private JToolBar jtbFile, jtbSearch, jtbControls;
+    private AppToolBar jtbFile, jtbSearch, jtbControls;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll, btnListRS, btnListRF;
@@ -226,10 +226,7 @@ public class SearchBigFile extends AppFrame {
         mbRFiles.add(menuRFiles);
         updateRecentMenu(menuRFiles, getFiles(), txtFilePath, TXT_F_MAP_KEY);
 
-        //TODO: locked screen and all tabbed drag drop and setfile method when select from recent menu
-        jtbFile = new JToolBar();
-        jtbFile.setFloatable(false);
-        jtbFile.setRollover(false);
+        jtbFile = new AppToolBar();
         jtbFile.add(txtFilePath);
         jtbFile.add(btnFileOpen);
         jtbFile.add(btnListRF);
@@ -299,9 +296,7 @@ public class SearchBigFile extends AppFrame {
         mbRSearches.add(menuRSearches);
         updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
 
-        jtbSearch = new JToolBar();
-        jtbSearch.setFloatable(false);
-        jtbSearch.setRollover(true);
+        jtbSearch = new AppToolBar();
         jtbSearch.add(txtSearch);
         jtbSearch.add(btnUC);
         jtbSearch.add(btnLC);
@@ -333,9 +328,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(btnCancel);
         searchPanel.setBorder(searchPanelBorder);
 
-        jtbControls = new JToolBar();
-        jtbControls.setFloatable(false);
-        jtbControls.setRollover(false);
+        jtbControls = new AppToolBar();
         uin = UIName.BTN_PLUSFONT;
         btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPlusFont.addActionListener(e -> increaseFontSize());
