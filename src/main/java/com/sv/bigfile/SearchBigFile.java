@@ -16,6 +16,7 @@ import com.sv.swingui.component.table.AppTable;
 import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
+import javax.print.attribute.ResolutionSyntax;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
@@ -290,6 +291,7 @@ public class SearchBigFile extends AppFrame {
         //Supports if single line is around 30mb in one file as json response
         uin = UIName.LBL_RSEARCHES;
         mbRSearches = new JMenuBar();
+        mbRSearches.setBorder(ZERO_BORDER);
         menuRSearches = new JMenu(uin.name);
         menuRSearches.setMnemonic(uin.mnemonic);
         menuRSearches.setToolTipText(uin.tip);
@@ -557,7 +559,8 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new StartClipboardTask(this), SEC_1);
     }
 
-    public void copyClipboardSuccess(String data) {
+    @Override
+    public void copyClipboardYes(String data) {
         setFileToSearch(data);
     }
 
@@ -566,10 +569,6 @@ public class SearchBigFile extends AppFrame {
         if (pwdChanged) {
             updateTitleAndMsg("Password changed", MsgType.INFO);
         }
-    }
-
-    public void copyClipboardFailed() {
-        // no need to take any action
     }
 
     private void addBindings() {
@@ -909,8 +908,17 @@ public class SearchBigFile extends AppFrame {
         });
 
         // calling it separately as making opaque is making it weird, so just changing tab color
+
+        // TODO: color active tab
+        /*int tabsCount = tabbedPane.getTabCount();
+        for (int i = 0; i < tabsCount; i++) {
+            tabbedPane.setBackgroundAt(i, cl);
+            tabbedPane.setForegroundAt(i, highlightTextColor);
+        }*/
         tabbedPane.setBackground(cl);
         tabbedPane.setForeground(highlightTextColor);
+//        tabbedPane.setBackgroundAt(tabbedPane.getSelectedIndex(), selectionColor);
+//        tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
         Arrays.stream(inputPanel.getComponents()).forEach(c -> SwingUtils.setComponentColor((JComponent) c, cl, null));
 
         // memory info bar
@@ -1310,6 +1318,7 @@ public class SearchBigFile extends AppFrame {
         status = Status.READING;
     }
 
+    //TODO: show memory on UI
     private void printMemoryDetails() {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
@@ -1460,6 +1469,17 @@ public class SearchBigFile extends AppFrame {
             updateRecentMenu(menuRSearches, arrS, txtSearch, TXT_S_MAP_KEY);
             txtSearch.setAutoCompleteArr(arrS);
         }
+    }
+
+    private void removeItemAndUpdate() {
+        String strToRemove = SEPARATOR + getFilePath() + SEPARATOR;
+        if (recentFilesStr.contains(strToRemove)) {
+            recentFilesStr = recentFilesStr.replace(strToRemove, "");
+        }
+        String[] arrF = recentFilesStr.split(SEPARATOR);
+        updateRecentMenu(menuRFiles, arrF, txtFilePath, TXT_F_MAP_KEY);
+        txtFilePath.setAutoCompleteArr(arrF);
+        txtFilePath.setText("");
     }
 
     private String checkItems(String searchStr, String csv) {
@@ -1969,6 +1989,18 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    // called from AppFrame
+    public void removeFileFromRecentYes(String data) {
+        logger.info("removing file from recents " + Utils.addBraces(getFilePath()));
+        removeItemAndUpdate();
+        updateTitleAndMsg("Removed from recent file list", MsgType.INFO);
+    }
+
+    // called from AppFrame
+    public void removeFileFromRecentNo(String data) {
+        logger.info("removeFileFromRecentYes: No action taken for data " + Utils.addBraces(data));
+    }
+
     public void setMsgFont(Font f) {
         menuFonts.setText("Fonts " + Utils.addBraces(getFontFromEnum()));
         lblMsg.setFont(f);
@@ -2393,18 +2425,29 @@ public class SearchBigFile extends AppFrame {
                     sbf.updateTitleAndMsg("Search complete - " + result, getMsgTypeForOpr());
                 }
                 status = Status.DONE;
+            } catch (FileNotFoundException e) {
+                searchFailed(e);
+                sbf.updateTitleAndMsg("File not exists: " + getFilePath(), MsgType.ERROR);
+                createYesNoDialog("Remove entry ?",
+                        "File not exists " + Utils.addBraces(getFilePath())
+                                + ", do you want to remove it from Recent list ?",
+                        "removeFileFromRecent");
             } catch (IOException e) {
-                String msg = "ERROR: " + e.getMessage();
-                sbf.logger.error(e.getMessage());
-                sbf.tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
-                sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
-                status = Status.DONE;
+                searchFailed(e);
             } finally {
                 sbf.enableControls();
             }
 
             finishAction();
             return true;
+        }
+
+        private void searchFailed(Exception e) {
+            String msg = "ERROR: " + e.getMessage();
+            sbf.logger.error(e.getMessage());
+            sbf.tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+            sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
+            status = Status.DONE;
         }
     }
 }
