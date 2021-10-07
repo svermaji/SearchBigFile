@@ -542,8 +542,10 @@ public class SearchBigFile extends AppFrame {
     public void trackMemory() {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
-        String mem = Utils.getSizeString(total - free) + F_SLASH + Utils.getSizeString(total);
+        String mem = Utils.addBraces(Utils.getSizeString(total - free, false, false)
+                + F_SLASH + Utils.getSizeString(total, false, false));
         btnMemory.setText(mem);
+        btnMemory.setToolTipText(getMemoryDetails()+". Click to free memory. Shortcut: Alt+" + UIName.BTN_MEMORY.mnemonic);
     }
 
     private String checkSep(String s) {
@@ -1343,13 +1345,17 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void printMemoryDetails() {
+        debug(getMemoryDetails());
+    }
+
+    private String getMemoryDetails() {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
-        debug(String.format("Memory - Total: %s, Free: %s, Occupied: %s",
+        return String.format("Memory - Total: %s, Free: %s, Occupied: %s",
                 Utils.getSizeString(total),
                 Utils.getSizeString(free),
                 Utils.getSizeString(total - free)
-        ));
+        );
     }
 
     private String getLineNumStr(long line) {
