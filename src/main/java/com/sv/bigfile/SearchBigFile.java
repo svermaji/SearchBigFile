@@ -542,7 +542,7 @@ public class SearchBigFile extends AppFrame {
     public void trackMemory() {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
-        String mem = Utils.getFileSizeString(total - free) + F_SLASH + Utils.getFileSizeString(total);
+        String mem = Utils.getSizeString(total - free) + F_SLASH + Utils.getSizeString(total);
         btnMemory.setText(mem);
     }
 
@@ -1346,9 +1346,9 @@ public class SearchBigFile extends AppFrame {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
         debug(String.format("Memory - Total: %s, Free: %s, Occupied: %s",
-                Utils.getFileSizeString(total),
-                Utils.getFileSizeString(free),
-                Utils.getFileSizeString(total - free)
+                Utils.getSizeString(total),
+                Utils.getSizeString(free),
+                Utils.getSizeString(total - free)
         ));
     }
 
@@ -1751,7 +1751,7 @@ public class SearchBigFile extends AppFrame {
                 String.format("File size %s, " +
                                 "time taken %s, lines read [%s]" +
                                 (isSearchStrEmpty() ? "" : ", occurrences [%s]"),
-                        Utils.getFileSizeString(new File(path).length()),
+                        Utils.getSizeString(new File(path).length()),
                         seconds,
                         lineNum,
                         occurrences);
@@ -1864,7 +1864,7 @@ public class SearchBigFile extends AppFrame {
                 if (!isMatchCase()) {
                     htmlDocText = htmlDocText.toLowerCase();
                 }
-                log("Updating offsets.  Doc length " + Utils.getFileSizeString(htmlDocText.length()));
+                log("Updating offsets.  Doc length " + Utils.getSizeString(htmlDocText.length()));
                 //debug(htmlDocText);
 
                 int idx = 0, x = 0;
