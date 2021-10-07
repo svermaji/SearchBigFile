@@ -13,6 +13,7 @@ public enum UIName {
     LBL_RFILES("Recent", 'R', "Recent used files list."),
     BTN_UC("U", 'u', "Make search string to upper case."),
     BTN_SHOWALL("Show/Hide All", 'q', "Show/Hide all search occurrences."),
+    BTN_MEMORY("", 'm', "Show memory taken by program. Click to attempt free unused memory."),
     BTN_LC("L", 'y', "Make search string to lower case."),
     BTN_TC("T", 'p', "Make search string to title case."),
     BTN_IC("V", 'v', "Invert case of search string."),

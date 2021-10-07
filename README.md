@@ -20,7 +20,8 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 ## Description
 * Program stores the last searched file and search string. 
-* If file not exists user has choice to remove it from recent entry
+* Memory indicator added to application, and can be used to free memory
+* If file to search/read does not exist then user has choice to remove it from recent entry
 * User can lock screen with a password and change password
 * Added export button and cleanup button for old exports. 
 * Clipboard popup will appear to set file name.

@@ -91,7 +91,7 @@ public class SearchBigFile extends AppFrame {
     private AppToolBar jtbFile, jtbSearch, jtbControls;
     private JPanel msgPanel;
     private JLabel lblMsg;
-    private JButton btnShowAll, btnListRS, btnListRF;
+    private JButton btnShowAll, btnMemory, btnListRS, btnListRF;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnLock;
     private JButton btnFileOpen, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
     private JButton btnSearch, btnLastN, btnCancel;
@@ -413,9 +413,15 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.BTN_SHOWALL;
         btnShowAll = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnShowAll.addActionListener(e -> showAllOccr());
-
+        uin = UIName.BTN_MEMORY;
+        btnMemory = new AppButton(uin.name, uin.mnemonic, uin.tip);
+        btnMemory.addActionListener(e -> freeMemory());
         msgPanel.add(lblMsg, BorderLayout.CENTER);
-        msgPanel.add(btnShowAll, BorderLayout.LINE_END);
+        AppToolBar msgButtons = new AppToolBar();
+        msgPanel.setBorder(ZERO_BORDER);
+        msgButtons.add(btnShowAll);
+        msgButtons.add(btnMemory);
+        msgPanel.add(msgButtons, BorderLayout.LINE_END);
         topPanel.add(msgPanel, BorderLayout.SOUTH);
 
         tpHelp = new JTextPane();
@@ -499,7 +505,7 @@ public class SearchBigFile extends AppFrame {
                 btnFileOpen, btnPlusFont, btnMinusFont, btnResetFont, btnGoTop,
                 btnGoBottom, btnNextOccr, btnLock, btnPreOccr, btnFind,
                 btnHelp, btnHelpBrowser, btnExport, btnCleanExport, btnSearch,
-                btnLastN, btnShowAll, btnHelp, jcbMatchCase, jcbWholeWord
+                btnLastN, btnShowAll, btnMemory, btnHelp, jcbMatchCase, jcbWholeWord
         };
 
         prepareSettingsMenu();
@@ -524,12 +530,20 @@ public class SearchBigFile extends AppFrame {
         // Delay so window can be activated
         new Timer().schedule(new FontChangerTask(this), SEC_1, MIN_10);
         new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
+        new Timer().schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
 
         if (configs.getBooleanConfig(Configs.AutoLock.name())) {
             applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD, WindowChecks.AUTO_LOCK});
         } else {
             applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
         }
+    }
+
+    public void trackMemory() {
+        long total = Runtime.getRuntime().totalMemory();
+        long free = Runtime.getRuntime().freeMemory();
+        String mem = Utils.getFileSizeString(total - free) + F_SLASH + Utils.getFileSizeString(total);
+        btnMemory.setText(mem);
     }
 
     private String checkSep(String s) {
@@ -543,7 +557,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setDragNDrop() {
-        JComponent[] addBindingsTo = {tpContactMe, tpHelp, tpResults, lblMsg, btnShowAll, msgPanel};
+        JComponent[] addBindingsTo = {tpContactMe, tpHelp, tpResults, lblMsg, btnShowAll, btnMemory, msgPanel};
         Arrays.stream(addBindingsTo).forEach(j -> {
             // to make drag n drop specific set below method for txtFilePath
             j.setDropTarget(new DropTarget() {
@@ -620,7 +634,7 @@ public class SearchBigFile extends AppFrame {
         keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_HOME, InputEvent.CTRL_DOWN_MASK, actionCtrlHome));
         keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_END, InputEvent.CTRL_DOWN_MASK, actionCtrlEnd));
 
-        final JComponent[] addBindingsTo = {tpResults, tpHelp, lblMsg, btnShowAll, msgPanel};
+        final JComponent[] addBindingsTo = {tpResults, tpHelp, lblMsg, btnShowAll, btnMemory, msgPanel};
         keyActionDetails.forEach(ka -> {
             KeyStroke keyS = KeyStroke.getKeyStroke(ka.getKeyEvent(), ka.getInputEvent());
             Arrays.stream(addBindingsTo).forEach(j ->
@@ -838,7 +852,7 @@ public class SearchBigFile extends AppFrame {
                 menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
                 btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind,
-                menuSettings, btnShowAll,
+                menuSettings, btnShowAll
         };
         setComponentToEnable(components);
         setComponentContrastToEnable(new Component[]{btnCancel});
@@ -1328,7 +1342,6 @@ public class SearchBigFile extends AppFrame {
         status = Status.READING;
     }
 
-    //TODO: show memory on UI
     private void printMemoryDetails() {
         long total = Runtime.getRuntime().totalMemory();
         long free = Runtime.getRuntime().freeMemory();
@@ -1829,8 +1842,12 @@ public class SearchBigFile extends AppFrame {
         goToEnd(false);
         logger.debug("Timer: thread pool status " + threadPool.toString());
         // requesting to free used memory
-        System.gc();
+        freeMemory();
         printMemoryDetails();
+    }
+
+    private void freeMemory() {
+        System.gc();
     }
 
     private void updateOffsets() {
@@ -2151,7 +2168,7 @@ public class SearchBigFile extends AppFrame {
                 }
                 processForRead(readLines, sb.toString(), occr, true, true);
                 readLines++;
-            }  catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 catchForRead(e);
                 hasError = true;
                 sbf.fileNotFoundAction();
