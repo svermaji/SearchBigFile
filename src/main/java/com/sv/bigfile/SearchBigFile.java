@@ -179,8 +179,8 @@ public class SearchBigFile extends AppFrame {
         colorIdx = getIntCfg(Configs.ColorIndex);
         fontIdx = getIntCfg(Configs.FontIndex);
         setColorFromIdx();
-        recentFilesStr = getCfg(Configs.RecentFiles);
-        recentSearchesStr = getCfg(Configs.RecentSearches);
+        recentFilesStr = checkSep(getCfg(Configs.RecentFiles));
+        recentSearchesStr = checkSep(getCfg(Configs.RecentSearches));
         fixedWidth = getBooleanCfg(Configs.FixedWidth);
         msgCallable = new AppendMsgCallable(this);
 
@@ -530,6 +530,16 @@ public class SearchBigFile extends AppFrame {
         } else {
             applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
         }
+    }
+
+    private String checkSep(String s) {
+        if (!s.startsWith(SEPARATOR)) {
+            s = SEPARATOR + s;
+        }
+        if (!s.endsWith(SEPARATOR)) {
+            s = s + SEPARATOR;
+        }
+        return s;
     }
 
     private void setDragNDrop() {
@@ -1473,13 +1483,15 @@ public class SearchBigFile extends AppFrame {
 
     private void removeItemAndUpdate() {
         String strToRemove = SEPARATOR + getFilePath() + SEPARATOR;
-        if (recentFilesStr.contains(strToRemove)) {
-            recentFilesStr = recentFilesStr.replace(strToRemove, "");
+        boolean exists = recentFilesStr.contains(strToRemove);
+        debug("String to remove " + Utils.addBraces(strToRemove) + " exists " + Utils.addBraces(exists));
+        if (exists) {
+            recentFilesStr = recentFilesStr.replace(strToRemove, SEPARATOR);
         }
+        txtFilePath.setText("");
         String[] arrF = recentFilesStr.split(SEPARATOR);
         updateRecentMenu(menuRFiles, arrF, txtFilePath, TXT_F_MAP_KEY);
         txtFilePath.setAutoCompleteArr(arrF);
-        txtFilePath.setText("");
     }
 
     private String checkItems(String searchStr, String csv) {
@@ -2017,6 +2029,14 @@ public class SearchBigFile extends AppFrame {
         debug(msg);
     }
 
+    private void fileNotFoundAction() {
+        updateTitleAndMsg("File not exists: " + getFilePath(), MsgType.ERROR);
+        createYesNoDialog("Remove entry ?",
+                "File not exists " + Utils.addBraces(getFilePath())
+                        + ", do you want to remove it from Recent list ?",
+                "removeFileFromRecent");
+    }
+
     private String addLineNumAndEscAtStart(long lineNum, String str) {
         return BR + getLineNumStr(lineNum) + escString(str);
     }
@@ -2131,6 +2151,10 @@ public class SearchBigFile extends AppFrame {
                 }
                 processForRead(readLines, sb.toString(), occr, true, true);
                 readLines++;
+            }  catch (FileNotFoundException e) {
+                catchForRead(e);
+                hasError = true;
+                sbf.fileNotFoundAction();
             } catch (IOException e) {
                 catchForRead(e);
                 hasError = true;
@@ -2427,11 +2451,7 @@ public class SearchBigFile extends AppFrame {
                 status = Status.DONE;
             } catch (FileNotFoundException e) {
                 searchFailed(e);
-                sbf.updateTitleAndMsg("File not exists: " + getFilePath(), MsgType.ERROR);
-                createYesNoDialog("Remove entry ?",
-                        "File not exists " + Utils.addBraces(getFilePath())
-                                + ", do you want to remove it from Recent list ?",
-                        "removeFileFromRecent");
+                sbf.fileNotFoundAction();
             } catch (IOException e) {
                 searchFailed(e);
             } finally {
