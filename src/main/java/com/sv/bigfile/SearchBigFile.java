@@ -540,12 +540,14 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void trackMemory() {
-        long total = Runtime.getRuntime().totalMemory();
-        long free = Runtime.getRuntime().freeMemory();
-        String mem = Utils.addBraces(Utils.getSizeString(total - free, false, false)
-                + F_SLASH + Utils.getSizeString(total, false, false));
-        btnMemory.setText(mem);
-        btnMemory.setToolTipText(getMemoryDetails()+". Click to free memory. Shortcut: Alt+" + UIName.BTN_MEMORY.mnemonic);
+        if (isWindowActive()) {
+            long total = Runtime.getRuntime().totalMemory();
+            long free = Runtime.getRuntime().freeMemory();
+            String mem = Utils.getSizeString(total - free, false, false)
+                    + F_SLASH + Utils.getSizeString(total, false, false);
+            btnMemory.setText(mem);
+            btnMemory.setToolTipText(getMemoryDetails() + ". Click to free memory. Shortcut: Alt+" + UIName.BTN_MEMORY.mnemonic);
+        }
     }
 
     private String checkSep(String s) {
