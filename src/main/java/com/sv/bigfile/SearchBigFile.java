@@ -8,7 +8,6 @@ import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.runcmd.RunCommand;
-import com.sv.runcmd.RunCommandUI;
 import com.sv.swingui.SwingUtils;
 import com.sv.swingui.UIConstants;
 import com.sv.swingui.component.*;
@@ -16,9 +15,7 @@ import com.sv.swingui.component.table.AppTable;
 import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
-import javax.print.attribute.ResolutionSyntax;
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
@@ -97,7 +94,8 @@ public class SearchBigFile extends AppFrame {
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JTextPane tpResults, tpHelp, tpContactMe;
-    private final SimpleAttributeSet highlighted = new SimpleAttributeSet();
+    private final SimpleAttributeSet highlightSAS = new SimpleAttributeSet();
+    //private Highlighter.HighlightPainter painter;
     private Highlighter highlighter;
     private JScrollPane jspResults, jspHelp, jspContactMe;
     private HTMLDocument htmlDoc;
@@ -254,6 +252,7 @@ public class SearchBigFile extends AppFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 super.keyPressed(e);
+                //findAsType();
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     searchFile();
                 }
@@ -331,6 +330,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.setBorder(searchPanelBorder);
 
         jtbControls = new AppToolBar();
+        jtbControls.setLayout(new BoxLayout(jtbControls, BoxLayout.LINE_AXIS));
         uin = UIName.BTN_PLUSFONT;
         btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPlusFont.addActionListener(e -> increaseFontSize());
@@ -378,9 +378,10 @@ public class SearchBigFile extends AppFrame {
 
         controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
-        controlPanel.add(jtbControls);
         jtbControls.add(mbSettings);
         jtbControls.add(btnPlusFont);
+        menuSettings.setSize(menuSettings.getWidth(), 20);
+        mbSettings.setSize(mbSettings.getWidth(), 20);
         jtbControls.add(btnMinusFont);
         jtbControls.add(btnResetFont);
         jtbControls.add(btnGoTop);
@@ -393,6 +394,7 @@ public class SearchBigFile extends AppFrame {
         jtbControls.add(btnCleanExport);
         jtbControls.add(btnHelpBrowser);
         jtbControls.add(btnHelp);
+        controlPanel.add(jtbControls);
         controlPanel.add(btnExit);
         controlPanel.setBorder(controlPanelBorder);
 
@@ -745,7 +747,8 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void highlightSearch() {
-        highlighter.removeAllHighlights();
+        removeHighlight();
+        //highlighter.removeAllHighlights();
         for (int idx : lineOffsets.keySet()) {
             OffsetInfo info = lineOffsets.get(idx);
             highLightInResult(info.getSIdx(), info.getEIdx());
@@ -753,7 +756,21 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void highLightInResult(int s, int e) {
-        tpResults.getStyledDocument().setCharacterAttributes(s, e - s, highlighted, false);
+        tpResults.getStyledDocument().setCharacterAttributes(s, e - s, highlightSAS, false);
+    }
+
+    /*private Object highLightInResult(int s, int e) {
+        try {
+            return highlighter.addHighlight(s, e, painter);
+        } catch (BadLocationException ex) {
+            logger.error("Unable to highlight for start index " + Utils.addBraces(s)
+                    + ", end index " + Utils.addBraces(e));
+        }
+        return null;
+    }*/
+
+    private void removeHighlight() {
+        // TODO: remove highlight when search new word
     }
 
     private void createAllOccrRows() {
@@ -889,9 +906,10 @@ public class SearchBigFile extends AppFrame {
     private void setHighlightColor() {
         if (isWindowActive()) {
             setColorFromIdx();
-            StyleConstants.setForeground(highlighted, highlightTextColor);
-            StyleConstants.setBackground(highlighted, highlightColor);
+            StyleConstants.setForeground(highlightSAS, highlightTextColor);
+            StyleConstants.setBackground(highlightSAS, highlightColor);
             highlightColorStr = SwingUtils.htmlBGColor(highlightColor);
+            //painter = new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
             if (timeTaken != null) {
                 findWordInResult();
             }
@@ -922,8 +940,6 @@ public class SearchBigFile extends AppFrame {
         JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, mbRFiles, mbRSearches, mbSettings};
         Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(selectionColor)));
 
-        //TODO: search as type
-
         // This sets foreground of scroll bar but removes background color
         /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
         jspResults.getVerticalScrollBar().setUI(new BasicScrollBarUI() );
@@ -937,16 +953,6 @@ public class SearchBigFile extends AppFrame {
 
         // calling it separately as making opaque is making it weird, so just changing tab color
 
-        // TODO: color active tab
-        /*int tabsCount = tabbedPane.getTabCount();
-        for (int i = 0; i < tabsCount; i++) {
-            tabbedPane.setBackgroundAt(i, cl);
-            tabbedPane.setForegroundAt(i, highlightTextColor);
-        }*/
-        tabbedPane.setBackground(cl);
-        tabbedPane.setForeground(highlightTextColor);
-//        tabbedPane.setBackgroundAt(tabbedPane.getSelectedIndex(), selectionColor);
-//        tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
         Arrays.stream(inputPanel.getComponents()).forEach(c -> SwingUtils.setComponentColor((JComponent) c, cl, null));
 
         // memory info bar
@@ -954,6 +960,18 @@ public class SearchBigFile extends AppFrame {
         SwingUtils.setComponentColor(ca, cl, null);
 
         setBkColors(bkColorComponents);
+
+        try {
+            //TODO: search as type
+            tabbedPane.setBackground(highlightColor);
+            tabbedPane.setForeground(highlightTextColor);
+            //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
+            UIManager.put("TabbedPane.selected", selectionColor);
+            tabbedPane.updateUI();
+            //SwingUtilities.updateComponentTreeUI(tabbedPane);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -1045,6 +1063,29 @@ public class SearchBigFile extends AppFrame {
         } catch (IOException e) {
             logger.error("Unable to display contact information");
             updateTitleAndMsg("Unable to display contact information", MsgType.ERROR);
+        }
+    }
+
+    private void findAsType() {
+        operation = FILE_OPR.FIND;
+        if (isValidate()) {
+            resetOffsets();
+            setSearchStrings();
+            updateOffsets();
+            // Setting here to avoid break and count mismatch during offset processing
+            occrTillNow = lineOffsets.size();
+            if (occrTillNow > 0) {
+                if (occrTillNow > ERROR_LIMIT_OCCR) {
+                    showMsg(getProblemMsg(), MsgType.ERROR);
+                } else if (occrTillNow > WARN_LIMIT_OCCR) {
+                    showMsg(getProblemMsg(), MsgType.WARN);
+                } else {
+                    showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + occrTillNow + "] found. Use next/pre occurrences controls.");
+                }
+            } else {
+                showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
+            }
+            updateTitle("Find complete - " + getSearchResult(getFilePath(), timeTaken, lineNums, occrTillNow));
         }
     }
 
