@@ -95,6 +95,7 @@ public class SearchBigFile extends AppFrame {
     private AppTextField txtFilePath, txtSearch;
     private JTextPane tpResults, tpHelp, tpContactMe;
     private final SimpleAttributeSet highlightSAS = new SimpleAttributeSet();
+    private final SimpleAttributeSet nonhighlightSAS = new SimpleAttributeSet();
     //private Highlighter.HighlightPainter painter;
     private Highlighter highlighter;
     private JScrollPane jspResults, jspHelp, jspContactMe;
@@ -539,6 +540,8 @@ public class SearchBigFile extends AppFrame {
         } else {
             applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
         }
+        StyleConstants.setForeground(nonhighlightSAS, Color.black);
+        StyleConstants.setBackground(nonhighlightSAS, Color.white);
     }
 
     public void trackMemory() {
@@ -746,8 +749,14 @@ public class SearchBigFile extends AppFrame {
         return tblAllOccr;
     }
 
+    private void removeOldHighlights() {
+        for (int idx : lineOffsets.keySet()) {
+            OffsetInfo info = lineOffsets.get(idx);
+            removeHighlight(info.getSIdx(), info.getEIdx());
+        }
+    }
+
     private void highlightSearch() {
-        removeHighlight();
         //highlighter.removeAllHighlights();
         for (int idx : lineOffsets.keySet()) {
             OffsetInfo info = lineOffsets.get(idx);
@@ -769,8 +778,8 @@ public class SearchBigFile extends AppFrame {
         return null;
     }*/
 
-    private void removeHighlight() {
-        // TODO: remove highlight when search new word
+    private void removeHighlight(int s, int e) {
+        tpResults.getStyledDocument().setCharacterAttributes(s, e - s, nonhighlightSAS, true);
     }
 
     private void createAllOccrRows() {
@@ -966,8 +975,9 @@ public class SearchBigFile extends AppFrame {
             tabbedPane.setBackground(highlightColor);
             tabbedPane.setForeground(highlightTextColor);
             //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
-            UIManager.put("TabbedPane.selected", selectionColor);
-            tabbedPane.updateUI();
+            // This changes selected tab color
+            // UIManager.put("TabbedPane.selected", selectionColor);
+            // tabbedPane.updateUI();
             //SwingUtilities.updateComponentTreeUI(tabbedPane);
         } catch (Exception e) {
             logger.error(e.getMessage());
@@ -1092,6 +1102,7 @@ public class SearchBigFile extends AppFrame {
     private void findWordInResult() {
         operation = FILE_OPR.FIND;
         if (isValidate()) {
+            removeOldHighlights();
             resetOffsets();
             setSearchStrings();
             updateRecentValues();
@@ -1380,6 +1391,7 @@ public class SearchBigFile extends AppFrame {
         qMsgsToAppend.clear();
         idxMsgsToAppend.clear();
         globalCharIdx = 0;
+        removeOldHighlights();
         resetOffsets();
         setSearchStrings();
         logger.info(getSearchDetails());
