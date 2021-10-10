@@ -25,7 +25,7 @@ public enum UIName {
     BTN_GOBOTTOM("↓", '2', "Ctrl+End", "Go to last line."),
     BTN_PREOCCR("<", ',', "Shift+F3", "Previous occurrence."),
     BTN_NEXTOCCR(">", '.', "F3", "Next occurrence."),
-    BTN_FIND("¤", 'z', "Set new word from Search box to see occurrences without highlighting."),
+    BTN_FIND("¤", 'z', "Set new word from Search box to see occurrences."),
     BTN_HELP("?", '/', "Application help."),
     BTN_HBROWSER("O", ';', "Open help in browser."),
     BTN_EXPORT("×", '9', "Export result."),

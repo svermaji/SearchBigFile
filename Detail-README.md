@@ -15,8 +15,12 @@ Utility in Java to search big file (tested with nearly 400MB and 1GB log file)
  - Attaching result with the name as `Test 1GB`<br>
 
 ## Recent Changes<br>
+#### On 10-Oct-2021
+* Support search as you type
+
 #### On 7-Oct-2021
 * Memory indicator added to application, and can be used to free memory
+* Clipboard support via menu
 
 #### On 5-Oct-2021
 * Now if file not exists app will ask to remove it from recent entry

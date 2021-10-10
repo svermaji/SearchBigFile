@@ -56,7 +56,7 @@ public class SearchBigFile extends AppFrame {
     enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
-        MatchCase, WholeWord, FixedWidth, DebugEnabled
+        ClipboardSupport, MatchCase, WholeWord, FixedWidth, DebugEnabled
     }
 
     enum Status {
@@ -102,7 +102,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLDocument htmlDoc;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock;
+    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock, jcbmiClipboardSupport;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -248,12 +248,12 @@ public class SearchBigFile extends AppFrame {
         if (fixedWidth) {
             txtSearch.setMaximumSize(new Dimension(100, TXT_HEIGHT));
         }
-        txtSearch.setToolTipText("Ctrl+F to come here and enter to perform Search");
+        txtSearch.setToolTipText("Ctrl+F to come here and enter to perform Search. Also support search as you type");
         txtSearch.addKeyListener(new KeyAdapter() {
+
             @Override
-            public void keyPressed(KeyEvent e) {
-                super.keyPressed(e);
-                //findAsType();
+            public void keyReleased(KeyEvent e) {
+                findAsType();
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     searchFile();
                 }
@@ -535,11 +535,15 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
         new Timer().schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
 
+        List<WindowChecks> windowChecks = new ArrayList<>();
+        windowChecks.add(WindowChecks.WINDOW_ACTIVE);
         if (configs.getBooleanConfig(Configs.AutoLock.name())) {
-            applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD, WindowChecks.AUTO_LOCK});
-        } else {
-            applyWindowActiveCheck(new WindowChecks[]{WindowChecks.WINDOW_ACTIVE, WindowChecks.CLIPBOARD});
+            windowChecks.add(WindowChecks.AUTO_LOCK);
         }
+        if (configs.getBooleanConfig(Configs.ClipboardSupport.name())) {
+            windowChecks.add(WindowChecks.CLIPBOARD);
+        }
+        applyWindowActiveCheck(windowChecks.toArray(new WindowChecks[0]));
         StyleConstants.setForeground(nonhighlightSAS, Color.black);
         StyleConstants.setBackground(nonhighlightSAS, Color.white);
     }
@@ -688,6 +692,9 @@ public class SearchBigFile extends AppFrame {
         jcbmiAutoLock = new JCheckBoxMenuItem("Auto Lock", null, configs.getBooleanConfig(Configs.AutoLock.name()));
         jcbmiAutoLock.setMnemonic('L');
         jcbmiAutoLock.setToolTipText("Auto Lock App if idle for 10 min - change need restart");
+        jcbmiClipboardSupport = new JCheckBoxMenuItem("Clipboard Support", null, configs.getBooleanConfig(Configs.ClipboardSupport.name()));
+        jcbmiClipboardSupport.setMnemonic('L');
+        jcbmiClipboardSupport.setToolTipText("Clipboard support (to use copied text as search file) - change need restart");
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -707,6 +714,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jmiChangePwd);
         menuSettings.add(jmiLock);
         menuSettings.add(jcbmiAutoLock);
+        menuSettings.add(jcbmiClipboardSupport);
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -779,7 +787,7 @@ public class SearchBigFile extends AppFrame {
     }*/
 
     private void removeHighlight(int s, int e) {
-        tpResults.getStyledDocument().setCharacterAttributes(s, e - s, nonhighlightSAS, true);
+        tpResults.getStyledDocument().setCharacterAttributes(s, e - s, nonhighlightSAS, false);
     }
 
     private void createAllOccrRows() {
@@ -1026,14 +1034,19 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private void exportResults() {
-        // Will get get text and NOT html document which will be easy to process
+    private boolean resultsAreaHasValue() {
+        // Will get text and NOT html document which will be easy to process
         String resultsText = tpResults.getText();
         String resultsTextNoNewLine = resultsText.replaceAll("([\\r\\n])", "");
 
-        if (Utils.hasValue(resultsText) &&
-                !resultsTextNoNewLine.equalsIgnoreCase(AppConstants.EMPTY_RESULT_TEXT)) {
-            if (searchUtils.exportResults(resultsText)) {
+        return (Utils.hasValue(resultsText) &&
+                !resultsTextNoNewLine.equalsIgnoreCase(AppConstants.EMPTY_RESULT_TEXT));
+    }
+
+    private void exportResults() {
+        if (resultsAreaHasValue()) {
+            // Will get text and NOT html document which will be easy to process
+            if (searchUtils.exportResults(tpResults.getText())) {
                 showMsgAsInfo("Result exported to file successfully.");
             } else {
                 showMsg("Failed to export result to file.", MsgType.ERROR);
@@ -1077,25 +1090,29 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void findAsType() {
-        operation = FILE_OPR.FIND;
-        if (isValidate()) {
-            resetOffsets();
-            setSearchStrings();
-            updateOffsets();
-            // Setting here to avoid break and count mismatch during offset processing
-            occrTillNow = lineOffsets.size();
-            if (occrTillNow > 0) {
-                if (occrTillNow > ERROR_LIMIT_OCCR) {
-                    showMsg(getProblemMsg(), MsgType.ERROR);
-                } else if (occrTillNow > WARN_LIMIT_OCCR) {
-                    showMsg(getProblemMsg(), MsgType.WARN);
+        if (resultsAreaHasValue()) {
+            operation = FILE_OPR.FIND;
+            //if (isValidate())
+            {
+                removeOldHighlights();
+                resetOffsets();
+                setSearchStrings();
+                updateOffsets();
+                // Setting here to avoid break and count mismatch during offset processing
+                occrTillNow = lineOffsets.size();
+                if (occrTillNow > 0) {
+                    if (occrTillNow > ERROR_LIMIT_OCCR) {
+                        showMsg(getProblemMsg(), MsgType.ERROR);
+                    } else if (occrTillNow > WARN_LIMIT_OCCR) {
+                        showMsg(getProblemMsg(), MsgType.WARN);
+                    } else {
+                        showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + occrTillNow + "] found. Use next/pre occurrences controls.");
+                    }
                 } else {
-                    showMsgAsInfo("Search for new word [" + searchStr + "] set, total occurrences [" + occrTillNow + "] found. Use next/pre occurrences controls.");
+                    showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
                 }
-            } else {
-                showMsg("Search for new word [" + searchStr + "] set, no occurrence found.", MsgType.WARN);
+                updateTitle("Find complete - " + getSearchResult(getFilePath(), timeTaken, lineNums, occrTillNow));
             }
-            updateTitle("Find complete - " + getSearchResult(getFilePath(), timeTaken, lineNums, occrTillNow));
         }
     }
 
@@ -1386,12 +1403,13 @@ public class SearchBigFile extends AppFrame {
         maxReadCharTimes = 0;
         disableControls();
         resetShowWarning();
+        // sequence is important for removeOldHighlights and resetOffsets
+        removeOldHighlights();
         emptyResults();
         updateRecentValues();
         qMsgsToAppend.clear();
         idxMsgsToAppend.clear();
         globalCharIdx = 0;
-        removeOldHighlights();
         resetOffsets();
         setSearchStrings();
         logger.info(getSearchDetails());
@@ -1641,6 +1659,8 @@ public class SearchBigFile extends AppFrame {
                 }
             } catch (BadLocationException | IOException e) {
                 logger.error("Unable to append data: " + data);
+            } catch (Exception e) {
+                logger.error("====>" + data);
             }
 
             if (readCounter == insertCounter) {
@@ -1709,6 +1729,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getAutoLock() {
         return jcbmiAutoLock.isSelected() + "";
+    }
+
+    public String getClipboardSupport() {
+        return jcbmiClipboardSupport.isSelected() + "";
     }
 
     public String getChangeFontAuto() {
@@ -1953,6 +1977,8 @@ public class SearchBigFile extends AppFrame {
             return htmlDoc.getText(0, htmlDoc.getLength());
         } catch (BadLocationException e) {
             logger.error("Unable to get results.  Details: ", e);
+        } catch (Exception e) {
+            logger.error("xxxx-----xxxx");
         }
         return "";
     }
@@ -2234,6 +2260,10 @@ public class SearchBigFile extends AppFrame {
                 hasError = true;
                 sbf.fileNotFoundAction();
             } catch (IOException e) {
+                catchForRead(e);
+                hasError = true;
+            } catch (Exception e) {
+                logger.error("...........");
                 catchForRead(e);
                 hasError = true;
             } finally {
@@ -2532,6 +2562,9 @@ public class SearchBigFile extends AppFrame {
                 sbf.fileNotFoundAction();
             } catch (IOException e) {
                 searchFailed(e);
+            } catch (Exception e) {
+                searchFailed(e);
+                logger.error("ssss ---- xxxx");
             } finally {
                 sbf.enableControls();
             }
