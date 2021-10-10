@@ -69,6 +69,8 @@ public class SearchUtils {
         text = text.replaceAll("([\\r\\n])", "");
         text = text.replaceAll("<span><font color=\"blue\">", "");
         text = text.replaceAll("</font></span>", "");
+        text = text.replaceAll("<font color=\"#000000\">", "");
+        text = text.replaceAll("</font>", "");
         text = text.replaceAll("&#160;", Utils.HtmlEsc.SP.getCh());
         text = text.replaceAll("<br>", System.lineSeparator());
 
