@@ -36,6 +36,7 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static com.sv.bigfile.AppConstants.*;
 import static com.sv.core.Constants.*;
@@ -259,6 +260,13 @@ public class SearchBigFile extends AppFrame {
                 }
             }
         });
+        txtSearch.addFocusListener(new FocusAdapter() {
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                updateRecentValues();
+            }
+        });
         uin = UIName.LBL_SEARCH;
         AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         uin = UIName.BTN_SEARCH;
@@ -331,7 +339,6 @@ public class SearchBigFile extends AppFrame {
         searchPanel.setBorder(searchPanelBorder);
 
         jtbControls = new AppToolBar();
-        jtbControls.setLayout(new BoxLayout(jtbControls, BoxLayout.LINE_AXIS));
         uin = UIName.BTN_PLUSFONT;
         btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPlusFont.addActionListener(e -> increaseFontSize());
@@ -954,8 +961,8 @@ public class SearchBigFile extends AppFrame {
 
         lblMsg.setForeground(selectionColor);
 
-        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, mbRFiles, mbRSearches, mbSettings};
-        Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(selectionColor)));
+        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, /*btnSearch, btnLastN,*/ mbRFiles, mbRSearches, mbSettings};
+        Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(highlightTextColor)));
 
         // This sets foreground of scroll bar but removes background color
         /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
@@ -978,18 +985,13 @@ public class SearchBigFile extends AppFrame {
 
         setBkColors(bkColorComponents);
 
-        try {
-            //TODO: search as type
-            tabbedPane.setBackground(highlightColor);
-            tabbedPane.setForeground(highlightTextColor);
-            //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
-            // This changes selected tab color
-            // UIManager.put("TabbedPane.selected", selectionColor);
-            // tabbedPane.updateUI();
-            //SwingUtilities.updateComponentTreeUI(tabbedPane);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-        }
+        tabbedPane.setBackground(highlightColor);
+        tabbedPane.setForeground(highlightTextColor);
+        //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
+        // This changes selected tab color
+        // UIManager.put("TabbedPane.selected", selectionColor);
+        // tabbedPane.updateUI();
+        //SwingUtilities.updateComponentTreeUI(tabbedPane);
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -1603,8 +1605,10 @@ public class SearchBigFile extends AppFrame {
         }
         csv = ssp + csv;
 
-        if (csv.split(SEPARATOR).length > RECENT_LIMIT) {
-            csv = csv.substring(0, csv.lastIndexOf(SEPARATOR) + SEPARATOR.length());
+        String[] arr = csv.split(SEPARATOR);
+        if (arr.length > RECENT_LIMIT) {
+            arr = Arrays.stream(arr).limit(RECENT_LIMIT).collect(Collectors.toList()).toArray(new String[RECENT_LIMIT]);
+            csv = SEPARATOR + String.join(SEPARATOR, arr) + SEPARATOR;
         }
 
         return csv;
