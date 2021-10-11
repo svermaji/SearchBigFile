@@ -961,7 +961,7 @@ public class SearchBigFile extends AppFrame {
 
         lblMsg.setForeground(selectionColor);
 
-        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, /*btnSearch, btnLastN,*/ mbRFiles, mbRSearches, mbSettings};
+        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, /*btnSearch, btnLastN, */mbRFiles, mbRSearches, mbSettings};
         Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(highlightTextColor)));
 
         // This sets foreground of scroll bar but removes background color
