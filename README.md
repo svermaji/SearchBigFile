@@ -19,6 +19,11 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
  - Attaching result with the name as `With BufferedReader`
 
 ## Description
+* Pom.xml versions:
+  * 1.0 - Contains all search feature from initial release till colors implemented
+  * 2.0 - Implemented wrapping, style attributes and support long text in one line
+    * Added theme support and key bindings
+  * 3.0 - Planned to have multi file search support
 * Program stores the last searched file and search string. 
 * Support search as you type
 * Clipboard support via menu
