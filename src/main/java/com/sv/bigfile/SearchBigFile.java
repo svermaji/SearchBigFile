@@ -8,6 +8,7 @@ import com.sv.core.config.DefaultConfigs;
 import com.sv.core.logger.MyLogger;
 import com.sv.core.logger.MyLogger.MsgType;
 import com.sv.runcmd.RunCommand;
+import com.sv.swingui.KeyActionDetails;
 import com.sv.swingui.SwingUtils;
 import com.sv.swingui.UIConstants;
 import com.sv.swingui.component.*;
@@ -648,18 +649,14 @@ public class SearchBigFile extends AppFrame {
         };
 
         List<KeyActionDetails> keyActionDetails = new ArrayList<>();
-        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK, actionTxtSearch));
-        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK, actionShiftF3));
-        keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_F3, 0, actionF3));
+        keyActionDetails.add(new KeyActionDetails(KS_CTRL_F, actionTxtSearch));
+        keyActionDetails.add(new KeyActionDetails(KS_SHIFT_F3, actionShiftF3));
+        keyActionDetails.add(new KeyActionDetails(KS_F3, actionF3));
         keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_HOME, InputEvent.CTRL_DOWN_MASK, actionCtrlHome));
         keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_END, InputEvent.CTRL_DOWN_MASK, actionCtrlEnd));
 
         final JComponent[] addBindingsTo = {tpResults, tpHelp, lblMsg, btnShowAll, btnMemory, msgPanel};
-        keyActionDetails.forEach(ka -> {
-            KeyStroke keyS = KeyStroke.getKeyStroke(ka.getKeyEvent(), ka.getInputEvent());
-            Arrays.stream(addBindingsTo).forEach(j ->
-                    j.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keyS, ka.getAction()));
-        });
+        SwingUtils.addKeyBindings(addBindingsTo, keyActionDetails);
     }
 
     // This will be called by reflection from SwingUI jar
