@@ -76,6 +76,7 @@ public class SearchBigFile extends AppFrame {
     private SearchUtils searchUtils;
     private MyLogger logger;
     private DefaultConfigs configs;
+    private TabCloseComponent tbc;
 
     private JSplitPane splitAllOccr;
     private DefaultTableModel modelAllOccr;
@@ -489,8 +490,10 @@ public class SearchBigFile extends AppFrame {
         parentContainer.add(topPanel, BorderLayout.NORTH);
         tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
+        tbc = SwingUtils.makeTabClosable(0, tabbedPane);
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
         tabbedPane.addTab("Contact Me", null, jspContactMe, "Displays my information");
+
 
         bottomPanel = new JPanel(new BorderLayout());
         jspAllOccr = new JScrollPane(createAllOccrTable());
@@ -982,6 +985,7 @@ public class SearchBigFile extends AppFrame {
 
         setBkColors(bkColorComponents);
 
+        tbc.setColors(selectionTextColor, selectionColor, highlightTextColor, highlightColor);
         tabbedPane.setBackground(highlightColor);
         tabbedPane.setForeground(highlightTextColor);
         //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
