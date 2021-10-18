@@ -1,4 +1,4 @@
-package com.sv.bigfile.helpers;
+package com.sv.bigfile.action;
 
 import com.sv.swingui.component.table.AppTable;
 

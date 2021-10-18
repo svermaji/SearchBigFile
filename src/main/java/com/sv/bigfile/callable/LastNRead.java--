@@ -1,0 +1,176 @@
+package com.sv.bigfile.callable;
+
+import com.sv.bigfile.SearchBigFile;
+import com.sv.core.Utils;
+import com.sv.core.logger.MyLogger;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.Stack;
+import java.util.concurrent.Callable;
+
+import static com.sv.bigfile.AppConstants.APPEND_MSG_CHUNK;
+import static com.sv.bigfile.AppConstants.WARN_LIMIT_OCCR;
+import static com.sv.swingui.UIConstants.FONT_SUFFIX;
+import static com.sv.swingui.UIConstants.R_FONT_PREFIX;
+
+public class LastNRead implements Callable<Boolean> {
+
+    private final Stack<String> stack = new Stack<>();
+    private final SearchBigFile sbf;
+
+    LastNRead(SearchBigFile sbf) {
+        this.sbf = sbf;
+    }
+
+    @Override
+    public Boolean call() {
+        final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+        int readLines = 0, occr = 0;
+        boolean hasError = false;
+        String searchPattern = processPattern(), fn = getFilePath();
+        StringBuilder sb = new StringBuilder();
+        File file = new File(fn);
+
+        updateTitle("Reading last " + LIMIT + " lines");
+        logger.info("Loading last [" + LIMIT + "] lines from [" + Utils.addBraces(fn));
+        // FIFO
+        stack.removeAllElements();
+
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+            long fileLength = file.length() - 1;
+            // Set the pointer at the last of the file
+            randomAccessFile.seek(fileLength);
+
+            long time = System.currentTimeMillis();
+            for (long pointer = fileLength; pointer >= 0; pointer--) {
+                randomAccessFile.seek(pointer);
+                char c;
+                // read from the last, one char at the time
+                c = (char) randomAccessFile.read();
+                // break when end of the line
+                boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
+                if (maxReadCharLimitReached) {
+                    maxReadCharTimes++;
+                }
+                boolean isNewLineChar = c == '\n';
+                // TODO: check how to avoid \n at start for READ opr only
+                if (isNewLineChar || maxReadCharLimitReached) {
+
+                    if (!isNewLineChar) {
+                        sb.append(c);
+                    }
+
+                    if (Utils.hasValue(sb.toString())) {
+                        sb.reverse();
+                    }
+
+                    occr += calculateOccr(sb.toString(), searchPattern);
+                    if (isNewLineChar) {
+                        // to handle \n
+                        processForRead(readLines, "", occr, false);
+                    }
+                    processForRead(readLines, sb.toString(), occr, isNewLineChar);
+
+                    sb = new StringBuilder();
+                    if (isNewLineChar) {
+                        readLines++;
+                    }
+                    // Last line will be printed after loop
+                    if (readLines == LIMIT - 1) {
+                        break;
+                    }
+                    if (isCancelled()) {
+                        logger.warn("---xxx--- Read cancelled ---xxx---");
+                        break;
+                    }
+                } else {
+                    sb.append(c);
+                }
+                fileLength = fileLength - pointer;
+            }
+            if (maxReadCharTimes > 0) {
+                logger.info("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
+                        + Utils.addBraces(maxReadCharTimes) + " times, processing...");
+            }
+
+            log("File read complete in " + Utils.getTimeDiffSecMilliStr(time));
+            if (Utils.hasValue(sb.toString())) {
+                sb.reverse();
+            }
+            processForRead(readLines, sb.toString(), occr, true, true);
+            readLines++;
+        } catch (FileNotFoundException e) {
+            catchForRead(e);
+            hasError = true;
+            sbf.fileNotFoundAction();
+        } catch (IOException e) {
+            catchForRead(e);
+            hasError = true;
+        } catch (Exception e) {
+            logger.error("...........");
+            catchForRead(e);
+            hasError = true;
+        } finally {
+            enableControls();
+        }
+
+        occr += calculateOccr(sb.toString(), searchPattern);
+        occrTillNow = occr;
+        if (!hasError) {
+            timeTaken = Utils.getTimeDiffSecMilliStr(startTime);
+            lineNums = readLines;
+            String result = getSearchResult(
+                    fn,
+                    timeTaken,
+                    lineNums,
+                    occr);
+            String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
+            updateTitleAndMsg(statusStr + result, getMsgTypeForOpr());
+        }
+        status = SearchBigFile.Status.DONE;
+
+        // No need to wait as data can be async added at top
+        sbf.finishAction();
+        return true;
+    }
+
+    private void catchForRead(Exception e) {
+        String msg = "ERROR: " + e.getMessage();
+        logger.error(e.getMessage());
+        tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+        sbf.updateTitleAndMsg("Unable to read file: " + getFilePath(), MyLogger.MsgType.ERROR);
+    }
+
+    private void processForRead(int line, String str, int occr, boolean appendLineNum) {
+        processForRead(line, str, occr, appendLineNum, false);
+    }
+
+    private void processForRead(int line, String str, int occr, boolean appendLineNum, boolean bypass) {
+        String strToAppend = "";
+        if (appendLineNum) {
+            strToAppend = addLineNumAndEscAtStart(line + 1, str);
+        } else {
+            strToAppend = escString(str);
+        }
+        synchronized (SearchBigFile.class) {
+            // emptying stack to Q
+            stack.push(strToAppend);
+            if (bypass || stack.size() > APPEND_MSG_CHUNK) {
+                while (!stack.empty()) {
+                    qMsgsToAppend.add(stack.pop());
+                }
+                startThread(msgCallable);
+            }
+        }
+
+        occrTillNow = occr;
+        linesTillNow = line;
+        if (!showWarning && occr > WARN_LIMIT_OCCR) {
+            showWarning = true;
+        }
+    }
+}
+

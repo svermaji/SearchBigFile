@@ -1,0 +1,43 @@
+package com.sv.bigfile.callable;
+
+import com.sv.bigfile.SearchBigFile;
+import com.sv.bigfile.helpers.AppendData;
+import com.sv.core.Utils;
+
+import javax.swing.*;
+import java.util.concurrent.Callable;
+
+public class AppendMsgCallable implements Callable<Boolean> {
+
+    private final SearchBigFile sbf;
+
+    public AppendMsgCallable(SearchBigFile sbf) {
+        this.sbf = sbf;
+    }
+
+    @Override
+    public Boolean call() {
+        StringBuilder sb = new StringBuilder();
+
+        int qSize = qMsgsToAppend.size();
+        synchronized (SearchBigFile.class) {
+            if (!qMsgsToAppend.isEmpty()) {
+                while (!qMsgsToAppend.isEmpty()) {
+                    String m = qMsgsToAppend.poll();
+                    if (sbf.isReadOpr() || Utils.hasValue(m)) {
+                        sb.append(m);
+                    }
+                }
+                if (sbf.isReadOpr() || sb.length() > 0) {
+                    insertCounter++;
+                    idxMsgsToAppend.put(insertCounter, sb.toString());
+                    SwingUtilities.invokeLater(new AppendData(sbf));
+                }
+                /*logger.debug("Initial Q size [" + qSize + "], after message processing Q size ["
+                        + qMsgsToAppend.size() + "]");*/
+            }
+        }
+
+        return true;
+    }
+}

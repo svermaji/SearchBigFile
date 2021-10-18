@@ -1,7 +1,14 @@
 package com.sv.bigfile;
 
+import com.sv.bigfile.action.AllOccrEnterAction;
+import com.sv.bigfile.action.CopyCommandAction;
+import com.sv.bigfile.action.RecentMenuAction;
 import com.sv.bigfile.helpers.*;
 import com.sv.bigfile.html.WrapHtmlKit;
+import com.sv.bigfile.task.FontChangerTask;
+import com.sv.bigfile.task.HelpColorChangerTask;
+import com.sv.bigfile.task.MemoryTrackTask;
+import com.sv.bigfile.task.StartClipboardTask;
 import com.sv.core.Constants;
 import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
@@ -55,21 +62,21 @@ public class SearchBigFile extends AppFrame {
      * <p>
      * e.g. if enum is Xyz then when storing getXyz will be called
      */
-    enum Configs {
+    public enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
-        ClipboardSupport, MatchCase, WholeWord, FixedWidth, DebugEnabled
+        ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab, DebugEnabled
     }
 
-    enum Status {
+    public enum Status {
         NOT_STARTED, READING, DONE, CANCELLED
     }
 
-    enum FONT_OPR {
+    public enum FONT_OPR {
         INCREASE, DECREASE, RESET, NONE
     }
 
-    enum FILE_OPR {
+    public enum FILE_OPR {
         SEARCH, READ, FIND
     }
 
@@ -87,6 +94,8 @@ public class SearchBigFile extends AppFrame {
     private String filePanelHeading, searchPanelHeading, controlPanelHeading;
     private JScrollPane jspAllOccr;
     private JTabbedPane tabbedPane;
+    private Map<Component, ResultTabData> resultTabsData;
+    private ResultTabData activeResultTabData = null;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
     private AppToolBar jtbFile, jtbSearch, jtbControls;
     private JPanel msgPanel;
@@ -97,15 +106,18 @@ public class SearchBigFile extends AppFrame {
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JTextPane tpResults, tpHelp, tpContactMe;
+    private JTextPane[] tpResult;
     private final SimpleAttributeSet highlightSAS = new SimpleAttributeSet();
     private final SimpleAttributeSet nonhighlightSAS = new SimpleAttributeSet();
     //private Highlighter.HighlightPainter painter;
     private Highlighter highlighter;
     private JScrollPane jspResults, jspHelp, jspContactMe;
+    private JScrollPane[] jspResult;
     private HTMLDocument htmlDoc;
+    private HTMLDocument[] htmlDocs;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock, jcbmiClipboardSupport;
+    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock, jcbmiClipboardSupport, jcbmiMultiTab;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -116,6 +128,7 @@ public class SearchBigFile extends AppFrame {
     private static boolean ignoreBlackAndWhite = true;
     private static boolean showWarning = false;
     private static boolean fixedWidth = false;
+    private static boolean multiTab = false;
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
@@ -129,6 +142,8 @@ public class SearchBigFile extends AppFrame {
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
     private final int MAX_READ_CHAR_LIMIT = 5000;
+    private final int MAX_RESULTS_TAB = 5;
+    private final int TAB_TITLE_LIMIT = 20;
     private static int maxReadCharTimes = 0;
     private boolean debugAllowed;
     private String searchStr, recentFilesStr, recentSearchesStr;
@@ -152,6 +167,7 @@ public class SearchBigFile extends AppFrame {
     private static Queue<String> qMsgsToAppend;
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(5);
+    private static List<Timer> timers = new ArrayList<>();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
@@ -174,6 +190,7 @@ public class SearchBigFile extends AppFrame {
 
         super.setLogger(logger);
 
+        resultTabsData = new HashMap<>();
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
@@ -184,7 +201,9 @@ public class SearchBigFile extends AppFrame {
         recentFilesStr = checkSep(getCfg(Configs.RecentFiles));
         recentSearchesStr = checkSep(getCfg(Configs.RecentSearches));
         fixedWidth = getBooleanCfg(Configs.FixedWidth);
+        multiTab = getBooleanCfg(Configs.MultiTab);
         msgCallable = new AppendMsgCallable(this);
+        jspResult = new JScrollPane[MAX_RESULTS_TAB];
 
         Container parentContainer = getContentPane();
         parentContainer.setLayout(new BorderLayout());
@@ -444,56 +463,26 @@ public class SearchBigFile extends AppFrame {
         tpContactMe.setEditable(false);
         tpContactMe.setContentType("text/html");
 
-        tpResults = new JTextPane() {
-            @Override
-            public Color getSelectionColor() {
-                return selectionColor;
-            }
-
-            @Override
-            public Color getSelectedTextColor() {
-                return selectionTextColor;
-            }
-        };
-        highlighter = tpResults.getHighlighter();
-        tpResults.setEditable(false);
-        tpResults.setContentType("text/html");
-        tpResults.setFont(getFontForEditor(getCfg(Configs.FontSize)));
-        tpResults.setForeground(Color.black);
-        tpResults.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        htmlDoc = new HTMLDocument();
-        tpResults.setDocument(htmlDoc);
-        tpResults.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                super.mouseClicked(e);
-                if (!Utils.hasValue(tpResults.getSelectedText())) {
-                    highlightLastSelectedItem();
-                }
-            }
-        });
-        tpResults.addFocusListener(new FocusAdapter() {
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                highlightLastSelectedItem();
-            }
-        });
         //kit = new HTMLEditorKit();
-        kit = new WrapHtmlKit();
-        jspResults = new JScrollPane(tpResults);
+        /*kit = new WrapHtmlKit();
+
+        ResultTabData rtb = new ResultTabData(title, tabIdx, this);
+        tpResults = rtb.getResultPane();
+        jspResults = rtb.getJspPane();
+        htmlDoc = rtb.getHtmlDoc();
+        highlighter = rtb.getHighlighter();*/
+
         jspHelp = new JScrollPane(tpHelp);
         jspContactMe = new JScrollPane(tpContactMe);
-        jspResults.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jspResults.setBorder(EMPTY_BORDER);
 
         parentContainer.add(topPanel, BorderLayout.NORTH);
+        prepareSettingsMenu();
+
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
-        tbc = SwingUtils.makeTabClosable(0, tabbedPane);
+        //tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
+        updateForActiveTab();
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
         tabbedPane.addTab("Contact Me", null, jspContactMe, "Displays my information");
-
 
         bottomPanel = new JPanel(new BorderLayout());
         jspAllOccr = new JScrollPane(createAllOccrTable());
@@ -522,8 +511,6 @@ public class SearchBigFile extends AppFrame {
                 btnLastN, btnShowAll, btnMemory, btnHelp, jcbMatchCase, jcbWholeWord
         };
 
-        prepareSettingsMenu();
-
         setFontSize(FONT_OPR.NONE);
         setControlsToEnable();
         setupHelp();
@@ -542,9 +529,15 @@ public class SearchBigFile extends AppFrame {
         SwingUtils.getInFocus(menuRFiles);
 
         // Delay so window can be activated
-        new Timer().schedule(new FontChangerTask(this), SEC_1, MIN_10);
-        new Timer().schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
-        new Timer().schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
+        Timer t = new Timer();
+        t.schedule(new FontChangerTask(this), SEC_1, MIN_10);
+        timers.add(t);
+        t = new Timer();
+        t.schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
+        timers.add(t);
+        t = new Timer();
+        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
+        timers.add(t);
 
         List<WindowChecks> windowChecks = new ArrayList<>();
         windowChecks.add(WindowChecks.WINDOW_ACTIVE);
@@ -557,6 +550,54 @@ public class SearchBigFile extends AppFrame {
         applyWindowActiveCheck(windowChecks.toArray(new WindowChecks[0]));
         StyleConstants.setForeground(nonhighlightSAS, Color.black);
         StyleConstants.setBackground(nonhighlightSAS, Color.white);
+    }
+
+    private void updateForActiveTab() {
+        addOrSetActiveTab();
+        SwingUtils.getInFocus(activeResultTabData.getJspPane());
+        jspResults = activeResultTabData.getJspPane();
+        tpResults = activeResultTabData.getResultPane();
+        highlighter = activeResultTabData.getHighlighter();
+        htmlDoc = activeResultTabData.getHtmlDoc();
+        globalCharIdx = activeResultTabData.getGlobalCharIdx();
+        qMsgsToAppend = activeResultTabData.getqMsgsToAppend();
+        idxMsgsToAppend = activeResultTabData.getIdxMsgsToAppend();
+        jspResults = activeResultTabData.getJspPane();
+        lastLineOffsetsIdx = activeResultTabData.getLastLineOffsetsIdx();
+        lastSelectedRow = activeResultTabData.getLastSelectedRow();
+        lineOffsets = activeResultTabData.getLineOffsets();
+    }
+
+    private void addOrSetActiveTab() {
+        boolean tabExists = false;
+        int tabsCnt = tabbedPane.getTabCount();
+        ResultTabData rtb = null;
+        if (jcbmiMultiTab.isSelected() && tabsCnt < MAX_RESULTS_TAB + 2) {
+            if (isValidate()) {
+                for (ResultTabData r : resultTabsData.values()) {
+                    if (r.getTitle().equalsIgnoreCase(getTitleForFilePath())) {
+                        tabExists = true;
+                        activeResultTabData = r;
+                        break;
+                    }
+                }
+                if (!tabExists) {
+                    rtb = new ResultTabData(getTitleForFilePath(), tabsCnt, this);
+                    resultTabsData.put(rtb.getResultPane(), rtb);
+                    tabbedPane.addTab(getTitleForFilePath(), null, rtb.getJspPane(), "Displays Search/Read results");
+                    rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, tabbedPane));
+                    applyTabCloseCompColor(rtb.getTabCloseComponent());
+                    activeResultTabData = rtb;
+                }
+            }
+        } else {
+            if (activeResultTabData == null) {
+                rtb = new ResultTabData(getTitleForFilePath(), 0, this);
+                resultTabsData.put(rtb.getResultPane(), rtb);
+                tabbedPane.addTab(getTitleForFilePath(), null, rtb.getJspPane(), "Displays Search/Read results");
+                activeResultTabData = rtb;
+            }
+        }
     }
 
     public void trackMemory() {
@@ -604,7 +645,9 @@ public class SearchBigFile extends AppFrame {
 
     @Override
     public void startClipboardAction() {
-        new Timer().schedule(new StartClipboardTask(this), SEC_1);
+        Timer t = new Timer();
+        t.schedule(new StartClipboardTask(this), SEC_1);
+        timers.add(t);
     }
 
     @Override
@@ -700,8 +743,11 @@ public class SearchBigFile extends AppFrame {
         jcbmiAutoLock.setMnemonic('L');
         jcbmiAutoLock.setToolTipText("Auto Lock App if idle for 10 min - change need restart");
         jcbmiClipboardSupport = new JCheckBoxMenuItem("Clipboard Support", null, configs.getBooleanConfig(Configs.ClipboardSupport.name()));
-        jcbmiClipboardSupport.setMnemonic('L');
+        jcbmiClipboardSupport.setMnemonic('b');
         jcbmiClipboardSupport.setToolTipText("Clipboard support (to use copied text as search file) - change need restart");
+        jcbmiMultiTab = new JCheckBoxMenuItem("Multi tabs", null, configs.getBooleanConfig(Configs.MultiTab.name()));
+        jcbmiMultiTab.setMnemonic('u');
+        jcbmiMultiTab.setToolTipText("Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -722,6 +768,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jmiLock);
         menuSettings.add(jcbmiAutoLock);
         menuSettings.add(jcbmiClipboardSupport);
+        menuSettings.add(jcbmiMultiTab);
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -754,7 +801,7 @@ public class SearchBigFile extends AppFrame {
         tblAllOccr.getColumnModel().getColumn(0)
                 .setCellRenderer(new CellRendererCenterAlign());
 
-        String msg = "Search/read and use < or >";
+        String msg = "Search or read";
         lblNoRow = new JLabel(msg);
         lblNoRow.setToolTipText(msg);
         lblNoRow.setSize(lblNoRow.getPreferredSize());
@@ -985,7 +1032,8 @@ public class SearchBigFile extends AppFrame {
 
         setBkColors(bkColorComponents);
 
-        tbc.setColors(selectionTextColor, selectionColor, highlightTextColor, highlightColor);
+        resultTabsData.values().forEach(v -> applyTabCloseCompColor(v.getTabCloseComponent()));
+
         tabbedPane.setBackground(highlightColor);
         tabbedPane.setForeground(highlightTextColor);
         //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
@@ -993,6 +1041,10 @@ public class SearchBigFile extends AppFrame {
         // UIManager.put("TabbedPane.selected", selectionColor);
         // tabbedPane.updateUI();
         //SwingUtilities.updateComponentTreeUI(tabbedPane);
+    }
+
+    private void applyTabCloseCompColor(TabCloseComponent tcc) {
+        tcc.setColors(selectionTextColor, selectionColor, highlightTextColor, highlightColor);
     }
 
     private void updateRecentMenu(JMenu m, String[] arr, JTextField txtF, String mapKey) {
@@ -1239,7 +1291,15 @@ public class SearchBigFile extends AppFrame {
         SwingUtils.setComponentColor(c, cl, highlightTextColor, selectionColor, selectionTextColor);
     }
 
-    private Font getFontForEditor(String sizeStr) {
+    public Color getSelectionTextColor() {
+        return selectionTextColor;
+    }
+
+    public Color getSelectionColor() {
+        return selectionColor;
+    }
+
+    public Font getFontForEditor(String sizeStr) {
         Font retVal = SwingUtils.getPlainCalibriFont(Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE);
         logger.info("Returning " + getFontDetail(retVal));
         return retVal;
@@ -1497,6 +1557,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void searchFile() {
+        updateForActiveTab();
         operation = FILE_OPR.SEARCH;
         if (isValidate()) {
             resetForNewSearch();
@@ -1510,6 +1571,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void readFile() {
+        updateForActiveTab();
         operation = FILE_OPR.READ;
         if (isValidate()) {
             resetForNewSearch();
@@ -1664,8 +1726,6 @@ public class SearchBigFile extends AppFrame {
                 }
             } catch (BadLocationException | IOException e) {
                 logger.error("Unable to append data: " + data);
-            } catch (Exception e) {
-                logger.error("====>" + data);
             }
 
             if (readCounter == insertCounter) {
@@ -1697,6 +1757,7 @@ public class SearchBigFile extends AppFrame {
      * Exit the Application
      */
     private void exitForm() {
+        cancelTimers();
         configs.saveConfig(this);
         setVisible(false);
         dispose();
@@ -1704,8 +1765,20 @@ public class SearchBigFile extends AppFrame {
         System.exit(0);
     }
 
+    private void cancelTimers() {
+        timers.forEach(Timer::cancel);
+    }
+
     public String getFilePath() {
         return txtFilePath.getText();
+    }
+
+    public String getTitleForFilePath() {
+        String nm = Utils.getFileName(txtFilePath.getText());
+        if (nm.length() > TAB_TITLE_LIMIT) {
+            nm = nm.substring(0, TAB_TITLE_LIMIT - ELLIPSIS.length()) + ELLIPSIS;
+        }
+        return nm;
     }
 
     public String getFontSize() {
@@ -1718,6 +1791,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getFixedWidth() {
         return fixedWidth + "";
+    }
+
+    public String getMultiTab() {
+        return jcbmiMultiTab.isSelected() + "";
     }
 
     public String getColorIndex() {
@@ -1891,7 +1968,7 @@ public class SearchBigFile extends AppFrame {
         selectAndGoToIndex(idx, idx);
     }
 
-    private void highlightLastSelectedItem() {
+    public void highlightLastSelectedItem() {
         // as called on lost focus
         synchronized (SearchBigFile.class) {
             if (lastLineOffsetsIdx != -1) {
@@ -1982,9 +2059,8 @@ public class SearchBigFile extends AppFrame {
             return htmlDoc.getText(0, htmlDoc.getLength());
         } catch (BadLocationException e) {
             logger.error("Unable to get results.  Details: ", e);
-        } catch (Exception e) {
-            logger.error("xxxx-----xxxx");
         }
+
         return "";
     }
 
