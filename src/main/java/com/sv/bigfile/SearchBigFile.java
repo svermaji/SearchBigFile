@@ -5,6 +5,7 @@ import com.sv.bigfile.action.CopyCommandAction;
 import com.sv.bigfile.action.RecentMenuAction;
 import com.sv.bigfile.helpers.AppendData;
 import com.sv.bigfile.helpers.StartWarnIndicator;
+import com.sv.bigfile.helpers.TabRemoveHandler;
 import com.sv.bigfile.html.WrapHtmlKit;
 import com.sv.bigfile.task.FontChangerTask;
 import com.sv.bigfile.task.HelpColorChangerTask;
@@ -557,112 +558,90 @@ public class SearchBigFile extends AppFrame {
 
     private void updateForActiveTab() {
         addOrSetActiveTab();
-        debug("Tab length is " + Utils.addBraces(tabbedPane.getTabCount())
-                + " and resultTabsData on adding tab is " + resultTabsData.toString());
-        if (activeResultTabData == null && resultTabsData.size() > 0) {
-            activeResultTabData = resultTabsData.values().iterator().next();
-        }
         setEditorVars();
-        String newTitle = getTitleForFilePath();
-        activeResultTabData.setTitle(newTitle);
-        TabCloseComponent tcc = activeResultTabData.getTabCloseComponent();
-        if (tcc != null) {
-            tcc.getTabLabel().setText(newTitle);
-        } else {
-            tabbedPane.setTitleAt(activeResultTabData.getTabIdx(), newTitle);
-        }
-        tabbedPane.updateUI();
-        SwingUtils.getInFocus(activeResultTabData.getJspPane());
+    }
+
+    public void tabRemoved(String title, int tabNum) {
+        debug("Tab removed with title " + Utils.addBraces(title) + " and number " + Utils.addBraces(tabNum));
+        resultTabsData.remove(title);
+        debug("Tab length is " + Utils.addBraces(tabbedPane.getTabCount())
+                + " and resultTabsData in active tab is " + resultTabsData.toString());
+        reIndexTabs();
     }
 
     private void setActiveTabVars() {
-        checkTabRemovalAndIndexes();
-        logger.info("Size of all tabs components " + Utils.addBraces(resultTabsData.size()));
         if (resultTabsData.size() > 0) {
-            activeResultTabData = resultTabsData.values().iterator().next();
-            logger.info("Title of active tab " + Utils.addBraces(activeResultTabData.getTitle()));
-            SwingUtils.getInFocus(activeResultTabData.getJspPane());
-            setEditorVars();
+            String title = tabbedPane.getTitleAt(tabbedPane.getSelectedIndex());
+            if (activeResultTabData == null || !activeResultTabData.getTitle().equalsIgnoreCase(title)) {
+                activeResultTabData = resultTabsData.get(title);
+                if (activeResultTabData != null) {
+                    selectTab(activeResultTabData.getJspPane());
+                    setEditorVars();
+                }
+            }
         }
     }
 
-    private synchronized void checkTabRemovalAndIndexes() {
-        // check if any tab is removed
-        String allTitles = prepareStringOfTitles();
-        List<String> keysToRemove = new ArrayList<>();
-        resultTabsData.keySet().forEach(k -> {
-            String t = COMMA + k + COMMA;
-            if (!allTitles.contains(t)) {
-                keysToRemove.add(k);
-            }
-        });
-        logger.info("keysToRemove " + keysToRemove);
-        keysToRemove.forEach(k -> resultTabsData.remove(k));
-
+    private synchronized void reIndexTabs() {
         // update tab indexes
         int tc = tabbedPane.getTabCount();
+        logger.info("Before re-indexing tab count is " + Utils.addBraces(tc));
         for (int i = 0; i < tc; i++) {
-            if (!Utils.hasValue(tabbedPane.getTitleAt(i))) {
-                TabCloseComponent tcc = (TabCloseComponent) tabbedPane.getTabComponentAt(i);
+            TabCloseComponent tcc = (TabCloseComponent) tabbedPane.getTabComponentAt(i);
+            if (tcc != null) {
                 tcc.setTabNum(i);
+                resultTabsData.get(tcc.getTitle()).setTabIdx(i);
+                resultTabsData.get(tcc.getTitle()).getTabCloseComponent().setTabNum(i);
             }
         }
-        resultTabsData.values().forEach(v -> v.setTabIdx(v.getTabCloseComponent().getTabNum()));
         debug("Tab length is " + Utils.addBraces(tabbedPane.getTabCount())
                 + " and resultTabsData on re-indexing is " + resultTabsData.toString());
     }
 
-    private String prepareStringOfTitles() {
-        String csv = "";
-        int tc = tabbedPane.getTabCount();
-        for (int i = 0; i < tc; i++) {
-            if (Utils.hasValue(tabbedPane.getTitleAt(i))) {
-                csv += COMMA + tabbedPane.getTitleAt(i);
-            } else {
-                TabCloseComponent tcc = (TabCloseComponent) tabbedPane.getTabComponentAt(i);
-                csv += COMMA + tcc.getTabLabel().getText();
-            }
-        }
-        csv = csv + COMMA;
-        logger.debug("All tab titles csv " + Utils.addBraces(csv));
-        return csv;
-    }
-
     private void setEditorVars() {
-        jspResults = activeResultTabData.getJspPane();
-        tpResults = activeResultTabData.getResultPane();
-        highlighter = activeResultTabData.getHighlighter();
-        htmlDoc = activeResultTabData.getHtmlDoc();
-        globalCharIdx = activeResultTabData.getGlobalCharIdx();
-        qMsgsToAppend = activeResultTabData.getqMsgsToAppend();
-        idxMsgsToAppend = activeResultTabData.getIdxMsgsToAppend();
-        jspResults = activeResultTabData.getJspPane();
-        lastLineOffsetsIdx = activeResultTabData.getLastLineOffsetsIdx();
-        lastSelectedRow = activeResultTabData.getLastSelectedRow();
-        lineOffsets = activeResultTabData.getLineOffsets();
+        if (activeResultTabData != null) {
+            jspResults = activeResultTabData.getJspPane();
+            tpResults = activeResultTabData.getResultPane();
+            highlighter = activeResultTabData.getHighlighter();
+            htmlDoc = activeResultTabData.getHtmlDoc();
+            globalCharIdx = activeResultTabData.getGlobalCharIdx();
+            qMsgsToAppend = activeResultTabData.getqMsgsToAppend();
+            idxMsgsToAppend = activeResultTabData.getIdxMsgsToAppend();
+            lastLineOffsetsIdx = activeResultTabData.getLastLineOffsetsIdx();
+            lastSelectedRow = activeResultTabData.getLastSelectedRow();
+            lineOffsets = activeResultTabData.getLineOffsets();
+        }
     }
 
     private void addOrSetActiveTab() {
-        activeResultTabData = null;
         boolean tabExists = false;
-        int tabsCnt = tabbedPane.getTabCount();
-        int mapSize = resultTabsData.size();
-        log("Checking if tab can be added, present map size is " + Utils.addBraces(mapSize));
+        String title = getTitleForFilePath();
+        log("addOrSetActiveTab: map size " + Utils.addBraces(resultTabsData.size())
+                + " and activeResultTabData " + activeResultTabData);
         ResultTabData rtb;
-        if (jcbmiMultiTab.isSelected() && mapSize < MAX_RESULTS_TAB) {
+        if (resultTabsData.size() >= MAX_RESULTS_TAB) {
+            if (activeResultTabData != null) {
+                tabbedPane.remove(activeResultTabData.getTabIdx());
+                tabRemoved(activeResultTabData.getTitle(), activeResultTabData.getTabIdx());
+            }
+        }
+        int tabsCnt = tabbedPane.getTabCount();
+        activeResultTabData = null;
+        if (jcbmiMultiTab.isSelected() && resultTabsData.size() < MAX_RESULTS_TAB) {
             if (isValidate()) {
                 for (ResultTabData r : resultTabsData.values()) {
-                    if (r.getTitle().equalsIgnoreCase(getTitleForFilePath())) {
+                    if (r.getTitle().equalsIgnoreCase(title)) {
                         tabExists = true;
                         activeResultTabData = r;
                         break;
                     }
                 }
                 if (!tabExists) {
-                    rtb = new ResultTabData(getTitleForFilePath(), tabsCnt, this);
-                    resultTabsData.put(getTitleForFilePath(), rtb);
-                    tabbedPane.addTab(getTitleForFilePath(), null, rtb.getJspPane(), "Displays Search/Read results");
-                    rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, tabbedPane));
+                    rtb = new ResultTabData(title, tabsCnt, this);
+                    resultTabsData.put(title, rtb);
+                    tabbedPane.addTab(title, null, rtb.getJspPane(), "Displays Search/Read results");
+                    TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
+                    rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
                     applyTabCloseCompColor(rtb.getTabCloseComponent());
                     activeResultTabData = rtb;
                     addBindingsToNewEditors();
@@ -670,9 +649,9 @@ public class SearchBigFile extends AppFrame {
             }
         } else {
             if (resultTabsData.size() == 0) {
-                rtb = new ResultTabData(getTitleForFilePath(), 0, this);
-                resultTabsData.put(getTitleForFilePath(), rtb);
-                tabbedPane.addTab(getTitleForFilePath(), null, rtb.getJspPane(), "Displays Search/Read results");
+                rtb = new ResultTabData(title, 0, this);
+                resultTabsData.put(title, rtb);
+                tabbedPane.addTab(title, null, rtb.getJspPane(), "Displays Search/Read results");
                 activeResultTabData = rtb;
             }
         }
@@ -1210,6 +1189,10 @@ public class SearchBigFile extends AppFrame {
 
     private void selectTab(boolean show) {
         //tabbedPane.setSelectedComponent(show ? jspHelp : jspResults);
+    }
+
+    private void selectTab(JComponent c) {
+        tabbedPane.setSelectedComponent(c);
     }
 
     private void setupHelp() {
