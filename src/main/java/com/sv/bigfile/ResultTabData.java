@@ -33,8 +33,8 @@ public class ResultTabData {
 
     private TabCloseComponent tabCloseComponent;
 
-    private final String title;
-    private final int tabIdx;
+    private String title;
+    private int tabIdx;
 
     // indexed structure to maintain line indexing
     private Map<Long, String> idxMsgsToAppend;
@@ -132,8 +132,16 @@ public class ResultTabData {
         return title;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public int getTabIdx() {
         return tabIdx;
+    }
+
+    public void setTabIdx(int tabIdx) {
+        this.tabIdx = tabIdx;
     }
 
     public Map<Long, String> getIdxMsgsToAppend() {
@@ -162,5 +170,14 @@ public class ResultTabData {
 
     public Queue<String> getqMsgsToAppend() {
         return qMsgsToAppend;
+    }
+
+    @Override
+    public String toString() {
+        return "ResultTabData{" +
+                "title='" + title + '\'' +
+                ", tabIdx=" + tabIdx +
+                ", tabCloseComponent=" + tabCloseComponent +
+                '}';
     }
 }
