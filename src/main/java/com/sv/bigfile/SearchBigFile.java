@@ -707,6 +707,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    //TODO: close other tabs and tooltip color
     private String checkSep(String s) {
         if (!s.startsWith(SEPARATOR)) {
             s = SEPARATOR + s;
