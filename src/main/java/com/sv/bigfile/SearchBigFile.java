@@ -676,7 +676,7 @@ public class SearchBigFile extends AppFrame {
                     int tabsCnt = tabbedPane.getTabCount();
                     rtb = new ResultTabData(title, tabsCnt, this);
                     resultTabsData.put(title, rtb);
-                    tabbedPane.addTab(title, null, rtb.getJspPane(), "Displays Search/Read results");
+                    tabbedPane.addTab(title, null, rtb.getJspPane(), getFilePath());
                     TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
                     rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
                     applyTabCloseCompColor(rtb.getTabCloseComponent());
@@ -689,7 +689,7 @@ public class SearchBigFile extends AppFrame {
             if (resultTabsData.size() == 0) {
                 rtb = new ResultTabData(title, 0, this);
                 resultTabsData.put(title, rtb);
-                tabbedPane.addTab(title, null, rtb.getJspPane(), "Displays Search/Read results");
+                tabbedPane.addTab(title, null, rtb.getJspPane(), getFilePath());
                 activeResultTabData = rtb;
                 selectTab(activeResultTabData.getJspPane());
             }
