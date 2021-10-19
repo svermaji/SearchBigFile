@@ -15,6 +15,6 @@ public class ReloadLastTabsTask extends TimerTask {
     @Override
     public void run() {
         sbf.debug("Running open file task");
-        sbf.openFiles();
+        sbf.reloadLastTabs();
     }
 }

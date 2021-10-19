@@ -559,7 +559,8 @@ public class SearchBigFile extends AppFrame {
         new Timer().schedule(new ReloadLastTabsTask(this), SEC_1 * 2);
     }
 
-    public void openFiles() {
+    public void reloadLastTabs() {
+        disableControls();
         if (jcbmiMultiTab.isSelected() && jcbmiReopenLastTabs.isSelected()) {
             String[] arrF = recentFilesStr.split(SEPARATOR);
             boolean skipFirst = false; // as first tab is already opened
@@ -568,7 +569,7 @@ public class SearchBigFile extends AppFrame {
                     if (skipFirst) {
                         txtFilePath.setText(s);
                         updateForActiveTab();
-                        Utils.sleep1Sec();
+                        Utils.sleep(100);
                     } else {
                         skipFirst = true;
                     }
@@ -578,6 +579,7 @@ public class SearchBigFile extends AppFrame {
                 }
             }
         }
+        enableControls();
         log("Results tab data size " + Utils.addBraces(resultTabsData.size()));
     }
 
@@ -1051,7 +1053,7 @@ public class SearchBigFile extends AppFrame {
                 menuRFiles, menuRSearches, cbLastN, jcbMatchCase,
                 jcbWholeWord, btnPlusFont, btnMinusFont, btnResetFont,
                 btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind,
-                menuSettings, btnShowAll
+                menuSettings, btnShowAll, btnLock
         };
         setComponentToEnable(components);
         setComponentContrastToEnable(new Component[]{btnCancel});
