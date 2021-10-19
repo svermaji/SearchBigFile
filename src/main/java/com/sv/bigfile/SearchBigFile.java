@@ -490,7 +490,7 @@ public class SearchBigFile extends AppFrame {
         parentContainer.add(topPanel, BorderLayout.NORTH);
         tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
-        tbc = SwingUtils.makeTabClosable(0, "Result", tabbedPane);
+        //tbc = SwingUtils.makeTabClosable(0, "Result", tabbedPane);
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
         tabbedPane.addTab("Contact Me", null, jspContactMe, "Displays my information");
 
@@ -985,7 +985,7 @@ public class SearchBigFile extends AppFrame {
 
         setBkColors(bkColorComponents);
 
-        tbc.setColors(selectionTextColor, selectionColor, highlightTextColor, highlightColor);
+        //tbc.setColors(selectionTextColor, selectionColor, highlightTextColor, highlightColor);
         tabbedPane.setBackground(highlightColor);
         tabbedPane.setForeground(highlightTextColor);
         //tabbedPane.setForegroundAt(tabbedPane.getSelectedIndex(), selectionTextColor);
