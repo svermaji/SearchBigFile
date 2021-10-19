@@ -7,10 +7,7 @@ import com.sv.bigfile.helpers.AppendData;
 import com.sv.bigfile.helpers.StartWarnIndicator;
 import com.sv.bigfile.helpers.TabRemoveHandler;
 import com.sv.bigfile.html.WrapHtmlKit;
-import com.sv.bigfile.task.FontChangerTask;
-import com.sv.bigfile.task.HelpColorChangerTask;
-import com.sv.bigfile.task.MemoryTrackTask;
-import com.sv.bigfile.task.StartClipboardTask;
+import com.sv.bigfile.task.*;
 import com.sv.core.Constants;
 import com.sv.core.Utils;
 import com.sv.core.config.DefaultConfigs;
@@ -67,7 +64,8 @@ public class SearchBigFile extends AppFrame {
     public enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
-        ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab, DebugEnabled
+        ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab,
+        ReopenLastTabs, DebugEnabled
     }
 
     public enum Status {
@@ -119,7 +117,8 @@ public class SearchBigFile extends AppFrame {
     private HTMLDocument[] htmlDocs;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock, jcbmiClipboardSupport, jcbmiMultiTab;
+    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
+            jcbmiClipboardSupport, jcbmiMultiTab, jcbmiReopenLastTabs;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -131,6 +130,7 @@ public class SearchBigFile extends AppFrame {
     private static boolean showWarning = false;
     private static boolean fixedWidth = false;
     private static boolean multiTab = false;
+    private static boolean reopenLastTabs = false;
     private static long insertCounter = 0;
     private static long readCounter = 0;
     private static long startTime = System.currentTimeMillis();
@@ -204,6 +204,7 @@ public class SearchBigFile extends AppFrame {
         recentSearchesStr = checkSep(getCfg(Configs.RecentSearches));
         fixedWidth = getBooleanCfg(Configs.FixedWidth);
         multiTab = getBooleanCfg(Configs.MultiTab);
+        reopenLastTabs = getBooleanCfg(Configs.ReopenLastTabs);
         msgCallable = new AppendMsgCallable(this);
         jspResult = new JScrollPane[MAX_RESULTS_TAB];
 
@@ -554,6 +555,30 @@ public class SearchBigFile extends AppFrame {
         applyWindowActiveCheck(windowChecks.toArray(new WindowChecks[0]));
         StyleConstants.setForeground(nonhighlightSAS, Color.black);
         StyleConstants.setBackground(nonhighlightSAS, Color.white);
+
+        new Timer().schedule(new ReloadLastTabsTask(this), SEC_1 * 2);
+    }
+
+    public void openFiles() {
+        if (jcbmiMultiTab.isSelected() && jcbmiReopenLastTabs.isSelected()) {
+            String[] arrF = recentFilesStr.split(SEPARATOR);
+            boolean skipFirst = false; // as first tab is already opened
+            for (String s : arrF) {
+                if (Utils.hasValue(s)) {
+                    if (skipFirst) {
+                        txtFilePath.setText(s);
+                        updateForActiveTab();
+                        Utils.sleep1Sec();
+                    } else {
+                        skipFirst = true;
+                    }
+                }
+                if (resultTabsData.size() >= MAX_RESULTS_TAB) {
+                    break;
+                }
+            }
+        }
+        log("Results tab data size " + Utils.addBraces(resultTabsData.size()));
     }
 
     private void updateForActiveTab() {
@@ -585,7 +610,8 @@ public class SearchBigFile extends AppFrame {
     private synchronized void reIndexTabs() {
         // update tab indexes
         int tc = tabbedPane.getTabCount();
-        logger.info("Before re-indexing tab count is " + Utils.addBraces(tc));
+        logger.info("Before re-indexing tab count is " + Utils.addBraces(tc)
+                + " and resultTabs are " + Utils.addBraces(resultTabsData.size()));
         for (int i = 0; i < tc; i++) {
             TabCloseComponent tcc = (TabCloseComponent) tabbedPane.getTabComponentAt(i);
             if (tcc != null) {
@@ -619,24 +645,33 @@ public class SearchBigFile extends AppFrame {
         log("addOrSetActiveTab: map size " + Utils.addBraces(resultTabsData.size())
                 + " and activeResultTabData " + activeResultTabData);
         ResultTabData rtb;
-        if (resultTabsData.size() >= MAX_RESULTS_TAB) {
-            if (activeResultTabData != null) {
-                tabbedPane.remove(activeResultTabData.getTabIdx());
-                tabRemoved(activeResultTabData.getTitle(), activeResultTabData.getTabIdx());
-            }
+        String activeTitle = "";
+        int activeIdx = -1;
+        if (activeResultTabData != null) {
+            activeTitle = activeResultTabData.getTitle();
+            activeIdx = activeResultTabData.getTabIdx();
         }
-        int tabsCnt = tabbedPane.getTabCount();
+        log("addOrSetActiveTab: activeTitle " + Utils.addBraces(activeTitle)
+                + " and activeIdx " + Utils.addBraces(activeIdx));
         activeResultTabData = null;
-        if (jcbmiMultiTab.isSelected() && resultTabsData.size() < MAX_RESULTS_TAB) {
+        if (jcbmiMultiTab.isSelected()) {
             if (isValidate()) {
                 for (ResultTabData r : resultTabsData.values()) {
                     if (r.getTitle().equalsIgnoreCase(title)) {
                         tabExists = true;
                         activeResultTabData = r;
+                        selectTab(activeResultTabData.getJspPane());
                         break;
                     }
                 }
                 if (!tabExists) {
+                    if (resultTabsData.size() >= MAX_RESULTS_TAB) {
+                        if (Utils.hasValue(activeTitle)) {
+                            tabbedPane.remove(activeIdx);
+                            tabRemoved(activeTitle, activeIdx);
+                        }
+                    }
+                    int tabsCnt = tabbedPane.getTabCount();
                     rtb = new ResultTabData(title, tabsCnt, this);
                     resultTabsData.put(title, rtb);
                     tabbedPane.addTab(title, null, rtb.getJspPane(), "Displays Search/Read results");
@@ -645,6 +680,7 @@ public class SearchBigFile extends AppFrame {
                     applyTabCloseCompColor(rtb.getTabCloseComponent());
                     activeResultTabData = rtb;
                     addBindingsToNewEditors();
+                    selectTab(activeResultTabData.getJspPane());
                 }
             }
         } else {
@@ -653,6 +689,7 @@ public class SearchBigFile extends AppFrame {
                 resultTabsData.put(title, rtb);
                 tabbedPane.addTab(title, null, rtb.getJspPane(), "Displays Search/Read results");
                 activeResultTabData = rtb;
+                selectTab(activeResultTabData.getJspPane());
             }
         }
     }
@@ -814,6 +851,9 @@ public class SearchBigFile extends AppFrame {
         jcbmiMultiTab = new JCheckBoxMenuItem("Multi tabs", null, configs.getBooleanConfig(Configs.MultiTab.name()));
         jcbmiMultiTab.setMnemonic('u');
         jcbmiMultiTab.setToolTipText("Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
+        jcbmiReopenLastTabs = new JCheckBoxMenuItem("Reopen Last Tabs", null, configs.getBooleanConfig(Configs.ReopenLastTabs.name()));
+        jcbmiReopenLastTabs.setMnemonic('p');
+        jcbmiReopenLastTabs.setToolTipText("Reopen last tabs");
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -835,6 +875,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiAutoLock);
         menuSettings.add(jcbmiClipboardSupport);
         menuSettings.add(jcbmiMultiTab);
+        menuSettings.add(jcbmiReopenLastTabs);
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -1867,6 +1908,10 @@ public class SearchBigFile extends AppFrame {
 
     public String getMultiTab() {
         return jcbmiMultiTab.isSelected() + "";
+    }
+
+    public String getReopenLastTabs() {
+        return jcbmiReopenLastTabs.isSelected() + "";
     }
 
     public String getColorIndex() {
