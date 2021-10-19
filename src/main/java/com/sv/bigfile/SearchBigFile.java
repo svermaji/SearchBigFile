@@ -490,7 +490,7 @@ public class SearchBigFile extends AppFrame {
         parentContainer.add(topPanel, BorderLayout.NORTH);
         tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
-        tbc = SwingUtils.makeTabClosable(0, tabbedPane);
+        tbc = SwingUtils.makeTabClosable(0, "Result", tabbedPane);
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
         tabbedPane.addTab("Contact Me", null, jspContactMe, "Displays my information");
 
