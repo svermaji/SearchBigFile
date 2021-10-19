@@ -106,6 +106,9 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * Error indicator<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-error.png)
 
+* Controls menu<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-controls-19-oct-2021.png)
+
 * Auto complete<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-ac.png)
 
