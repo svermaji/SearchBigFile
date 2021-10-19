@@ -2340,7 +2340,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String addLineNumAndEscAtStart(long lineNum, String str) {
-        return BR + getLineNumStr(lineNum) + escString(str);
+        return BR + addOnlyLineNumAndEsc(lineNum, str);
     }
 
     private String addOnlyLineNumAndEsc(long lineNum, String str) {
@@ -2419,10 +2419,11 @@ public class SearchBigFile extends AppFrame {
                         }
 
                         occr += calculateOccr(sb.toString(), searchPattern);
-                        if (isNewLineChar) {
+                        // todo check if this block is needed
+                        /*if (isNewLineChar) {
                             // to handle \n
                             processForRead(readLines, "", occr, false);
-                        }
+                        }*/
                         processForRead(readLines, sb.toString(), occr, isNewLineChar);
 
                         sb = new StringBuilder();
@@ -2451,7 +2452,8 @@ public class SearchBigFile extends AppFrame {
                 if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
                 }
-                processForRead(readLines, sb.toString(), occr, true, true);
+                // last remaining data
+                processForRead(false, readLines, sb.toString(), occr, true, true);
                 readLines++;
             } catch (FileNotFoundException e) {
                 catchForRead(e);
@@ -2496,13 +2498,17 @@ public class SearchBigFile extends AppFrame {
         }
 
         private void processForRead(int line, String str, int occr, boolean appendLineNum) {
-            processForRead(line, str, occr, appendLineNum, false);
+            processForRead(true, line, str, occr, appendLineNum, false);
         }
 
-        private void processForRead(int line, String str, int occr, boolean appendLineNum, boolean bypass) {
+        private void processForRead(boolean needBR, int line, String str, int occr, boolean appendLineNum, boolean bypass) {
             String strToAppend = "";
             if (appendLineNum) {
-                strToAppend = addLineNumAndEscAtStart(line + 1, str);
+                if (needBR) {
+                    strToAppend = addLineNumAndEscAtStart(line + 1, str);
+                } else {
+                    strToAppend = addOnlyLineNumAndEsc(line + 1, str);
+                }
             } else {
                 strToAppend = escString(str);
             }
