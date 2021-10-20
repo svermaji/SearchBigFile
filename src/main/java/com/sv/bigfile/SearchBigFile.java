@@ -83,7 +83,6 @@ public class SearchBigFile extends AppFrame {
     private SearchUtils searchUtils;
     private MyLogger logger;
     private DefaultConfigs configs;
-    private TabCloseComponent tbc;
 
     private JSplitPane splitAllOccr;
     private DefaultTableModel modelAllOccr;
@@ -97,7 +96,7 @@ public class SearchBigFile extends AppFrame {
     private Map<String, ResultTabData> resultTabsData;
     private ResultTabData activeResultTabData = null;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
-    private AppToolBar jtbFile, jtbSearch, jtbControls;
+    private AppToolBar jtbFile, jtbSearch, jtbControls, msgButtons;
     private JPanel msgPanel;
     private JLabel lblMsg;
     private JButton btnShowAll, btnMemory, btnListRS, btnListRF;
@@ -118,7 +117,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
-            jcbmiClipboardSupport, jcbmiMultiTab, jcbmiReopenLastTabs;
+            jcbmiClipboardSupport, jcbmiFixedWidth, jcbmiMultiTab, jcbmiReopenLastTabs;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -202,6 +201,7 @@ public class SearchBigFile extends AppFrame {
         setColorFromIdx();
         recentFilesStr = checkSep(getCfg(Configs.RecentFiles));
         recentSearchesStr = checkSep(getCfg(Configs.RecentSearches));
+        // to avoid length mismatch
         fixedWidth = getBooleanCfg(Configs.FixedWidth);
         multiTab = getBooleanCfg(Configs.MultiTab);
         reopenLastTabs = getBooleanCfg(Configs.ReopenLastTabs);
@@ -245,13 +245,11 @@ public class SearchBigFile extends AppFrame {
 
         uin = UIName.LBL_RFILES;
         mbRFiles = new JMenuBar();
-        menuRFiles = new JMenu(uin.name);
-        menuRFiles.setMnemonic(uin.mnemonic);
-        menuRFiles.setToolTipText(uin.tip);
+        menuRFiles = new AppMenu(uin.name, uin.mnemonic, uin.tip);
         mbRFiles.add(menuRFiles);
         updateRecentMenu(menuRFiles, getFiles(), txtFilePath, TXT_F_MAP_KEY);
 
-        jtbFile = new AppToolBar();
+        jtbFile = new AppToolBar(fixedWidth);
         jtbFile.add(txtFilePath);
         jtbFile.add(btnFileOpen);
         jtbFile.add(btnListRF);
@@ -324,13 +322,11 @@ public class SearchBigFile extends AppFrame {
         uin = UIName.LBL_RSEARCHES;
         mbRSearches = new JMenuBar();
         mbRSearches.setBorder(ZERO_BORDER);
-        menuRSearches = new JMenu(uin.name);
-        menuRSearches.setMnemonic(uin.mnemonic);
-        menuRSearches.setToolTipText(uin.tip);
+        menuRSearches = new AppMenu(uin.name, uin.mnemonic, uin.tip);
         mbRSearches.add(menuRSearches);
         updateRecentMenu(menuRSearches, getSearches(), txtSearch, TXT_S_MAP_KEY);
 
-        jtbSearch = new AppToolBar();
+        jtbSearch = new AppToolBar(fixedWidth);
         jtbSearch.add(txtSearch);
         jtbSearch.add(btnUC);
         jtbSearch.add(btnLC);
@@ -341,9 +337,7 @@ public class SearchBigFile extends AppFrame {
 
         uin = UIName.MNU_SETTINGS;
         mbSettings = new JMenuBar();
-        menuSettings = new JMenu(uin.name);
-        menuSettings.setMnemonic(uin.mnemonic);
-        menuSettings.setToolTipText(uin.tip + SHORTCUT + uin.mnemonic);
+        menuSettings = new AppMenu(uin.name, uin.mnemonic, uin.tip + SHORTCUT + uin.mnemonic);
         mbSettings.add(menuSettings);
         // populating settings menu at end so font can be applied to lblMsg
 
@@ -362,7 +356,7 @@ public class SearchBigFile extends AppFrame {
         searchPanel.add(btnCancel);
         searchPanel.setBorder(searchPanelBorder);
 
-        jtbControls = new AppToolBar();
+        jtbControls = new AppToolBar(fixedWidth);
         uin = UIName.BTN_PLUSFONT;
         btnPlusFont = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnPlusFont.addActionListener(e -> increaseFontSize());
@@ -441,7 +435,7 @@ public class SearchBigFile extends AppFrame {
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
         msgPanel = new JPanel(new BorderLayout());
-        lblMsg = new JLabel(getInitialMsg());
+        lblMsg = new AppLabel(getInitialMsg());
         lblMsg.setHorizontalAlignment(SwingConstants.CENTER);
         lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
         uin = UIName.BTN_SHOWALL;
@@ -451,7 +445,7 @@ public class SearchBigFile extends AppFrame {
         btnMemory = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnMemory.addActionListener(e -> freeMemory());
         msgPanel.add(lblMsg, BorderLayout.CENTER);
-        AppToolBar msgButtons = new AppToolBar();
+        msgButtons = new AppToolBar(fixedWidth);
         msgPanel.setBorder(ZERO_BORDER);
         msgButtons.add(btnShowAll);
         msgButtons.add(btnMemory);
@@ -482,7 +476,7 @@ public class SearchBigFile extends AppFrame {
         parentContainer.add(topPanel, BorderLayout.NORTH);
         prepareSettingsMenu();
 
-        tabbedPane = new JTabbedPane();
+        tabbedPane = new AppTabbedPane();
         //tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
         updateForActiveTab();
         tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
@@ -580,7 +574,8 @@ public class SearchBigFile extends AppFrame {
             }
         }
         enableControls();
-        log("Results tab data size " + Utils.addBraces(resultTabsData.size()));
+        setTabCloseButtonColor();
+        log("Last tabs reloaded. Results tab data size " + Utils.addBraces(resultTabsData.size()));
     }
 
     private void updateForActiveTab() {
@@ -836,7 +831,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void prepareSettingsMenu() {
-        jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
+            jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
         jcbmiFonts.setMnemonic('F');
         jcbmiFonts.setToolTipText("Changes font for information bar every 10 minutes");
         jcbmiHighlights = new JCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
@@ -854,6 +849,9 @@ public class SearchBigFile extends AppFrame {
         jcbmiMultiTab = new JCheckBoxMenuItem("Multi tabs", null, configs.getBooleanConfig(Configs.MultiTab.name()));
         jcbmiMultiTab.setMnemonic('u');
         jcbmiMultiTab.setToolTipText("Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
+        jcbmiFixedWidth = new JCheckBoxMenuItem("Fixed width", null, configs.getBooleanConfig(Configs.FixedWidth.name()));
+        jcbmiFixedWidth.setMnemonic('x');
+        jcbmiFixedWidth.setToolTipText("Applies fixed width and applies look to toolbar - change need restart");
         jcbmiReopenLastTabs = new JCheckBoxMenuItem("Reopen Last Tabs", null, configs.getBooleanConfig(Configs.ReopenLastTabs.name()));
         jcbmiReopenLastTabs.setMnemonic('p');
         jcbmiReopenLastTabs.setToolTipText("Reopen last tabs");
@@ -868,6 +866,8 @@ public class SearchBigFile extends AppFrame {
                 true, true, true, false, ignoreBlackAndWhite, this, logger));
         menuSettings.addSeparator();
         menuSettings.add(jcbmiApplyToApp);
+        menuSettings.addSeparator();
+        menuSettings.add(jcbmiFixedWidth);
         menuSettings.addSeparator();
         JMenuItem jmiChangePwd = new JMenuItem("Change Password", 'c');
         jmiChangePwd.addActionListener(e -> showChangePwdScreen(highlightColor));
@@ -1109,6 +1109,12 @@ public class SearchBigFile extends AppFrame {
         searchPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor);
         controlPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor);
 
+        // for tooltip
+        JComponent[] tt = {filePanel, searchPanel, controlPanel, msgPanel, msgButtons,
+                jtbFile, jtbSearch, jtbControls, tabbedPane};
+        Arrays.stream(tt).forEach(t -> Arrays.stream(t.getComponents()).forEach(this::applyTooltipColor));
+        setTabCloseButtonColor ();
+
         TitledBorder[] toTitleColor = {filePanelBorder, searchPanelBorder, controlPanelBorder};
         Arrays.stream(toTitleColor).forEach(t -> t.setTitleColor(highlightTextColor));
 
@@ -1151,6 +1157,33 @@ public class SearchBigFile extends AppFrame {
         // UIManager.put("TabbedPane.selected", selectionColor);
         // tabbedPane.updateUI();
         //SwingUtilities.updateComponentTreeUI(tabbedPane);
+
+    }
+
+    private void setTabCloseButtonColor() {
+        resultTabsData.values().forEach(v -> applyTooltipColor(v.getTabCloseComponent().getTabButton()));
+    }
+
+    private void applyTooltipColor(Component c) {
+        if (c instanceof AppTabbedPane) {
+            ((AppTabbedPane)c).setToolTipColors(selectionTextColor, selectionColor);
+        }
+        if (c instanceof AppTextField) {
+            ((AppTextField)c).setToolTipColors(selectionTextColor, selectionColor);
+        }
+        if (c instanceof JMenuBar) {
+            ((AppMenu)((JMenuBar)c).getMenu(0)).setToolTipColors(selectionTextColor, selectionColor);
+        }
+        if (c instanceof AppButton) {
+            System.out.println(((AppButton)c).getText());
+            ((AppButton)c).setToolTipColors(selectionTextColor, selectionColor);
+        }
+        if (c instanceof AppLabel) {
+            ((AppLabel)c).setToolTipColors(selectionTextColor, selectionColor);
+        }
+        if (c instanceof AppToolBar) {
+            ((AppToolBar)c).setToolTipColors(selectionTextColor, selectionColor);
+        }
     }
 
     private void applyTabCloseCompColor(TabCloseComponent tcc) {
@@ -1906,7 +1939,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public String getFixedWidth() {
-        return fixedWidth + "";
+        return jcbmiFixedWidth.isSelected() + "";
     }
 
     public String getMultiTab() {
