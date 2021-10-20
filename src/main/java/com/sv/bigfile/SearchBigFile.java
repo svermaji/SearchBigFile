@@ -486,7 +486,7 @@ public class SearchBigFile extends AppFrame {
         tabbedPane.addTab("", null, jspHelp);
         ResultTabData rtb = new ResultTabData(tabTitle, tabIdx, this);
         TabRemoveHandler trh = new TabRemoveHandler(tabIdx, tabTitle, false, tabbedPane, this);
-        //trh.getTabLabel().setToolTipText("Displays application help");
+        trh.getTabLabel().setToolTipText("Displays application help");
         rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
         applyTabCloseCompColor(rtb.getTabCloseComponent());
         resultTabsData.put(tabTitle, rtb);
@@ -496,7 +496,7 @@ public class SearchBigFile extends AppFrame {
         tabbedPane.addTab("", null, jspContactMe);
         rtb = new ResultTabData(tabTitle, tabIdx, this);
         trh = new TabRemoveHandler(tabIdx, tabTitle, false, tabbedPane, this);
-        //trh.getTabLabel().setToolTipText("Displays application help");
+        trh.getTabLabel().setToolTipText("Displays application help");
         rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
         applyTabCloseCompColor(rtb.getTabCloseComponent());
         resultTabsData.put(tabTitle, rtb);
@@ -700,7 +700,7 @@ public class SearchBigFile extends AppFrame {
                     resultTabsData.put(title, rtb);
                     tabbedPane.addTab(title, null, rtb.getJspPane(), getFilePath());
                     TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
-                    //trh.getTabLabel().setToolTipText(getFilePath());
+                    trh.getTabLabel().setToolTipText(getFilePath());
                     rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
                     applyTabCloseCompColor(rtb.getTabCloseComponent());
                     activeResultTabData = rtb;
