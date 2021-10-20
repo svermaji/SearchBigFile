@@ -92,7 +92,7 @@ public class SearchBigFile extends AppFrame {
     private TitledBorder filePanelBorder, searchPanelBorder, controlPanelBorder;
     private String filePanelHeading, searchPanelHeading, controlPanelHeading;
     private JScrollPane jspAllOccr;
-    private JTabbedPane tabbedPane;
+    private AppTabbedPane tabbedPane;
     private Map<String, ResultTabData> resultTabsData;
     private ResultTabData activeResultTabData = null;
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
@@ -138,12 +138,13 @@ public class SearchBigFile extends AppFrame {
     private static int fontIdx = 0;
     private static int colorIdx = 0;
 
+    private AppLabel lblHelp, lblContactMe;
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
     private final int MAX_READ_CHAR_LIMIT = 5000;
-    private final int MAX_RESULTS_TAB = 5;
+    private final int MAX_RESULTS_TAB = 7;
     private final int TAB_TITLE_LIMIT = 20;
     private static int maxReadCharTimes = 0;
     private boolean debugAllowed;
@@ -479,9 +480,35 @@ public class SearchBigFile extends AppFrame {
         tabbedPane = new AppTabbedPane();
         //tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
         updateForActiveTab();
-        tabbedPane.addTab("Help", null, jspHelp, "Displays application help");
-        tabbedPane.addTab("Contact Me", null, jspContactMe, "Displays my information");
+
+        int tabIdx = 1;
+        String tabTitle = "Help";
+        tabbedPane.addTab("", null, jspHelp);
+        ResultTabData rtb = new ResultTabData(tabTitle, tabIdx, this);
+        TabRemoveHandler trh = new TabRemoveHandler(tabIdx, tabTitle, false, tabbedPane, this);
+        //trh.getTabLabel().setToolTipText("Displays application help");
+        rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
+        applyTabCloseCompColor(rtb.getTabCloseComponent());
+        resultTabsData.put(tabTitle, rtb);
+
+        tabIdx = 2;
+        tabTitle = "Contact Me";
+        tabbedPane.addTab("", null, jspContactMe);
+        rtb = new ResultTabData(tabTitle, tabIdx, this);
+        trh = new TabRemoveHandler(tabIdx, tabTitle, false, tabbedPane, this);
+        //trh.getTabLabel().setToolTipText("Displays application help");
+        rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
+        applyTabCloseCompColor(rtb.getTabCloseComponent());
+        resultTabsData.put(tabTitle, rtb);
+
+/*
+        lblHelp = new AppLabel("Help", null, null, "Displays application help");
+        tabbedPane.setComponentAt(1, lblHelp);
+        tabbedPane.addTab("", null, jspContactMe, "");
+        lblContactMe = new AppLabel("Contact Me", null, null, "Displays my information");
+        tabbedPane.setComponentAt(2, lblContactMe);
         tabbedPane.addChangeListener(e -> setActiveTabVars());
+*/
 
         bottomPanel = new JPanel(new BorderLayout());
         jspAllOccr = new JScrollPane(createAllOccrTable());
@@ -673,6 +700,7 @@ public class SearchBigFile extends AppFrame {
                     resultTabsData.put(title, rtb);
                     tabbedPane.addTab(title, null, rtb.getJspPane(), getFilePath());
                     TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
+                    //trh.getTabLabel().setToolTipText(getFilePath());
                     rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
                     applyTabCloseCompColor(rtb.getTabCloseComponent());
                     activeResultTabData = rtb;
@@ -831,7 +859,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void prepareSettingsMenu() {
-            jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
+        jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
         jcbmiFonts.setMnemonic('F');
         jcbmiFonts.setToolTipText("Changes font for information bar every 10 minutes");
         jcbmiHighlights = new JCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
@@ -1113,7 +1141,7 @@ public class SearchBigFile extends AppFrame {
         JComponent[] tt = {filePanel, searchPanel, controlPanel, msgPanel, msgButtons,
                 jtbFile, jtbSearch, jtbControls, tabbedPane};
         Arrays.stream(tt).forEach(t -> Arrays.stream(t.getComponents()).forEach(this::applyTooltipColor));
-        setTabCloseButtonColor ();
+        setTabCloseButtonColor();
 
         TitledBorder[] toTitleColor = {filePanelBorder, searchPanelBorder, controlPanelBorder};
         Arrays.stream(toTitleColor).forEach(t -> t.setTitleColor(highlightTextColor));
@@ -1157,32 +1185,38 @@ public class SearchBigFile extends AppFrame {
         // UIManager.put("TabbedPane.selected", selectionColor);
         // tabbedPane.updateUI();
         //SwingUtilities.updateComponentTreeUI(tabbedPane);
-
+        //tabbedPane.repaint();
     }
 
     private void setTabCloseButtonColor() {
-        resultTabsData.values().forEach(v -> applyTooltipColor(v.getTabCloseComponent().getTabButton()));
+        resultTabsData.values().forEach(v -> {
+            if (v.getTabCloseComponent().isClosable()) {
+                applyTooltipColor(v.getTabCloseComponent().getTabButton());
+            }
+        });
+        resultTabsData.values().forEach(v -> applyTooltipColor(v.getTabCloseComponent().getTabLabel()));
+        /*lblHelp.setToolTipColors(selectionTextColor, selectionColor);
+        lblContactMe.setToolTipColors(selectionTextColor, selectionColor);*/
     }
 
     private void applyTooltipColor(Component c) {
         if (c instanceof AppTabbedPane) {
-            ((AppTabbedPane)c).setToolTipColors(selectionTextColor, selectionColor);
+            ((AppTabbedPane) c).setToolTipColors(selectionTextColor, selectionColor);
         }
         if (c instanceof AppTextField) {
-            ((AppTextField)c).setToolTipColors(selectionTextColor, selectionColor);
+            ((AppTextField) c).setToolTipColors(selectionTextColor, selectionColor);
         }
         if (c instanceof JMenuBar) {
-            ((AppMenu)((JMenuBar)c).getMenu(0)).setToolTipColors(selectionTextColor, selectionColor);
+            ((AppMenu) ((JMenuBar) c).getMenu(0)).setToolTipColors(selectionTextColor, selectionColor);
         }
         if (c instanceof AppButton) {
-            System.out.println(((AppButton)c).getText());
-            ((AppButton)c).setToolTipColors(selectionTextColor, selectionColor);
+            ((AppButton) c).setToolTipColors(selectionTextColor, selectionColor);
         }
         if (c instanceof AppLabel) {
-            ((AppLabel)c).setToolTipColors(selectionTextColor, selectionColor);
+            ((AppLabel) c).setToolTipColors(selectionTextColor, selectionColor);
         }
         if (c instanceof AppToolBar) {
-            ((AppToolBar)c).setToolTipColors(selectionTextColor, selectionColor);
+            ((AppToolBar) c).setToolTipColors(selectionTextColor, selectionColor);
         }
     }
 
