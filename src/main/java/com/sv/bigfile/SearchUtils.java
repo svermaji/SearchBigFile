@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 public class SearchUtils {
 
@@ -64,16 +65,30 @@ public class SearchUtils {
 
     private String removeHtml(String text) {
         // need to check this
+        String ls = System.lineSeparator();
+
         text = text.replaceAll(" {4}", "");
         text = Utils.unescape(text);
         text = text.replaceAll("([\\r\\n])", "");
-        text = text.replaceAll("<span><font color=\"blue\">", "");
-        text = text.replaceAll("</font></span>", "");
         text = text.replaceAll("<font color=\"#000000\">", "");
         text = text.replaceAll("</font>", "");
+        text = text.replaceAll(" {2}</body></html>", "");
         text = text.replaceAll("&#160;", Utils.HtmlEsc.SP.getCh());
-        text = text.replaceAll("<br>", System.lineSeparator());
+        text = text.replaceAll("<br>", ls);
 
+        // handling line numbers
+        String toRemove = "</span>";
+        String[] allLines = text.split(ls);
+        StringBuilder sb = new StringBuilder();
+        for (String l : allLines) {
+            if (l.contains(toRemove)) {
+                sb.append(l.substring(l.indexOf(toRemove) + toRemove.length())).append(ls);
+            }
+        }
+
+        text = sb.toString();
+        text = text.replaceAll("<font color=\"#a52a2a\">", "");
+        text = text.replaceAll(" " + ls, ls);
         if (text.contains(BODY_S) && text.contains(BODY_E)) {
             text = text.substring(text.indexOf(BODY_S) + BODY_S.length(), text.indexOf(BODY_E));
         }

@@ -1,0 +1,47 @@
+package com.sv.bigfile.callable;
+
+import com.sv.bigfile.SearchBigFile;
+import com.sv.bigfile.helpers.StartWarnIndicator;
+import com.sv.core.Utils;
+
+import javax.swing.*;
+import java.util.concurrent.Callable;
+
+public class TimerCallable implements Callable<Boolean> {
+
+    private final SearchBigFile sbf;
+
+    public TimerCallable(SearchBigFile sbf) {
+        this.sbf = sbf;
+    }
+
+    @Override
+    public Boolean call() {
+        long timeElapse = 0;
+        do {
+            // Due to multi threading, separate if is imposed
+            if (isReading()) {
+                timeElapse = Utils.getTimeDiffSec(startTime);
+                timeTillNow = timeElapse;
+                String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
+                if ((showWarning || isWarningState())) {
+                    msg += sbf.getProblemMsg();
+                    sbf.debug("Invoking warning indicator.");
+                    SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
+                }
+                if (isErrorState()) {
+                    sbf.logger.warn("Stopping forcefully.");
+                    cancelSearch();
+                }
+                if (isReading()) {
+                    sbf.updateTitle(msg);
+                }
+                logger.debug("Timer callable sleeping now for a second");
+                Utils.sleep(1000, sbf.logger);
+            }
+        } while (isReading());
+
+        logger.info("Timer stopped after " + Utils.addBraces(timeElapse) + " sec");
+        return true;
+    }
+}

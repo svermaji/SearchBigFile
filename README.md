@@ -24,6 +24,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
   * 2.0 - Implemented wrapping, style attributes and support long text in one line
     * Added theme support and key bindings
   * 3.0 - Planned to have multi file search support
+* Now multi tab is supported. 
 * Program stores the last searched file and search string. 
 * Support search as you type
 * Clipboard support via menu
@@ -73,7 +74,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 #### Images of different stages of development/features since day 1
 * Application Present Image<br>
-![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-7-oct-2021.png)
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-19-oct-2021.png)
 
 * First cut<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-first-cut.png)
@@ -104,6 +105,9 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 
 * Error indicator<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-error.png)
+
+* Controls menu<br>
+![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-controls-19-oct-2021.png)
 
 * Auto complete<br>
 ![Image of Yaktocat](https://github.com/svermaji/SearchBigFile/blob/master/app-images/app-image-ac.png)

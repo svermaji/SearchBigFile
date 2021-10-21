@@ -1,4 +1,4 @@
-package com.sv.bigfile.helpers;
+package com.sv.bigfile.task;
 
 import com.sv.bigfile.SearchBigFile;
 

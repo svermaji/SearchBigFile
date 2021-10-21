@@ -1,0 +1,141 @@
+package com.sv.bigfile.callable;
+
+import com.sv.bigfile.SearchBigFile;
+import com.sv.bigfile.SearchStats;
+import com.sv.core.Utils;
+import com.sv.core.logger.MyLogger;
+
+import java.io.*;
+import java.util.concurrent.Callable;
+
+import static com.sv.bigfile.AppConstants.APPEND_MSG_CHUNK;
+import static com.sv.bigfile.AppConstants.ERROR_LIMIT_OCCR;
+import static com.sv.swingui.UIConstants.FONT_SUFFIX;
+import static com.sv.swingui.UIConstants.R_FONT_PREFIX;
+
+public class SearchFileCallable implements Callable<Boolean> {
+
+    private final SearchBigFile sbf;
+
+    public SearchFileCallable(SearchBigFile sbf) {
+        this.sbf = sbf;
+    }
+
+    @Override
+    public Boolean call() {
+        final int BUFFER_SIZE = 200 * 1024;
+        String searchPattern = sbf.processPattern();
+
+        String path = sbf.getFilePath();
+
+        try (InputStream stream = new FileInputStream(path);
+             BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
+        ) {
+            long lineNum = 1, occurrences = 0, time = System.currentTimeMillis();
+            SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
+            SearchBigFile.SearchData searchData = new SearchBigFile.SearchData(stats);
+
+            String line;
+            char c;
+            int i;
+            StringBuilder sb = new StringBuilder();
+            boolean appendLine = false;
+            while ((i = br.read()) != -1) {
+
+                c = (char) i;
+                boolean isNewLineChar = c == '\n';
+                if (!isNewLineChar) {
+                    sb.append(c);
+                }
+                boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
+                if (maxReadCharLimitReached) {
+                    maxReadCharTimes++;
+                }
+
+                if (isNewLineChar || maxReadCharLimitReached) {
+                    stats.setEofLine(appendLine);
+                    line = sb.toString();
+                    sb = new StringBuilder();
+                    stats.setLine(line);
+                    stats.setMatch(sbf.hasOccr(line, searchPattern));
+
+                    if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
+                        searchData.process();
+                        if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                            startThread(msgCallable);
+                        }
+                    }
+                    if (isCancelled()) {
+                        String msg = "---xxx--- Search cancelled ---xxx---";
+                        debug(msg);
+                        qMsgsToAppend.add(addLineEnd(msg));
+                        startThread(msgCallable);
+                        break;
+                    }
+                }
+                if (!appendLine && !stats.isSofFile()) {
+                    appendLine = isNewLineChar;
+                }
+            }
+            if (maxReadCharTimes > 0) {
+                logger.info("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
+                        + Utils.addBraces(maxReadCharTimes) + " times, processing...");
+            }
+            logger.info("File read in " + Utils.getTimeDiffSecMilliStr(time));
+
+            if (!isCancelled()) {
+                time = System.currentTimeMillis();
+                startThread(msgCallable);
+                while (readCounter != insertCounter) {
+                    if (isCancelled()) {
+                        debug("Status is cancelled.  Exiting wait condition.");
+                        break;
+                    }
+                    logger.debug("Waiting for readCounter to be equal insertCounter");
+                    Utils.sleep(200, sbf.logger);
+                }
+                idxMsgsToAppend.clear();
+                logger.info("Time in waiting all message to append is " + Utils.getTimeDiffSecMilliStr(time));
+            }
+            timeTaken = Utils.getTimeDiffSecMilliStr(startTime);
+            lineNums = stats.getLineNum();
+            String result = getSearchResult(path, timeTaken, lineNums, stats.getOccurrences());
+            if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
+                String s = "No match found";
+                sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
+                sbf.showMsg(s, MyLogger.MsgType.WARN);
+            }
+
+            if (isCancelled()) {
+                sbf.updateTitle("Search cancelled - " + result);
+            } else {
+                String msg = "--- Search complete ---";
+                qMsgsToAppend.add(addLineEnd(msg));
+                startThread(msgCallable);
+                sbf.updateTitleAndMsg("Search complete - " + result, getMsgTypeForOpr());
+            }
+            status = SearchBigFile.Status.DONE;
+        } catch (FileNotFoundException e) {
+            searchFailed(e);
+            sbf.fileNotFoundAction();
+        } catch (IOException e) {
+            searchFailed(e);
+        } catch (Exception e) {
+            searchFailed(e);
+            logger.error("ssss ---- xxxx");
+        } finally {
+            sbf.enableControls();
+        }
+
+        finishAction();
+        return true;
+    }
+
+    private void searchFailed(Exception e) {
+        String msg = "ERROR: " + e.getMessage();
+        sbf.logger.error(e.getMessage());
+        sbf.tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
+        sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MyLogger.MsgType.ERROR);
+        status = SearchBigFile.Status.DONE;
+    }
+}

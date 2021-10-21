@@ -1,4 +1,4 @@
-package com.sv.bigfile.helpers;
+package com.sv.bigfile.action;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

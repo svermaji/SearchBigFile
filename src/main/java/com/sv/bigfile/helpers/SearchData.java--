@@ -1,0 +1,55 @@
+package com.sv.bigfile.helpers;
+
+import com.sv.bigfile.SearchStats;
+
+import java.text.NumberFormat;
+
+import static com.sv.bigfile.AppConstants.WARN_LIMIT_OCCR;
+
+// To avoid async order of lines this cannot be worker
+public class SearchData {
+
+    private final int LINES_TO_INFORM = 5_00_000;
+    private final SearchStats stats;
+
+    SearchData(SearchStats stats) {
+        this.stats = stats;
+    }
+
+    public void process() {
+        long lineNum = stats.getLineNum();
+        StringBuilder sb = new StringBuilder();
+
+        boolean sof = stats.isSofFile();
+        boolean eol = stats.isEofLine();
+        if (stats.isMatch()) {
+            int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
+            if (occr > 0) {
+                if (sof) {
+                    sb.append(addOnlyLineNumAndEsc(stats.getLineNum(), ""));
+                    stats.setSofFile(false);
+                }
+                stats.setOccurrences(stats.getOccurrences() + occr);
+                sb.append(escString(stats.getLine()));
+                if (eol && !sof) {
+                    qMsgsToAppend.add(addLineNumAndEscAtStart(stats.getLineNum(), ""));
+                }
+                //TODO: empty lines in read opr
+                qMsgsToAppend.add(sb.toString());
+            }
+        }
+        if (sof || eol) {
+            stats.setLineNum(lineNum + 1);
+        }
+
+        if (lineNum % LINES_TO_INFORM == 0) {
+            logger.info("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
+        }
+
+        occrTillNow = stats.getOccurrences();
+        linesTillNow = stats.getLineNum();
+        if (!showWarning && stats.getOccurrences() > WARN_LIMIT_OCCR) {
+            showWarning = true;
+        }
+    }
+}
