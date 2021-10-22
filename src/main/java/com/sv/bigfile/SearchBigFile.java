@@ -117,7 +117,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
     private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
-            jcbmiClipboardSupport, jcbmiFixedWidth, jcbmiMultiTab, jcbmiReopenLastTabs;
+            jcbmiClipboardSupport, jcbmiFixedWidth, jcbmiDebugEnabled, jcbmiMultiTab, jcbmiReopenLastTabs;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -147,7 +147,7 @@ public class SearchBigFile extends AppFrame {
     private final int MAX_RESULTS_TAB = 7;
     private final int TAB_TITLE_LIMIT = 20;
     private static int maxReadCharTimes = 0;
-    private boolean debugAllowed;
+    private boolean debugEnabled;
     private String searchStr, recentFilesStr, recentSearchesStr;
     private long timeTillNow;
     private long occrTillNow;
@@ -186,8 +186,8 @@ public class SearchBigFile extends AppFrame {
         logger = MyLogger.createLogger(getClass());
         searchUtils = new SearchUtils(logger);
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
-        debugAllowed = getBooleanCfg(Configs.DebugEnabled);
-        logger.setDebug(debugAllowed);
+        debugEnabled = getBooleanCfg(Configs.DebugEnabled);
+        logger.setDebug(debugEnabled);
         printConfigs();
 
         super.setLogger(logger);
@@ -479,13 +479,12 @@ public class SearchBigFile extends AppFrame {
         prepareSettingsMenu();
 
         tabbedPane = new AppTabbedPane();
-        //tabbedPane.addTab("Result", null, jspResults, "Displays Search/Read results");
         updateForActiveTab();
 
         int tabIdx = 1;
         String tabTitle = "Help";
         tabbedPane.addTab("", null, jspHelp);
-        ResultTabData rtb = new ResultTabData(tabTitle, tabIdx, this);
+        ResultTabData rtb = new ResultTabData(tabIdx, tabTitle, this);
         TabRemoveHandler trh = new TabRemoveHandler(tabIdx, tabTitle, false, tabbedPane, this);
         trh.getTabLabel().setToolTipText("Displays application help");
         rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
@@ -495,21 +494,14 @@ public class SearchBigFile extends AppFrame {
         tabIdx = 2;
         tabTitle = "Contact Me";
         tabbedPane.addTab("", null, jspContactMe);
-        rtb = new ResultTabData(tabTitle, tabIdx, this);
+        rtb = new ResultTabData(tabIdx, tabTitle, this);
         trh = new TabRemoveHandler(tabIdx, tabTitle, false, tabbedPane, this);
         trh.getTabLabel().setToolTipText("Displays application help");
         rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
         applyTabCloseCompColor(rtb.getTabCloseComponent());
         resultTabsData.put(tabTitle, rtb);
 
-/*
-        lblHelp = new AppLabel("Help", null, null, "Displays application help");
-        tabbedPane.setComponentAt(1, lblHelp);
-        tabbedPane.addTab("", null, jspContactMe, "");
-        lblContactMe = new AppLabel("Contact Me", null, null, "Displays my information");
-        tabbedPane.setComponentAt(2, lblContactMe);
         tabbedPane.addChangeListener(e -> setActiveTabVars());
-*/
 
         bottomPanel = new JPanel(new BorderLayout());
         jspAllOccr = new JScrollPane(createAllOccrTable());
@@ -542,7 +534,6 @@ public class SearchBigFile extends AppFrame {
         setControlsToEnable();
         setupHelp();
         setupContactMe();
-        setDragNDrop();
         addBindings();
 
         setToCenter();
@@ -579,6 +570,10 @@ public class SearchBigFile extends AppFrame {
         StyleConstants.setBackground(nonhighlightSAS, Color.white);
 
         new Timer().schedule(new ReloadLastTabsTask(this), SEC_1 * 2);
+
+        // setting colors here if window is not active then it will set only when color changes
+        StyleConstants.setForeground(highlightSAS, Color.white);
+        StyleConstants.setBackground(highlightSAS, Color.blue);
     }
 
     public void reloadLastTabs() {
@@ -630,6 +625,7 @@ public class SearchBigFile extends AppFrame {
                 }
             }
         }
+        log("setActiveTabVars: active tab set to " + activeResultTabData.toString());
     }
 
     private synchronized void reIndexTabs() {
@@ -668,7 +664,7 @@ public class SearchBigFile extends AppFrame {
         boolean tabExists = false;
         String title = getTitleForFilePath();
         log("addOrSetActiveTab: map size " + Utils.addBraces(resultTabsData.size())
-                + " and activeResultTabData " + activeResultTabData);
+                + " and present activeResultTabData " + activeResultTabData);
         ResultTabData rtb;
         String activeTitle = "";
         int activeIdx = -1;
@@ -697,9 +693,10 @@ public class SearchBigFile extends AppFrame {
                         }
                     }
                     int tabsCnt = tabbedPane.getTabCount();
-                    rtb = new ResultTabData(title, tabsCnt, this);
+                    rtb = new ResultTabData(tabsCnt, title, this);
                     resultTabsData.put(title, rtb);
-                    tabbedPane.addTab(title, null, rtb.getJspPane(), getFilePath());
+                    // not adding tooltip on tab as color not applied over it
+                    tabbedPane.addTab(title, null, rtb.getJspPane());
                     TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
                     trh.getTabLabel().setToolTipText(getFilePath());
                     rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
@@ -711,13 +708,19 @@ public class SearchBigFile extends AppFrame {
             }
         } else {
             if (resultTabsData.size() == 0) {
-                rtb = new ResultTabData(title, 0, this);
+                int tabIdx = 0;
+                rtb = new ResultTabData(tabIdx, title, this);
+                tabbedPane.addTab(title, null, rtb.getJspPane());
+                TabRemoveHandler trh = new TabRemoveHandler(tabIdx, title, false, tabbedPane, this);
+                trh.getTabLabel().setToolTipText(getFilePath());
+                rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabIdx, trh, tabbedPane));
+                applyTabCloseCompColor(rtb.getTabCloseComponent());
                 resultTabsData.put(title, rtb);
-                tabbedPane.addTab(title, null, rtb.getJspPane(), getFilePath());
                 activeResultTabData = rtb;
                 selectTab(activeResultTabData.getJspPane());
             }
         }
+        log("addOrSetActiveTab: now activeResultTabData is " + activeResultTabData);
     }
 
     public void trackMemory() {
@@ -742,8 +745,7 @@ public class SearchBigFile extends AppFrame {
         return s;
     }
 
-    private void setDragNDrop() {
-        JComponent[] addBindingsTo = {tpContactMe, tpHelp, tpResults, lblMsg, btnShowAll, btnMemory, msgPanel};
+    private void setDragNDrop(JComponent[] addBindingsTo) {
         Arrays.stream(addBindingsTo).forEach(j -> {
             // to make drag n drop specific set below method for txtFilePath
             j.setDropTarget(new DropTarget() {
@@ -786,6 +788,8 @@ public class SearchBigFile extends AppFrame {
     private void addBindingsToNewEditors() {
         addKeyBindings(resultTabsData.values().stream().map(ResultTabData::getJspPane)
                 .filter(Objects::nonNull).toArray(JComponent[]::new));
+        addKeyBindings(resultTabsData.values().stream().map(ResultTabData::getResultPane)
+                .filter(Objects::nonNull).toArray(JComponent[]::new));
     }
 
     private void addBindings() {
@@ -794,7 +798,6 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void addKeyBindings(JComponent[] addBindingsTo) {
-
         Action actionTxtSearch = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 SwingUtils.getInFocus(txtSearch);
@@ -833,6 +836,7 @@ public class SearchBigFile extends AppFrame {
         keyActionDetails.add(new KeyActionDetails(KeyEvent.VK_END, InputEvent.CTRL_DOWN_MASK, actionCtrlEnd));
 
         SwingUtils.addKeyBindings(addBindingsTo, keyActionDetails);
+        setDragNDrop(addBindingsTo);
     }
 
     // This will be called by reflection from SwingUI jar
@@ -881,6 +885,9 @@ public class SearchBigFile extends AppFrame {
         jcbmiFixedWidth = new JCheckBoxMenuItem("Fixed width", null, configs.getBooleanConfig(Configs.FixedWidth.name()));
         jcbmiFixedWidth.setMnemonic('x');
         jcbmiFixedWidth.setToolTipText("Applies fixed width and applies look to toolbar - change need restart");
+        jcbmiDebugEnabled = new JCheckBoxMenuItem("Enable debug", null, configs.getBooleanConfig(Configs.DebugEnabled.name()));
+        jcbmiDebugEnabled.setMnemonic('g');
+        jcbmiDebugEnabled.setToolTipText("Enable debug logging - change need restart");
         jcbmiReopenLastTabs = new JCheckBoxMenuItem("Reopen Last Tabs", null, configs.getBooleanConfig(Configs.ReopenLastTabs.name()));
         jcbmiReopenLastTabs.setMnemonic('p');
         jcbmiReopenLastTabs.setToolTipText("Reopen last tabs");
@@ -908,6 +915,8 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiClipboardSupport);
         menuSettings.add(jcbmiMultiTab);
         menuSettings.add(jcbmiReopenLastTabs);
+        menuSettings.addSeparator();
+        menuSettings.add(jcbmiDebugEnabled);
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
@@ -1142,6 +1151,8 @@ public class SearchBigFile extends AppFrame {
         JComponent[] tt = {filePanel, searchPanel, controlPanel, msgPanel, msgButtons,
                 jtbFile, jtbSearch, jtbControls, tabbedPane};
         Arrays.stream(tt).forEach(t -> Arrays.stream(t.getComponents()).forEach(this::applyTooltipColor));
+        resultTabsData.values().stream().map(ResultTabData::getTabCloseComponent)
+                .filter(Objects::nonNull).forEach(this::applyTooltipColor);
         setTabCloseButtonColor();
 
         TitledBorder[] toTitleColor = {filePanelBorder, searchPanelBorder, controlPanelBorder};
@@ -1196,34 +1207,16 @@ public class SearchBigFile extends AppFrame {
             }
         });
         resultTabsData.values().forEach(v -> applyTooltipColor(v.getTabCloseComponent().getTabLabel()));
-        /*lblHelp.setToolTipColors(selectionTextColor, selectionColor);
-        lblContactMe.setToolTipColors(selectionTextColor, selectionColor);*/
     }
 
     private void applyTooltipColor(Component c) {
-        if (c instanceof AppTabbedPane) {
-            ((AppTabbedPane) c).setToolTipColors(selectionTextColor, selectionColor);
-        }
-        if (c instanceof AppTextField) {
-            ((AppTextField) c).setToolTipColors(selectionTextColor, selectionColor);
-        }
-        if (c instanceof JMenuBar) {
-            ((AppMenu) ((JMenuBar) c).getMenu(0)).setToolTipColors(selectionTextColor, selectionColor);
-        }
-        if (c instanceof AppButton) {
-            ((AppButton) c).setToolTipColors(selectionTextColor, selectionColor);
-        }
-        if (c instanceof AppLabel) {
-            ((AppLabel) c).setToolTipColors(selectionTextColor, selectionColor);
-        }
-        if (c instanceof AppToolBar) {
-            ((AppToolBar) c).setToolTipColors(selectionTextColor, selectionColor);
-        }
+        SwingUtils.applyTooltipColor(c, selectionTextColor, selectionColor);
     }
 
     private void applyTabCloseCompColor(TabCloseComponent tcc) {
         if (tcc != null) {
             tcc.setColors(selectionTextColor, selectionColor, highlightTextColor, highlightColor);
+            setTabCloseButtonColor();
         }
     }
 
@@ -2034,7 +2027,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public String getDebugEnabled() {
-        return debugAllowed + "";
+        return jcbmiDebugEnabled.isSelected() + "";
     }
 
     public void showMsgAsInfo(String msg) {

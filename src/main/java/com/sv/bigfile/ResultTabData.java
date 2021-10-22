@@ -47,7 +47,7 @@ public class ResultTabData {
     // LIFO
     private Queue<String> qMsgsToAppend;
 
-    public ResultTabData(String title, int tabIdx, SearchBigFile sbf) {
+    public ResultTabData(int tabIdx, String title, SearchBigFile sbf) {
         this.title = title;
         this.tabIdx = tabIdx;
         this.sbf = sbf;
