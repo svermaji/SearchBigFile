@@ -884,13 +884,13 @@ public class SearchBigFile extends AppFrame {
         jcbmiMultiTab.setToolTipText("Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
         jcbmiFixedWidth = new AppCheckBoxMenuItem("Fixed width", null, configs.getBooleanConfig(Configs.FixedWidth.name()));
         jcbmiFixedWidth.setMnemonic('x');
-        jcbmiFixedWidth.setToolTipText("Applies fixed width and applies look to toolbar - change need restart");
+        jcbmiFixedWidth.setToolTipText("Applies fixed width and look to toolbar, use only when UI goes off for menu buttons - change need restart");
         jcbmiDebugEnabled = new AppCheckBoxMenuItem("Enable debug", null, configs.getBooleanConfig(Configs.DebugEnabled.name()));
         jcbmiDebugEnabled.setMnemonic('g');
         jcbmiDebugEnabled.setToolTipText("Enable debug logging - change need restart");
         jcbmiReopenLastTabs = new AppCheckBoxMenuItem("Reopen Last Tabs", null, configs.getBooleanConfig(Configs.ReopenLastTabs.name()));
         jcbmiReopenLastTabs.setMnemonic('p');
-        jcbmiReopenLastTabs.setToolTipText("Reopen last tabs");
+        jcbmiReopenLastTabs.setToolTipText("Reopen last opened tabs at restart - change need restart");
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -903,21 +903,21 @@ public class SearchBigFile extends AppFrame {
         menuSettings.addSeparator();
         menuSettings.add(jcbmiApplyToApp);
         menuSettings.addSeparator();
-        menuSettings.add(jcbmiFixedWidth);
-        menuSettings.addSeparator();
         AppMenuItem jmiChangePwd = new AppMenuItem("Change Password", 'c');
         jmiChangePwd.setToolTipText("Change password for lock screen");
         jmiChangePwd.addActionListener(e -> showChangePwdScreen(highlightColor));
         AppMenuItem jmiLock = new AppMenuItem("Lock screen", 'o');
         jmiLock.setToolTipText("Lock screen now. Password required to unlock");
         jmiLock.addActionListener(e -> showLockScreen(highlightColor));
+        menuSettings.add(jcbmiMultiTab);
+        menuSettings.add(jcbmiReopenLastTabs);
+        menuSettings.addSeparator();
         menuSettings.add(jmiChangePwd);
         menuSettings.add(jmiLock);
         menuSettings.add(jcbmiAutoLock);
         menuSettings.add(jcbmiClipboardSupport);
-        menuSettings.add(jcbmiMultiTab);
-        menuSettings.add(jcbmiReopenLastTabs);
         menuSettings.addSeparator();
+        menuSettings.add(jcbmiFixedWidth);
         menuSettings.add(jcbmiDebugEnabled);
 
         // setting font from config
