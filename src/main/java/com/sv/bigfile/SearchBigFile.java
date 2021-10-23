@@ -478,7 +478,7 @@ public class SearchBigFile extends AppFrame {
 
         prepareSettingsMenu();
 
-        tabbedPane = new AppTabbedPane();
+        tabbedPane = new AppTabbedPane(true);
         updateForActiveTab();
 
         int tabIdx = 1;
@@ -625,7 +625,8 @@ public class SearchBigFile extends AppFrame {
                 }
             }
         }
-        log("setActiveTabVars: active tab set to " + activeResultTabData.toString());
+        log("setActiveTabVars: active tab set to " +
+                (activeResultTabData == null ? null : activeResultTabData.toString()));
     }
 
     private synchronized void reIndexTabs() {
