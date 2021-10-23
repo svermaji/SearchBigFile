@@ -116,7 +116,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLDocument[] htmlDocs;
     private HTMLEditorKit kit;
     private JCheckBox jcbMatchCase, jcbWholeWord;
-    private JCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
+    private AppCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
             jcbmiClipboardSupport, jcbmiFixedWidth, jcbmiDebugEnabled, jcbmiMultiTab, jcbmiReopenLastTabs;
     private JComboBox<Integer> cbLastN;
 
@@ -566,14 +566,14 @@ public class SearchBigFile extends AppFrame {
             windowChecks.add(WindowChecks.CLIPBOARD);
         }
         applyWindowActiveCheck(windowChecks.toArray(new WindowChecks[0]));
-        StyleConstants.setForeground(nonhighlightSAS, Color.black);
-        StyleConstants.setBackground(nonhighlightSAS, Color.white);
-
-        new Timer().schedule(new ReloadLastTabsTask(this), SEC_1 * 2);
 
         // setting colors here if window is not active then it will set only when color changes
+        StyleConstants.setForeground(nonhighlightSAS, Color.black);
+        StyleConstants.setBackground(nonhighlightSAS, Color.white);
         StyleConstants.setForeground(highlightSAS, Color.white);
         StyleConstants.setBackground(highlightSAS, Color.blue);
+
+        new Timer().schedule(new ReloadLastTabsTask(this), SEC_1 * 2);
     }
 
     public void reloadLastTabs() {
@@ -663,8 +663,6 @@ public class SearchBigFile extends AppFrame {
     private void addOrSetActiveTab() {
         boolean tabExists = false;
         String title = getTitleForFilePath();
-        log("addOrSetActiveTab: map size " + Utils.addBraces(resultTabsData.size())
-                + " and present activeResultTabData " + activeResultTabData);
         ResultTabData rtb;
         String activeTitle = "";
         int activeIdx = -1;
@@ -672,7 +670,9 @@ public class SearchBigFile extends AppFrame {
             activeTitle = activeResultTabData.getTitle();
             activeIdx = activeResultTabData.getTabIdx();
         }
-        log("addOrSetActiveTab: activeTitle " + Utils.addBraces(activeTitle)
+        log("addOrSetActiveTab: map size " + Utils.addBraces(resultTabsData.size())
+                + " and present activeResultTabData " + activeResultTabData
+                + ", activeTitle " + Utils.addBraces(activeTitle)
                 + " and activeIdx " + Utils.addBraces(activeIdx));
         activeResultTabData = null;
         if (jcbmiMultiTab.isSelected()) {
@@ -720,7 +720,7 @@ public class SearchBigFile extends AppFrame {
                 selectTab(activeResultTabData.getJspPane());
             }
         }
-        log("addOrSetActiveTab: now activeResultTabData is " + activeResultTabData);
+        log("addOrSetActiveTab: activeResultTabData set as " + activeResultTabData);
     }
 
     public void trackMemory() {
@@ -734,7 +734,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    //TODO: close other tabs and tooltip color
+    //TODO: close other tabs
     private String checkSep(String s) {
         if (!s.startsWith(SEPARATOR)) {
             s = SEPARATOR + s;
@@ -864,31 +864,31 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void prepareSettingsMenu() {
-        jcbmiFonts = new JCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
+        jcbmiFonts = new AppCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
         jcbmiFonts.setMnemonic('F');
         jcbmiFonts.setToolTipText("Changes font for information bar every 10 minutes");
-        jcbmiHighlights = new JCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
+        jcbmiHighlights = new AppCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
         jcbmiHighlights.setMnemonic('H');
         jcbmiHighlights.setToolTipText("Changes colors of highlighted text, selected-text and selected background every 10 minutes");
-        jcbmiApplyToApp = new JCheckBoxMenuItem("Apply color to App", null, getBooleanCfg(Configs.ApplyColorToApp));
+        jcbmiApplyToApp = new AppCheckBoxMenuItem("Apply color to App", null, getBooleanCfg(Configs.ApplyColorToApp));
         jcbmiApplyToApp.setMnemonic('y');
         jcbmiApplyToApp.setToolTipText("Changes colors of complete application whenever highlight color changes");
-        jcbmiAutoLock = new JCheckBoxMenuItem("Auto Lock", null, configs.getBooleanConfig(Configs.AutoLock.name()));
+        jcbmiAutoLock = new AppCheckBoxMenuItem("Auto Lock", null, configs.getBooleanConfig(Configs.AutoLock.name()));
         jcbmiAutoLock.setMnemonic('L');
         jcbmiAutoLock.setToolTipText("Auto Lock App if idle for 10 min - change need restart");
-        jcbmiClipboardSupport = new JCheckBoxMenuItem("Clipboard Support", null, configs.getBooleanConfig(Configs.ClipboardSupport.name()));
+        jcbmiClipboardSupport = new AppCheckBoxMenuItem("Clipboard Support", null, configs.getBooleanConfig(Configs.ClipboardSupport.name()));
         jcbmiClipboardSupport.setMnemonic('b');
         jcbmiClipboardSupport.setToolTipText("Clipboard support (to use copied text as search file) - change need restart");
-        jcbmiMultiTab = new JCheckBoxMenuItem("Multi tabs", null, configs.getBooleanConfig(Configs.MultiTab.name()));
+        jcbmiMultiTab = new AppCheckBoxMenuItem("Multi tabs", null, configs.getBooleanConfig(Configs.MultiTab.name()));
         jcbmiMultiTab.setMnemonic('u');
         jcbmiMultiTab.setToolTipText("Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
-        jcbmiFixedWidth = new JCheckBoxMenuItem("Fixed width", null, configs.getBooleanConfig(Configs.FixedWidth.name()));
+        jcbmiFixedWidth = new AppCheckBoxMenuItem("Fixed width", null, configs.getBooleanConfig(Configs.FixedWidth.name()));
         jcbmiFixedWidth.setMnemonic('x');
         jcbmiFixedWidth.setToolTipText("Applies fixed width and applies look to toolbar - change need restart");
-        jcbmiDebugEnabled = new JCheckBoxMenuItem("Enable debug", null, configs.getBooleanConfig(Configs.DebugEnabled.name()));
+        jcbmiDebugEnabled = new AppCheckBoxMenuItem("Enable debug", null, configs.getBooleanConfig(Configs.DebugEnabled.name()));
         jcbmiDebugEnabled.setMnemonic('g');
         jcbmiDebugEnabled.setToolTipText("Enable debug logging - change need restart");
-        jcbmiReopenLastTabs = new JCheckBoxMenuItem("Reopen Last Tabs", null, configs.getBooleanConfig(Configs.ReopenLastTabs.name()));
+        jcbmiReopenLastTabs = new AppCheckBoxMenuItem("Reopen Last Tabs", null, configs.getBooleanConfig(Configs.ReopenLastTabs.name()));
         jcbmiReopenLastTabs.setMnemonic('p');
         jcbmiReopenLastTabs.setToolTipText("Reopen last tabs");
 
@@ -905,9 +905,11 @@ public class SearchBigFile extends AppFrame {
         menuSettings.addSeparator();
         menuSettings.add(jcbmiFixedWidth);
         menuSettings.addSeparator();
-        JMenuItem jmiChangePwd = new JMenuItem("Change Password", 'c');
+        AppMenuItem jmiChangePwd = new AppMenuItem("Change Password", 'c');
+        jmiChangePwd.setToolTipText("Change password for lock screen");
         jmiChangePwd.addActionListener(e -> showChangePwdScreen(highlightColor));
-        JMenuItem jmiLock = new JMenuItem("Lock screen", 'o');
+        AppMenuItem jmiLock = new AppMenuItem("Lock screen", 'o');
+        jmiLock.setToolTipText("Lock screen now. Password required to unlock");
         jmiLock.addActionListener(e -> showLockScreen(highlightColor));
         menuSettings.add(jmiChangePwd);
         menuSettings.add(jmiLock);
@@ -1227,7 +1229,7 @@ public class SearchBigFile extends AppFrame {
         for (String a : arr) {
             if (Utils.hasValue(a)) {
                 char ch = (char) i;
-                JMenuItem mi = new JMenuItem(ch + SP_DASH_SP + a);
+                AppMenuItem mi = new AppMenuItem(ch + SP_DASH_SP + a);
                 mi.addActionListener(e -> txtF.setText(a));
                 if (i <= 'z') {
                     mi.setMnemonic(i++);
@@ -1238,7 +1240,7 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    private void addActionOnMenu(AbstractAction action, JMenuItem mi, char keycode, String mapKey) {
+    private void addActionOnMenu(AbstractAction action, AppMenuItem mi, char keycode, String mapKey) {
         InputMap im = mi.getInputMap();
         im.put(KeyStroke.getKeyStroke(keycode, 0), mapKey);
         ActionMap am = mi.getActionMap();
@@ -1478,7 +1480,7 @@ public class SearchBigFile extends AppFrame {
 
     public Font getFontForEditor(String sizeStr) {
         Font retVal = SwingUtils.getPlainCalibriFont(Utils.hasValue(sizeStr) ? Integer.parseInt(sizeStr) : PREFERRED_FONT_SIZE);
-        logger.info("Returning " + getFontDetail(retVal));
+        logger.debug("Returning " + getFontDetail(retVal));
         return retVal;
     }
 
@@ -1658,7 +1660,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void printMemoryDetails() {
-        debug(getMemoryDetails());
+        log(getMemoryDetails());
     }
 
     private String getMemoryDetails() {
@@ -2086,7 +2088,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void printCounters() {
-        logger.info("insertCounter [" + insertCounter
+        logger.debug("insertCounter [" + insertCounter
                 + "], readCounter [" + readCounter
                 + "], qMsgsToAppend size [" + qMsgsToAppend.size()
                 + "], idxMsgsToAppend size [" + idxMsgsToAppend.size()
@@ -2471,7 +2473,6 @@ public class SearchBigFile extends AppFrame {
                         maxReadCharTimes++;
                     }
                     boolean isNewLineChar = c == '\n';
-                    // TODO: check how to avoid \n at start for READ opr only
                     if (isNewLineChar || maxReadCharLimitReached) {
 
                         if (!isNewLineChar) {
@@ -2483,11 +2484,6 @@ public class SearchBigFile extends AppFrame {
                         }
 
                         occr += calculateOccr(sb.toString(), searchPattern);
-                        // todo check if this block is needed
-                        /*if (isNewLineChar) {
-                            // to handle \n
-                            processForRead(readLines, "", occr, false);
-                        }*/
                         processForRead(readLines, sb.toString(), occr, isNewLineChar);
 
                         sb = new StringBuilder();
@@ -2623,7 +2619,6 @@ public class SearchBigFile extends AppFrame {
                     if (eol && !sof) {
                         qMsgsToAppend.add(addLineNumAndEscAtStart(stats.getLineNum(), ""));
                     }
-                    //TODO: empty lines in read opr
                     qMsgsToAppend.add(sb.toString());
                 }
             }
@@ -2632,7 +2627,7 @@ public class SearchBigFile extends AppFrame {
             }
 
             if (lineNum % LINES_TO_INFORM == 0) {
-                logger.info("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
+                logger.debug("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
             }
 
             occrTillNow = stats.getOccurrences();

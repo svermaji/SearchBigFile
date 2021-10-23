@@ -56,7 +56,6 @@ public class LastNRead implements Callable<Boolean> {
                     maxReadCharTimes++;
                 }
                 boolean isNewLineChar = c == '\n';
-                // TODO: check how to avoid \n at start for READ opr only
                 if (isNewLineChar || maxReadCharLimitReached) {
 
                     if (!isNewLineChar) {

@@ -14,7 +14,7 @@ public class StartClipboardTask extends TimerTask {
 
     @Override
     public void run() {
-        sbf.log("Starting clipboard action");
+        sbf.debug("Starting clipboard action");
         sbf.copyClipboard(sbf.getLogger());
     }
 }
