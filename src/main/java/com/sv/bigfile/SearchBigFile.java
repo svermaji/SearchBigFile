@@ -98,7 +98,7 @@ public class SearchBigFile extends AppFrame {
     private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
     private AppToolBar jtbFile, jtbSearch, jtbControls, msgButtons;
     private JPanel msgPanel;
-    private JLabel lblMsg;
+    private JLabel lblMsg, lblFilePath, lblSearch;
     private JButton btnShowAll, btnMemory, btnListRS, btnListRF;
     private JButton btnPlusFont, btnMinusFont, btnResetFont, btnLock;
     private JButton btnFileOpen, btnGoTop, btnGoBottom, btnNextOccr, btnPreOccr, btnFind, btnHelp;
@@ -115,7 +115,7 @@ public class SearchBigFile extends AppFrame {
     private HTMLDocument htmlDoc;
     private HTMLDocument[] htmlDocs;
     private HTMLEditorKit kit;
-    private JCheckBox jcbMatchCase, jcbWholeWord;
+    private AppCheckBox jcbMatchCase, jcbWholeWord;
     private AppCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
             jcbmiClipboardSupport, jcbmiFixedWidth, jcbmiDebugEnabled, jcbmiMultiTab, jcbmiReopenLastTabs;
     private JComboBox<Integer> cbLastN;
@@ -224,7 +224,7 @@ public class SearchBigFile extends AppFrame {
         if (fixedWidth) {
             txtFilePath.setMaximumSize(new Dimension(150, TXT_HEIGHT));
         }
-        AppLabel lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
+        lblFilePath = new AppLabel(uin.name, txtFilePath, uin.mnemonic);
         uin = UIName.BTN_FILE;
         btnFileOpen = new AppButton(uin.name, uin.mnemonic, uin.tip);// no need as image //, "", true);
         btnFileOpen.addActionListener(e -> openFile());
@@ -233,11 +233,11 @@ public class SearchBigFile extends AppFrame {
         btnListRF = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnListRF.addActionListener(e -> showListRF());
         uin = UIName.JCB_MATCHCASE;
-        jcbMatchCase = new JCheckBox(uin.name, getBooleanCfg(Configs.MatchCase));
+        jcbMatchCase = new AppCheckBox(uin.name, getBooleanCfg(Configs.MatchCase));
         jcbMatchCase.setMnemonic(uin.mnemonic);
         jcbMatchCase.setToolTipText(uin.tip);
         uin = UIName.JCB_WHOLEWORD;
-        jcbWholeWord = new JCheckBox(uin.name, getBooleanCfg(Configs.WholeWord));
+        jcbWholeWord = new AppCheckBox(uin.name, getBooleanCfg(Configs.WholeWord));
         jcbWholeWord.setMnemonic(uin.mnemonic);
         jcbWholeWord.setToolTipText(uin.tip);
 
@@ -291,7 +291,7 @@ public class SearchBigFile extends AppFrame {
             }
         });
         uin = UIName.LBL_SEARCH;
-        AppLabel lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
+        lblSearch = new AppLabel(uin.name, txtSearch, uin.mnemonic);
         uin = UIName.BTN_SEARCH;
         btnSearch = new AppButton(uin.name, uin.mnemonic);
         btnSearch.addActionListener(evt -> searchFile());
@@ -595,6 +595,7 @@ public class SearchBigFile extends AppFrame {
                     break;
                 }
             }
+            updateMsgAndTip();
         }
         enableControls();
         setTabCloseButtonColor();
@@ -1231,17 +1232,20 @@ public class SearchBigFile extends AppFrame {
             if (Utils.hasValue(a)) {
                 char ch = (char) i;
                 AppMenuItem mi = new AppMenuItem(ch + SP_DASH_SP + a);
-                mi.addActionListener(e -> txtF.setText(a));
+                mi.addActionListener(e -> {
+                    txtF.setText(a);
+                    updateMsgAndTip();
+                });
                 if (i <= 'z') {
                     mi.setMnemonic(i++);
-                    addActionOnMenu(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
+                    addKeyMapToMenuItem(new RecentMenuAction(txtF, a), mi, ch, mapKey + ch);
                 }
                 m.add(mi);
             }
         }
     }
 
-    private void addActionOnMenu(AbstractAction action, AppMenuItem mi, char keycode, String mapKey) {
+    private void addKeyMapToMenuItem(AbstractAction action, AppMenuItem mi, char keycode, String mapKey) {
         InputMap im = mi.getInputMap();
         im.put(KeyStroke.getKeyStroke(keycode, 0), mapKey);
         ActionMap am = mi.getActionMap();
@@ -1637,8 +1641,16 @@ public class SearchBigFile extends AppFrame {
         return new Integer[]{100, 200, 500, 1000, 2000, 3000, 4000, 5000};
     }
 
+    public void updateOnChangeToolTips() {
+        lblFilePath.setToolTipText(getFilePath());
+        txtFilePath.setToolTipText(getFilePath());
+        lblSearch.setToolTipText("Search/Read: " + getSearchString());
+    }
+
     private void resetForNewSearch() {
         debug("reset for new search");
+
+        updateOnChangeToolTips();
         hideHelp();
         printMemoryDetails();
         insertCounter = 0;
@@ -1703,9 +1715,14 @@ public class SearchBigFile extends AppFrame {
         showMsgAsInfo("Search pattern set as [" + s + "]");
     }
 
-    private void setFileToSearch(String s) {
+    public void setFileToSearch(String s) {
         txtFilePath.setText(s);
-        showMsgAsInfo("File set as [" + s + "]");
+        updateMsgAndTip();
+    }
+
+    private void updateMsgAndTip() {
+        showMsgAsInfo("File set [" + getFilePath() + "] and search set [" + getSearchString() + "]");
+        updateOnChangeToolTips();
     }
 
     private String[] getFiles() {

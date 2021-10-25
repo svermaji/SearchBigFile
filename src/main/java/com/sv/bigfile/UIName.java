@@ -7,7 +7,7 @@ import java.util.List;
 
 public enum UIName {
     LBL_FILE("File", 'F'),
-    BTN_FILE("...", 'O', "Select file from browser."),
+    BTN_FILE("...", 'O', "Open file"),
     BTN_LOCK("<html>&#x1F512;</html>", 'K', "Lock the screen"),
     BTN_CHNG_PWD("<html>&#x1F511;</html>", 'G', "Change password"),
     LBL_RFILES("Recent", 'R', "Recent used files list."),
