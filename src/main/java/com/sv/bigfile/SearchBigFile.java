@@ -105,6 +105,7 @@ public class SearchBigFile extends AppFrame {
     private JButton btnSearch, btnLastN, btnCancel;
     private AppTextField txtFilePath, txtSearch;
     private JTextPane tpResults, tpHelp, tpContactMe;
+    // todo: for multi thread - incomplete
     private JTextPane[] tpResult;
     private final SimpleAttributeSet highlightSAS = new SimpleAttributeSet();
     private final SimpleAttributeSet nonhighlightSAS = new SimpleAttributeSet();
@@ -138,7 +139,6 @@ public class SearchBigFile extends AppFrame {
     private static int fontIdx = 0;
     private static int colorIdx = 0;
 
-    private AppLabel lblHelp, lblContactMe;
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
@@ -616,7 +616,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setActiveTabVars() {
-        if (resultTabsData.size() > 0) {
+        if (resultTabsData.size() > 0 && tabbedPane.getSelectedIndex() > -1) {
             String title = tabbedPane.getTitleAt(tabbedPane.getSelectedIndex());
             if (activeResultTabData == null || !activeResultTabData.getTitle().equalsIgnoreCase(title)) {
                 activeResultTabData = resultTabsData.get(title);
@@ -787,11 +787,38 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    private void updateForTabPopupMenu() {
+        JPopupMenu pm = tabbedPane.getPopupMenu();
+        int tc = tabbedPane.getTabCount();
+        for (int i = 0; i < tc; i++) {
+            if (tabbedPane.getTabComponentAt(i) instanceof TabCloseComponent) {
+                JLabel lbl = ((TabCloseComponent) tabbedPane.getTabComponentAt(i)).getTabLabel();
+                lbl.setComponentPopupMenu(pm);
+                lbl.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        super.mouseClicked(e);
+                        System.out.println("in sbf... - ");
+                        if (SwingUtilities.isRightMouseButton(e)) {
+                            final int index = tabbedPane.getUI().tabForCoordinate(tabbedPane, e.getX(), e.getY());
+                            System.out.println("right click - " + index);
+                            if (index != -1) {
+                                tabbedPane.tabRightClicked(tabbedPane, index);
+                            }
+                        }
+                    }
+                });
+
+            }
+        }
+    }
+
     private void addBindingsToNewEditors() {
         addKeyBindings(resultTabsData.values().stream().map(ResultTabData::getJspPane)
                 .filter(Objects::nonNull).toArray(JComponent[]::new));
         addKeyBindings(resultTabsData.values().stream().map(ResultTabData::getResultPane)
                 .filter(Objects::nonNull).toArray(JComponent[]::new));
+        updateForTabPopupMenu();
     }
 
     private void addBindings() {
@@ -1253,7 +1280,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void showHelp() {
-        selectTab(true);
+        selectTab(jspContactMe);
     }
 
     private void cleanOldExportResults() {
@@ -1293,14 +1320,6 @@ public class SearchBigFile extends AppFrame {
 
     private void showHelpInBrowser() {
         new RunCommand(new String[]{"./show-help.bat " + Utils.getCurrentDir()}, logger);
-    }
-
-    private void hideHelp() {
-        selectTab(false);
-    }
-
-    private void selectTab(boolean show) {
-        //tabbedPane.setSelectedComponent(show ? jspHelp : jspResults);
     }
 
     private void selectTab(JComponent c) {
@@ -1506,7 +1525,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void setFontSize(FONT_OPR opr) {
-        hideHelp();
+        //hideHelp();
         Font font = tpResults.getFont();
         boolean changed = false;
         int fs = font.getName().equals(PREFERRED_FONT) ? PREFERRED_FONT_SIZE : DEFAULT_FONT_SIZE;
@@ -1651,7 +1670,7 @@ public class SearchBigFile extends AppFrame {
         debug("reset for new search");
 
         updateOnChangeToolTips();
-        hideHelp();
+        //hideHelp();
         printMemoryDetails();
         insertCounter = 0;
         readCounter = 0;
@@ -2194,7 +2213,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void selectAndGoToIndex(int sIdx, int eIdx) {
-        hideHelp();
+        //hideHelp();
         tpResults.grabFocus();
         repaintLastItem();
         tpResults.select(sIdx, eIdx);
