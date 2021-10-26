@@ -1051,14 +1051,12 @@ public class SearchBigFile extends AppFrame {
 
     private void setErrorTimeLimit(String text) {
         errorTimeLimit = Utils.convertToInt(Utils.filterNumbers(text), ERROR_LIMIT_SEC);
-        showMsgAsInfo("Hard force time limit set to " + Utils.addBraces(errorTimeLimit));
-        debug("Hard force time limit set to " + Utils.addBraces(errorTimeLimit));
+        setMsgBarTip("New hard stop Time/occurrences limit [" + errorTimeLimit + "sec/" + errorOccrLimit + "]");
     }
 
     private void setErrorOccrLimit(String text) {
         errorOccrLimit = Utils.convertToInt(Utils.filterNumbers(text), ERROR_LIMIT_OCCR);
-        showMsgAsInfo("Hard force occurrences limit set to " + Utils.addBraces(errorOccrLimit));
-        debug("Hard force occurrences limit set to " + Utils.addBraces(errorOccrLimit));
+        setMsgBarTip("New hard stop Time/occurrences limit [" + errorTimeLimit + "sec/" + errorOccrLimit + "]");
     }
 
     private void setSplitPaneLoc() {
@@ -2541,7 +2539,10 @@ public class SearchBigFile extends AppFrame {
     public void setMsgFont(Font f) {
         menuFonts.setText("Fonts " + Utils.addBraces(getFontFromEnum()));
         lblMsg.setFont(f);
-        String msg = getFontDetail(f);
+        setMsgBarTip ();
+    }
+
+    private void setMsgBarTip(String msg) {
         String tip = HTML_STR
                 + "Font for this bar " + msg + ", changes every [" + TEN + "min] if chosen - see 'Settings' menu. "
                 + BR
@@ -2552,6 +2553,10 @@ public class SearchBigFile extends AppFrame {
         //msgPanel.setToolTipText(tip);
         showMsgAsInfo(msg);
         debug(msg);
+    }
+
+    private void setMsgBarTip() {
+        setMsgBarTip(getFontDetail(lblMsg.getFont()));
     }
 
     private void fileNotFoundAction() {
