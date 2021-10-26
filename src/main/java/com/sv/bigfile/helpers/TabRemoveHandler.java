@@ -1,11 +1,8 @@
 package com.sv.bigfile.helpers;
 
 import com.sv.bigfile.SearchBigFile;
-import com.sv.core.Utils;
 import com.sv.swingui.component.AppTabbedPane;
 import com.sv.swingui.component.TabCloseComponent;
-
-import javax.swing.*;
 
 public class TabRemoveHandler extends TabCloseComponent {
 
@@ -22,7 +19,14 @@ public class TabRemoveHandler extends TabCloseComponent {
 
     @Override
     public void tabRemoved() {
+        sbf.debug("tabRemoved event received in tab remove handler");
         sbf.tabRemoved(getTitle(), getTabNum());
+    }
+
+    @Override
+    public void tabSelected(AppTabbedPane pane, int tabNum) {
+        sbf.debug("tabSelected event received in tab remove handler");
+        sbf.tabSelected(pane, getTitle(), getTabNum());
     }
 }
 
