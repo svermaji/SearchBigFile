@@ -66,7 +66,7 @@ public class SearchBigFile extends AppFrame {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
         ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab,
-        ReopenLastTabs, DebugEnabled, LogSimpleClassName
+        ReopenLastTabs, ErrorTimeLimit, ErrorOccrLimit, DebugEnabled, LogSimpleClassName
     }
 
     public enum Status {
@@ -121,6 +121,8 @@ public class SearchBigFile extends AppFrame {
     private AppCheckBoxMenuItem jcbmiFonts, jcbmiHighlights, jcbmiApplyToApp, jcbmiAutoLock,
             jcbmiClipboardSupport, jcbmiFixedWidth, jcbmiDebugEnabled, jcbmiMultiTab,
             jcbmiLogSimpleClassName, jcbmiReopenLastTabs;
+    private AppRadioButtonMenuItem jrbmiErrorTimeSec10, jrbmiErrorTimeSec30, jrbmiErrorTimeSec50, jrbmiErrorTimeSec100,
+            jrbmiErrorOccr100, jrbmiErrorOccr300, jrbmiErrorOccr500, jrbmiErrorOccr1000;
     private JComboBox<Integer> cbLastN;
 
     private static FILE_OPR operation;
@@ -151,6 +153,7 @@ public class SearchBigFile extends AppFrame {
     private static int maxReadCharTimes = 0;
     private boolean debugEnabled;
     private String searchStr, recentFilesStr, recentSearchesStr;
+    private int errorTimeLimit, errorOccrLimit;
     private long timeTillNow;
     private long occrTillNow;
     private long linesTillNow;
@@ -194,6 +197,9 @@ public class SearchBigFile extends AppFrame {
         printConfigs();
 
         super.setLogger(logger);
+
+        errorTimeLimit = getIntCfg(Configs.ErrorTimeLimit);
+        errorOccrLimit = getIntCfg(Configs.ErrorOccrLimit);
 
         resultTabsData = new HashMap<>();
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
@@ -901,36 +907,104 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void prepareSettingsMenu() {
-        jcbmiFonts = new AppCheckBoxMenuItem("Change fonts auto", null, getBooleanCfg(Configs.ChangeFontAuto));
-        jcbmiFonts.setMnemonic('F');
-        jcbmiFonts.setToolTipText("Changes font for information bar every 10 minutes");
-        jcbmiHighlights = new AppCheckBoxMenuItem("Change highlight auto", null, getBooleanCfg(Configs.ChangeHighlightAuto));
-        jcbmiHighlights.setMnemonic('H');
-        jcbmiHighlights.setToolTipText("Changes colors of highlighted text, selected-text and selected background every 10 minutes");
-        jcbmiApplyToApp = new AppCheckBoxMenuItem("Apply color to App", null, getBooleanCfg(Configs.ApplyColorToApp));
-        jcbmiApplyToApp.setMnemonic('y');
-        jcbmiApplyToApp.setToolTipText("Changes colors of complete application whenever highlight color changes");
-        jcbmiAutoLock = new AppCheckBoxMenuItem("Auto Lock*", null, configs.getBooleanConfig(Configs.AutoLock.name()));
-        jcbmiAutoLock.setMnemonic('L');
-        jcbmiAutoLock.setToolTipText("Auto Lock App if idle for 10 min - *change need restart");
-        jcbmiClipboardSupport = new AppCheckBoxMenuItem("Clipboard Support*", null, configs.getBooleanConfig(Configs.ClipboardSupport.name()));
-        jcbmiClipboardSupport.setMnemonic('b');
-        jcbmiClipboardSupport.setToolTipText("Clipboard support (to use copied text as search file) - *change need restart");
-        jcbmiMultiTab = new AppCheckBoxMenuItem("Multi tabs", null, configs.getBooleanConfig(Configs.MultiTab.name()));
-        jcbmiMultiTab.setMnemonic('u');
-        jcbmiMultiTab.setToolTipText("Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
-        jcbmiFixedWidth = new AppCheckBoxMenuItem("Fixed width*", null, configs.getBooleanConfig(Configs.FixedWidth.name()));
-        jcbmiFixedWidth.setMnemonic('x');
-        jcbmiFixedWidth.setToolTipText("Applies fixed width and look to toolbar, use only when UI goes off for menu buttons - *change need restart");
-        jcbmiDebugEnabled = new AppCheckBoxMenuItem("Enable debug*", null, configs.getBooleanConfig(Configs.DebugEnabled.name()));
-        jcbmiDebugEnabled.setMnemonic('g');
-        jcbmiDebugEnabled.setToolTipText("Enable debug logging - *change need restart");
-        jcbmiLogSimpleClassName = new AppCheckBoxMenuItem("Log Simple Class Name", null, configs.getBooleanConfig(Configs.LogSimpleClassName.name()));
-        jcbmiLogSimpleClassName.setMnemonic('c');
-        jcbmiLogSimpleClassName.setToolTipText("Log Simple Class Name i.e. with package name in logs - *change need restart");
-        jcbmiReopenLastTabs = new AppCheckBoxMenuItem("Reopen Last Tabs*", null, configs.getBooleanConfig(Configs.LogSimpleClassName.name()));
-        jcbmiReopenLastTabs.setMnemonic('p');
-        jcbmiReopenLastTabs.setToolTipText("Reopen last opened tabs at restart - *change need restart");
+        jcbmiFonts = new AppCheckBoxMenuItem(
+                "Change fonts auto",
+                getBooleanCfg(Configs.ChangeFontAuto),
+                'F',
+                "Changes font for information bar every 10 minutes");
+        jcbmiHighlights = new AppCheckBoxMenuItem(
+                "Change highlight auto",
+                getBooleanCfg(Configs.ChangeHighlightAuto),
+                'H',
+                "Changes colors of highlighted text, selected-text and selected background every 10 minutes");
+        jcbmiApplyToApp = new AppCheckBoxMenuItem(
+                "Apply color to App",
+                getBooleanCfg(Configs.ApplyColorToApp),
+                'y',
+                "Changes colors of complete application whenever highlight color changes");
+        jcbmiAutoLock = new AppCheckBoxMenuItem(
+                "Auto Lock*",
+                configs.getBooleanConfig(Configs.AutoLock.name()),
+                'L',
+                "Auto Lock App if idle for 10 min - *change need restart");
+        jcbmiClipboardSupport = new AppCheckBoxMenuItem(
+                "Clipboard Support*",
+                configs.getBooleanConfig(Configs.ClipboardSupport.name()),
+                'b',
+                "Clipboard support (to use copied text as search file) - *change need restart");
+        jcbmiMultiTab = new AppCheckBoxMenuItem(
+                "Multi tabs",
+                configs.getBooleanConfig(Configs.MultiTab.name()),
+                'u',
+                "Results will be opened in new tabs, max " + Utils.addBraces(MAX_RESULTS_TAB));
+        jcbmiFixedWidth = new AppCheckBoxMenuItem(
+                "Fixed width*",
+                configs.getBooleanConfig(Configs.FixedWidth.name()),
+                'x',
+                "Applies fixed width and look to toolbar, use only when UI goes off for menu buttons - *change need restart");
+        jcbmiDebugEnabled = new AppCheckBoxMenuItem(
+                "Enable debug*",
+                configs.getBooleanConfig(Configs.DebugEnabled.name()),
+                'g',
+                "Enable debug logging - *change need restart");
+        jcbmiLogSimpleClassName = new AppCheckBoxMenuItem(
+                "Log Simple Class Name",
+                configs.getBooleanConfig(Configs.LogSimpleClassName.name()),
+                'c',
+                "Log Simple Class Name i.e. with package name in logs - *change need restart");
+        jcbmiReopenLastTabs = new AppCheckBoxMenuItem(
+                "Reopen Last Tabs*",
+                configs.getBooleanConfig(Configs.LogSimpleClassName.name()),
+                'p',
+                "Reopen last opened tabs at restart - *change need restart");
+
+
+        String t = "Time 10 seconds";
+        char mn = 'a';
+        jrbmiErrorTimeSec10 = new AppRadioButtonMenuItem(t, isErrorTimeLimit(t), mn++, t);
+        jrbmiErrorTimeSec10.addActionListener(e -> setErrorTimeLimit(jrbmiErrorTimeSec10.getText()));
+        t = "Time 30 seconds";
+        jrbmiErrorTimeSec30 = new AppRadioButtonMenuItem(t, isErrorTimeLimit(t), mn++, t);
+        jrbmiErrorTimeSec30.addActionListener(e -> setErrorTimeLimit(jrbmiErrorTimeSec30.getText()));
+        t = "Time 50 seconds";
+        jrbmiErrorTimeSec50 = new AppRadioButtonMenuItem(t, isErrorTimeLimit(t), mn++, t);
+        jrbmiErrorTimeSec50.addActionListener(e -> setErrorTimeLimit(jrbmiErrorTimeSec50.getText()));
+        t = "Time 100 seconds";
+        jrbmiErrorTimeSec100 = new AppRadioButtonMenuItem(t, isErrorTimeLimit(t), mn++, t);
+        jrbmiErrorTimeSec100.addActionListener(e -> setErrorTimeLimit(jrbmiErrorTimeSec100.getText()));
+        ButtonGroup errorTimeBG = new ButtonGroup();
+        errorTimeBG.add(jrbmiErrorTimeSec10);
+        errorTimeBG.add(jrbmiErrorTimeSec30);
+        errorTimeBG.add(jrbmiErrorTimeSec50);
+        errorTimeBG.add(jrbmiErrorTimeSec100);
+        t = "Occurrences 100";
+        jrbmiErrorOccr100 = new AppRadioButtonMenuItem(t, isErrorOccrLimit(t), mn++, t);
+        jrbmiErrorOccr100.addActionListener(e -> setErrorOccrLimit(jrbmiErrorOccr100.getText()));
+        t = "Occurrences 300";
+        jrbmiErrorOccr300 = new AppRadioButtonMenuItem(t, isErrorOccrLimit(t), mn++, t);
+        jrbmiErrorOccr300.addActionListener(e -> setErrorOccrLimit(jrbmiErrorOccr300.getText()));
+        t = "Occurrences 500";
+        jrbmiErrorOccr500 = new AppRadioButtonMenuItem(t, isErrorOccrLimit(t), mn++, t);
+        jrbmiErrorOccr500.addActionListener(e -> setErrorOccrLimit(jrbmiErrorOccr500.getText()));
+        t = "Occurrences 1000";
+        jrbmiErrorOccr1000 = new AppRadioButtonMenuItem(t, isErrorOccrLimit(t), mn++, t);
+        jrbmiErrorOccr1000.addActionListener(e -> setErrorOccrLimit(jrbmiErrorOccr1000.getText()));
+        ButtonGroup errorOccrBG = new ButtonGroup();
+        errorOccrBG.add(jrbmiErrorOccr100);
+        errorOccrBG.add(jrbmiErrorOccr300);
+        errorOccrBG.add(jrbmiErrorOccr500);
+        errorOccrBG.add(jrbmiErrorOccr1000);
+
+        AppMenu errorLimitsMenu = new AppMenu("Error Limits", 'r', "Define hard limits");
+        errorLimitsMenu.add(jrbmiErrorTimeSec10);
+        errorLimitsMenu.add(jrbmiErrorTimeSec30);
+        errorLimitsMenu.add(jrbmiErrorTimeSec50);
+        errorLimitsMenu.add(jrbmiErrorTimeSec100);
+        errorLimitsMenu.addSeparator();
+        errorLimitsMenu.add(jrbmiErrorOccr100);
+        errorLimitsMenu.add(jrbmiErrorOccr300);
+        errorLimitsMenu.add(jrbmiErrorOccr500);
+        errorLimitsMenu.add(jrbmiErrorOccr1000);
 
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
@@ -952,6 +1026,8 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiMultiTab);
         menuSettings.add(jcbmiReopenLastTabs);
         menuSettings.addSeparator();
+        menuSettings.add(errorLimitsMenu);
+        menuSettings.addSeparator();
         menuSettings.add(jmiChangePwd);
         menuSettings.add(jmiLock);
         menuSettings.add(jcbmiAutoLock);
@@ -963,6 +1039,26 @@ public class SearchBigFile extends AppFrame {
 
         // setting font from config
         setMsgFont(getNewFont(lblMsg.getFont(), getFontFromEnum()));
+    }
+
+    private boolean isErrorTimeLimit(String text) {
+        return errorTimeLimit == Utils.convertToInt(Utils.filterNumbers(text), ERROR_LIMIT_SEC);
+    }
+
+    private boolean isErrorOccrLimit(String text) {
+        return errorOccrLimit == Utils.convertToInt(Utils.filterNumbers(text), ERROR_LIMIT_OCCR);
+    }
+
+    private void setErrorTimeLimit(String text) {
+        errorTimeLimit = Utils.convertToInt(Utils.filterNumbers(text), ERROR_LIMIT_SEC);
+        showMsgAsInfo("Hard force time limit set to " + Utils.addBraces(errorTimeLimit));
+        debug("Hard force time limit set to " + Utils.addBraces(errorTimeLimit));
+    }
+
+    private void setErrorOccrLimit(String text) {
+        errorOccrLimit = Utils.convertToInt(Utils.filterNumbers(text), ERROR_LIMIT_OCCR);
+        showMsgAsInfo("Hard force occurrences limit set to " + Utils.addBraces(errorOccrLimit));
+        debug("Hard force occurrences limit set to " + Utils.addBraces(errorOccrLimit));
     }
 
     private void setSplitPaneLoc() {
@@ -1490,8 +1586,8 @@ public class SearchBigFile extends AppFrame {
         return "This bar turns 'Orange' to show warnings and 'Red' to show error/force-stop. " +
                 "Time/occurrences limit for warning [" + WARN_LIMIT_SEC
                 + "sec/" + WARN_LIMIT_OCCR
-                + "] and for error [" + ERROR_LIMIT_SEC
-                + "sec/" + ERROR_LIMIT_OCCR + "]";
+                + "] and for error [" + errorTimeLimit
+                + "sec/" + errorOccrLimit + "]";
 
     }
 
@@ -2081,6 +2177,14 @@ public class SearchBigFile extends AppFrame {
         return jcbmiDebugEnabled.isSelected() + "";
     }
 
+    public String getErrorTimeLimit() {
+        return errorTimeLimit + "";
+    }
+
+    public String getErrorOccrLimit() {
+        return errorOccrLimit + "";
+    }
+
     public String getLogSimpleClassName() {
         return jcbmiLogSimpleClassName.isSelected() + "";
     }
@@ -2115,11 +2219,11 @@ public class SearchBigFile extends AppFrame {
             sb.append("Warning: Occurrences [").append(occrTillNow).append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
         }
         StringBuilder sbErr = new StringBuilder();
-        if (timeTillNow > ERROR_LIMIT_SEC) {
-            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(ERROR_LIMIT_SEC).append("]. Cancelling search...");
+        if (timeTillNow > errorTimeLimit) {
+            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(errorTimeLimit).append("]. Cancelling search...");
         }
-        if (occrTillNow > ERROR_LIMIT_OCCR) {
-            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(ERROR_LIMIT_OCCR).append("], try to narrow your search. Cancelling search...");
+        if (occrTillNow > errorOccrLimit) {
+            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(errorOccrLimit).append("], try to narrow your search. Cancelling search...");
         }
 
         if (Utils.hasValue(sbErr.toString())) {
@@ -2379,7 +2483,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public boolean isErrorState() {
-        return timeTillNow > ERROR_LIMIT_SEC || occrTillNow > ERROR_LIMIT_OCCR;
+        return timeTillNow > errorTimeLimit || occrTillNow > errorOccrLimit;
     }
 
     public void incRCtrNAppendIdxData() {
