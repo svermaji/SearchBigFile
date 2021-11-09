@@ -24,6 +24,7 @@ import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
@@ -344,6 +345,7 @@ public class SearchBigFile extends AppFrame {
         jtbSearch.add(btnIC);
         jtbSearch.add(btnListRS);
         jtbSearch.add(mbRSearches);
+        jtbSearch.add(btnSearch);
 
         uin = UIName.MNU_SETTINGS;
         mbSettings = new JMenuBar();
@@ -355,6 +357,11 @@ public class SearchBigFile extends AppFrame {
         btnCancel = new AppButton(uin.name, uin.mnemonic, uin.tip, "./icons/cancel-icon.png", true);
         btnCancel.setDisabledIcon(new ImageIcon("./icons/cancel-icon-disabled.png"));
         btnCancel.addActionListener(evt -> cancelSearch());
+
+        /*jtbSearch.add(lblLastN);
+        jtbSearch.add(cbLastN);
+        jtbSearch.add(btnLastN);
+        jtbSearch.add(btnCancel);*/
 
         searchPanel.setLayout(new FlowLayout());
         searchPanel.add(lblSearch);
@@ -563,7 +570,7 @@ public class SearchBigFile extends AppFrame {
         t.schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
         timers.add(t);
         t = new Timer();
-        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
+        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 5);
         timers.add(t);
 
         List<WindowChecks> windowChecks = new ArrayList<>();
@@ -738,8 +745,8 @@ public class SearchBigFile extends AppFrame {
         if (isWindowActive()) {
             long total = Runtime.getRuntime().totalMemory();
             long free = Runtime.getRuntime().freeMemory();
-            String mem = Utils.getSizeString(total - free, false, false)
-                    + F_SLASH + Utils.getSizeString(total, false, false);
+            String mem = Utils.getSizeString(total - free, false, false, 0)
+                    + F_SLASH + Utils.getSizeString(total, false, false, 0);
             btnMemory.setText(mem);
             btnMemory.setToolTipText(getMemoryDetails() + ". Click to free memory. Shortcut: Alt+" + UIName.BTN_MEMORY.mnemonic);
         }
@@ -802,23 +809,7 @@ public class SearchBigFile extends AppFrame {
         for (int i = 0; i < tc; i++) {
             if (tabbedPane.getTabComponentAt(i) instanceof TabCloseComponent) {
                 TabCloseComponent lbl = (TabCloseComponent) tabbedPane.getTabComponentAt(i);
-                //JLabel lbl = ((TabCloseComponent) tabbedPane.getTabComponentAt(i)).getTabLabel();
                 lbl.setComponentPopupMenu(pm);
-                /*lbl.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        super.mouseClicked(e);
-                        System.out.println("lbl...in sbf... is right btn - " + e);
-                        System.out.println("lbl...in sbf... is right btn - " + (SwingUtilities.isRightMouseButton(e)));
-                        if (SwingUtilities.isRightMouseButton(e)) {
-                            final int index = tabbedPane.getUI().tabForCoordinate(tabbedPane, e.getX(), e.getY());
-                            System.out.println("lbl....right click - " + index);
-                            if (index != -1) {
-                                tabbedPane.tabRightClicked(tabbedPane, index);
-                            }
-                        }
-                    }
-                });*/
             }
         }
     }
@@ -1301,8 +1292,12 @@ public class SearchBigFile extends AppFrame {
 
         lblMsg.setForeground(selectionColor);
 
-        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, /*btnSearch, btnLastN, */mbRFiles, mbRSearches, mbSettings};
+        JComponent[] toSetBorder = {msgPanel, txtFilePath, txtSearch, cbLastN, mbRFiles, mbRSearches, mbSettings};
         Arrays.stream(toSetBorder).forEach(c -> c.setBorder(SwingUtils.createLineBorder(highlightTextColor)));
+
+        // only set border color - not working
+        /*toSetBorder = new JComponent[]{btnSearch, btnLastN};
+        Arrays.stream(toSetBorder).forEach(c -> c.setBorder(new LineBorder(highlightTextColor)));*/
 
         // This sets foreground of scroll bar but removes background color
         /*UIManager.put("ScrollBar.thumb", new ColorUIResource(selectionColor));
