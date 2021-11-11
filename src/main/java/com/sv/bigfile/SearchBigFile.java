@@ -39,6 +39,10 @@ import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.*;
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
@@ -2885,14 +2889,21 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int BUFFER_SIZE = 200 * 1024;
+            final int KB1 = 1024;
+            final int BUFFER_SIZE = 200 * KB1;
             String searchPattern = sbf.processPattern();
 
             String path = sbf.getFilePath();
 
+/*
             try (InputStream stream = new FileInputStream(path);
                  BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
             ) {
+*/
+
+            try (SeekableByteChannel ch = Files.newByteChannel(Utils.createPath(path), EnumSet.of(StandardOpenOption.READ))) {
+                ByteBuffer bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
+
                 long lineNum = 1, occurrences = 0, time = System.currentTimeMillis();
                 SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
                 SearchData searchData = new SearchData(stats);
@@ -2902,9 +2913,11 @@ public class SearchBigFile extends AppFrame {
                 int i;
                 StringBuilder sb = new StringBuilder();
                 boolean appendLine = false;
-                while ((i = br.read()) != -1) {
+                //while ((i = br.read()) != -1) {
+                while (ch.read(bb) >= 0) {
 
-                    c = (char) i;
+                    String s = new String(bb.array());
+                    //c = (char) i;
                     boolean isNewLineChar = c == '\n';
                     if (!isNewLineChar) {
                         sb.append(c);

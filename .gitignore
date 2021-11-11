@@ -8,7 +8,7 @@
 
 # export file
 export_*.txt
-test-big-file.txt
+test-*.txt
 
 # Log file
 *.log
