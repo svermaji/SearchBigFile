@@ -24,7 +24,6 @@ import com.sv.swingui.component.table.CellRendererCenterAlign;
 import com.sv.swingui.component.table.CellRendererLeftAlign;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
@@ -38,12 +37,15 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.text.NumberFormat;
 import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
@@ -70,8 +72,8 @@ public class SearchBigFile extends AppFrame {
     public enum Configs {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
-        ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab,
-        ReopenLastTabs, ErrorTimeLimit, ErrorOccrLimit, DebugEnabled, LogSimpleClassName
+        ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab, ReopenLastTabs,
+        ErrorTimeLimit, ErrorOccrLimit, DebugEnabled, LogSimpleClassName, ErrorMemoryLimitInMB
     }
 
     public enum Status {
@@ -147,12 +149,13 @@ public class SearchBigFile extends AppFrame {
     private static long lineNums;
     private static int fontIdx = 0;
     private static int colorIdx = 0;
+    private static int errorMemoryLimitInMB = 0;
 
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
-    private final int MAX_READ_CHAR_LIMIT = 5000;
+    private final int MAX_READ_CHAR_LIMIT = 25000;
     private final int MAX_RESULTS_TAB = 7;
     private final int TAB_TITLE_LIMIT = 20;
     private static int maxReadCharTimes = 0;
@@ -205,6 +208,10 @@ public class SearchBigFile extends AppFrame {
 
         errorTimeLimit = getIntCfg(Configs.ErrorTimeLimit);
         errorOccrLimit = getIntCfg(Configs.ErrorOccrLimit);
+        errorMemoryLimitInMB = getIntCfg(Configs.ErrorMemoryLimitInMB);
+        info("errorTimeLimit [" + errorTimeLimit + "], " +
+                "errorOccrLimit [" + errorOccrLimit + "], " +
+                "errorMemoryLimitInMB [" + errorMemoryLimitInMB + "]");
 
         resultTabsData = new HashMap<>();
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
@@ -456,7 +463,7 @@ public class SearchBigFile extends AppFrame {
         topPanel.setLayout(new BorderLayout());
         topPanel.add(inputPanel, BorderLayout.NORTH);
         msgPanel = new JPanel(new BorderLayout());
-        lblMsg = new AppLabel(getInitialMsg());
+        lblMsg = new AppLabel();
         lblMsg.setHorizontalAlignment(SwingConstants.CENTER);
         lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
         uin = UIName.BTN_SHOWALL;
@@ -574,7 +581,7 @@ public class SearchBigFile extends AppFrame {
         t.schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
         timers.add(t);
         t = new Timer();
-        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 5);
+        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
         timers.add(t);
 
         List<WindowChecks> windowChecks = new ArrayList<>();
@@ -620,6 +627,7 @@ public class SearchBigFile extends AppFrame {
         enableControls();
         setTabCloseButtonColor();
         info("Last tabs reloaded. Results tab data size " + Utils.addBraces(resultTabsData.size()));
+        lblMsg.setText(getInitialMsg());
     }
 
     private void updateForActiveTab() {
@@ -746,6 +754,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void trackMemory() {
+        debug(getMemoryDetails());
         if (isWindowActive()) {
             long total = Runtime.getRuntime().totalMemory();
             long free = Runtime.getRuntime().freeMemory();
@@ -949,7 +958,7 @@ public class SearchBigFile extends AppFrame {
                 "Log Simple Class Name i.e. with package name in logs - *change need restart");
         jcbmiReopenLastTabs = new AppCheckBoxMenuItem(
                 "Reopen Last Tabs*",
-                configs.getBooleanConfig(Configs.LogSimpleClassName.name()),
+                configs.getBooleanConfig(Configs.ReopenLastTabs.name()),
                 'p',
                 "Reopen last opened tabs at restart - *change need restart");
 
@@ -1580,11 +1589,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getInitialMsg() {
-        return "This bar turns 'Orange' to show warnings and 'Red' to show error/force-stop. " +
+        return "Bar turns 'Orange' for warnings and 'Red' for error/force-stop. " +
                 "Time/occurrences limit for warning [" + WARN_LIMIT_SEC
                 + "sec/" + WARN_LIMIT_OCCR
                 + "] and for error [" + errorTimeLimit
-                + "sec/" + errorOccrLimit + "]";
+                + "sec/" + errorOccrLimit + "] or memory goes above [" + errorMemoryLimitInMB + "MB]";
 
     }
 
@@ -1800,8 +1809,32 @@ public class SearchBigFile extends AppFrame {
         info(getMemoryDetails());
     }
 
+    private boolean isMemoryOutOfLimit() {
+        return getTotalMemory() > getErrorLimitMemory();
+    }
+
+    private String getErrorMemoryLimitStr() {
+        return Utils.getSizeString(getErrorLimitMemory());
+    }
+
+    private String getTotalMemoryStrNoDecimal() {
+        return Utils.getSizeString(getTotalMemory(), true, false, 0);
+    }
+
+    private String getTotalMemoryStr() {
+        return Utils.getSizeString(getTotalMemory());
+    }
+
+    private long getTotalMemory() {
+        return Runtime.getRuntime().totalMemory();
+    }
+
+    private long getErrorLimitMemory() {
+        return errorMemoryLimitInMB * KB * KB;
+    }
+
     private String getMemoryDetails() {
-        long total = Runtime.getRuntime().totalMemory();
+        long total = getTotalMemory();
         long free = Runtime.getRuntime().freeMemory();
         return String.format("Memory: occupied %s of %s free %s, ",
                 Utils.getSizeString(total - free),
@@ -1869,10 +1902,11 @@ public class SearchBigFile extends AppFrame {
     private void cancelSearch() {
         // To ensure background is red
         if (!isErrorState()) {
+            logger.warn("Search cancelled by user.");
             showMsg("Search cancelled.", MsgType.ERROR);
         }
-        if (isReading()) {
-            logger.warn("Search cancelled by user.");
+
+        if (isReading() || isErrorState()) {
             status = Status.CANCELLED;
         }
     }
@@ -2186,6 +2220,10 @@ public class SearchBigFile extends AppFrame {
         return jcbmiLogSimpleClassName.isSelected() + "";
     }
 
+    public String getErrorMemoryLimitInMB() {
+        return errorMemoryLimitInMB + "";
+    }
+
     public void showMsgAsInfo(String msg) {
         showMsg(msg, MyLogger.MsgType.INFO);
     }
@@ -2210,22 +2248,33 @@ public class SearchBigFile extends AppFrame {
     public String getProblemMsg() {
         StringBuilder sb = new StringBuilder();
         if (timeTillNow > WARN_LIMIT_SEC) {
-            sb.append("Warning: Time [").append(timeTillNow).append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
+            sb.append("Warning: Time [").append(timeTillNow)
+                    .append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
         }
         if (occrTillNow > WARN_LIMIT_OCCR) {
-            sb.append("Warning: Occurrences [").append(occrTillNow).append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
+            sb.append("Warning: Occurrences [").append(occrTillNow)
+                    .append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
         }
+        sb.append("Memory ").append(getTotalMemoryStr());
         StringBuilder sbErr = new StringBuilder();
         if (timeTillNow > errorTimeLimit) {
-            sbErr.append("Error: Time [").append(timeTillNow).append("] > force stop limit [").append(errorTimeLimit).append("]. Cancelling search...");
+            sbErr.append("Error: Time [").append(timeTillNow)
+                    .append("] > force stop limit [").append(errorTimeLimit).append("]. Cancelling search...");
         }
         if (occrTillNow > errorOccrLimit) {
-            sbErr.append("Error: Occurrences [").append(occrTillNow).append("] > force stop limit [").append(errorOccrLimit).append("], try to narrow your search. Cancelling search...");
+            sbErr.append("Error: Occurrences [").append(occrTillNow)
+                    .append("] > force stop limit [").append(errorOccrLimit)
+                    .append("], try to narrow your search. Cancelling search...");
+        }
+        if (isMemoryOutOfLimit()) {
+            sbErr.append("Error: Out of memory limits. Total memory ").append(getTotalMemoryStr())
+                    .append(" > force stop limit ").append(getErrorMemoryLimitStr())
+                    .append(". Cancelling search...");
         }
 
         if (Utils.hasValue(sbErr.toString())) {
             sb = sbErr;
-            debug("Problem found - " + sb.toString());
+            debug("Error message: " + sb);
         }
 
         return sb.toString();
@@ -2251,14 +2300,16 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getSearchResult(String path, String seconds, long lineNum, long occurrences) {
+        String ln = Utils.formatNumber(lineNum);
         String result =
                 String.format("File size %s, " +
                                 "time taken %s, lines read [%s]" +
-                                (isSearchStrEmpty() ? "" : ", occurrences [%s]"),
+                                (isSearchStrEmpty() ? "" : ", occurrences [%s], memory %s"),
                         Utils.getSizeString(new File(path).length()),
                         seconds,
-                        lineNum,
-                        occurrences);
+                        ln,
+                        occurrences,
+                        getTotalMemoryStrNoDecimal());
 
         logger.info(result);
         return result;
@@ -2481,6 +2532,7 @@ public class SearchBigFile extends AppFrame {
 
     public boolean isErrorState() {
         return timeTillNow > errorTimeLimit || occrTillNow > errorOccrLimit;
+                //|| isMemoryOutOfLimit();
     }
 
     public void incRCtrNAppendIdxData() {
@@ -2538,7 +2590,7 @@ public class SearchBigFile extends AppFrame {
     public void setMsgFont(Font f) {
         menuFonts.setText("Fonts " + Utils.addBraces(getFontFromEnum()));
         lblMsg.setFont(f);
-        setMsgBarTip ();
+        setMsgBarTip();
     }
 
     private void setMsgBarTip(String msg) {
@@ -2593,7 +2645,7 @@ public class SearchBigFile extends AppFrame {
         return isWarningState() ? MsgType.WARN : MsgType.INFO;
     }
 
-    /*   Inner classes    */
+    /* Inner classes */
     class LastNRead implements Callable<Boolean> {
 
         private final Stack<String> stack = new Stack<>();
@@ -2619,11 +2671,13 @@ public class SearchBigFile extends AppFrame {
 
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
                 long fileLength = file.length() - 1;
+                debug("Read: file length to seek: " + fileLength);
                 // Set the pointer at the last of the file
                 randomAccessFile.seek(fileLength);
 
                 long time = System.currentTimeMillis();
                 for (long pointer = fileLength; pointer >= 0; pointer--) {
+                    //TODO: take in byte[]
                     randomAccessFile.seek(pointer);
                     char c;
                     // read from the last, one char at the time
@@ -2659,6 +2713,9 @@ public class SearchBigFile extends AppFrame {
                             logger.warn("---xxx--- Read cancelled ---xxx---");
                             break;
                         }
+                        if (maxReadCharLimitReached) {
+                            freeMemory();
+                        }
                     } else {
                         sb.append(c);
                     }
@@ -2684,7 +2741,7 @@ public class SearchBigFile extends AppFrame {
                 catchForRead(e);
                 hasError = true;
             } catch (Exception e) {
-                logger.error("...........");
+                logger.error(e);
                 catchForRead(e);
                 hasError = true;
             } finally {
@@ -2766,29 +2823,24 @@ public class SearchBigFile extends AppFrame {
             long lineNum = stats.getLineNum();
             StringBuilder sb = new StringBuilder();
 
-            boolean sof = stats.isSofFile();
-            boolean eol = stats.isEofLine();
+            boolean addLineEnding = stats.isAddLineEnding();
             if (stats.isMatch()) {
                 int occr = calculateOccr(stats.getLine(), stats.getSearchPattern());
                 if (occr > 0) {
-                    if (sof) {
-                        sb.append(addOnlyLineNumAndEsc(stats.getLineNum(), ""));
-                        stats.setSofFile(false);
-                    }
                     stats.setOccurrences(stats.getOccurrences() + occr);
                     sb.append(escString(stats.getLine()));
-                    if (eol && !sof) {
+                    if (addLineEnding) {
                         qMsgsToAppend.add(addLineNumAndEscAtStart(stats.getLineNum(), ""));
                     }
                     qMsgsToAppend.add(sb.toString());
                 }
             }
-            if (sof || eol) {
+            if (addLineEnding) {
                 stats.setLineNum(lineNum + 1);
             }
 
             if (lineNum % LINES_TO_INFORM == 0) {
-                logger.debug("Lines searched so far: " + NumberFormat.getNumberInstance().format(lineNum));
+                logger.debug("Lines searched so far: " + Utils.formatNumber(lineNum));
             }
 
             occrTillNow = stats.getOccurrences();
@@ -2815,9 +2867,9 @@ public class SearchBigFile extends AppFrame {
                 if (isReading()) {
                     timeElapse = Utils.getTimeDiffSec(startTime);
                     timeTillNow = timeElapse;
-                    String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "] ";
-                    if ((showWarning || isWarningState())) {
-                        msg += sbf.getProblemMsg();
+                    String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "], memory " + getTotalMemoryStr();
+                    if (showWarning || isWarningState()) {
+                        msg = sbf.getProblemMsg();
                         sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
                     }
@@ -2828,7 +2880,7 @@ public class SearchBigFile extends AppFrame {
                     if (isReading()) {
                         sbf.updateTitle(msg);
                     }
-                    logger.debug("Timer callable sleeping now for a second");
+                    logger.debug("Timer callable sleeping now for a second, status: " + status);
                     Utils.sleep(1000, sbf.logger);
                 }
             } while (isReading());
@@ -2892,15 +2944,12 @@ public class SearchBigFile extends AppFrame {
             final int KB1 = 1024;
             final int BUFFER_SIZE = 200 * KB1;
             String searchPattern = sbf.processPattern();
-
             String path = sbf.getFilePath();
-
 /*
             try (InputStream stream = new FileInputStream(path);
                  BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
             ) {
 */
-
             try (SeekableByteChannel ch = Files.newByteChannel(Utils.createPath(path), EnumSet.of(StandardOpenOption.READ))) {
                 ByteBuffer bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
 
@@ -2908,31 +2957,17 @@ public class SearchBigFile extends AppFrame {
                 SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
                 SearchData searchData = new SearchData(stats);
 
-                String line;
-                char c;
-                int i;
-                StringBuilder sb = new StringBuilder();
-                boolean appendLine = false;
-                //while ((i = br.read()) != -1) {
                 while (ch.read(bb) >= 0) {
+                    bb.flip();
+                    String s = StandardCharsets.UTF_8.decode(bb).toString();
+                    bb.clear();
+                    String[] lines = s.split(LN_BRK);
 
-                    String s = new String(bb.array());
-                    //c = (char) i;
-                    boolean isNewLineChar = c == '\n';
-                    if (!isNewLineChar) {
-                        sb.append(c);
-                    }
-                    boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
-                    if (maxReadCharLimitReached) {
-                        maxReadCharTimes++;
-                    }
-
-                    if (isNewLineChar || maxReadCharLimitReached) {
-                        stats.setEofLine(appendLine);
-                        line = sb.toString();
-                        sb = new StringBuilder();
-                        stats.setLine(line);
-                        stats.setMatch(sbf.hasOccr(line, searchPattern));
+                    for (int i = 0, linesLength = lines.length; i < linesLength; i++) {
+                        String ln = lines[i];
+                        stats.setAddLineEnding(i < linesLength - 1);
+                        stats.setLine(ln);
+                        stats.setMatch(sbf.hasOccr(ln, searchPattern));
 
                         if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
                             searchData.process();
@@ -2948,8 +2983,8 @@ public class SearchBigFile extends AppFrame {
                             break;
                         }
                     }
-                    if (!appendLine && !stats.isSofFile()) {
-                        appendLine = isNewLineChar;
+                    if (isCancelled()) {
+                        break;
                     }
                 }
                 if (maxReadCharTimes > 0) {
@@ -2993,11 +3028,13 @@ public class SearchBigFile extends AppFrame {
             } catch (FileNotFoundException e) {
                 searchFailed(e);
                 sbf.fileNotFoundAction();
+                logger.error(e);
             } catch (IOException e) {
                 searchFailed(e);
+                logger.error(e);
             } catch (Exception e) {
                 searchFailed(e);
-                logger.error("ssss ---- xxxx");
+                logger.error(e);
             } finally {
                 sbf.enableControls();
             }

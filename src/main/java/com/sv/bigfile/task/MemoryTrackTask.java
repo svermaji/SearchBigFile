@@ -14,7 +14,6 @@ public class MemoryTrackTask extends TimerTask {
 
     @Override
     public void run() {
-        sbf.debug("Running memory track task");
         sbf.trackMemory();
     }
 }

@@ -2,7 +2,9 @@ package com.sv.bigfile;
 
 import com.sv.core.Utils;
 
+import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.text.NumberFormat;
 
 public class CreateBigFileToTest {
 
@@ -23,8 +25,10 @@ public class CreateBigFileToTest {
         String fn = "test-big-file.txt";
         String fn2 = "test-single-line-big-file.txt";
         StringBuilder sb = new StringBuilder("File created on " + Utils.getFormattedDate());
-        Utils.writeFile(fn, sb.toString(), null, StandardOpenOption.TRUNCATE_EXISTING);
-        Utils.writeFile(fn2, sb.toString(), null, StandardOpenOption.TRUNCATE_EXISTING);
+        StandardOpenOption soo = Files.exists(Utils.createPath(fn)) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
+        Utils.writeFile(fn, sb.toString(), null, soo);
+        soo = Files.exists(Utils.createPath(fn2)) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
+        Utils.writeFile(fn2, sb.toString(), null, soo);
         sb = new StringBuilder();
         int MB_14_LINES = 100000;
         int GB_1_5_LINES = MB_14_LINES * 100;
@@ -43,7 +47,8 @@ public class CreateBigFileToTest {
         System.out.println("File [" + fn + "] created in " + Utils.getTimeDiffSecStr(time) + " of size "
                 + Utils.getFileSizeString(fn));
         time = System.currentTimeMillis();
-        for (int i = 0; i < MB_14_LINES * 3; i++) {
+        sb = new StringBuilder();
+        for (int i = 0; i < MB_14_LINES / 2; i++) {
             sb.append(line1).append(i);
             sb.append(line2).append(i);
             sb.append(line3).append(i);
