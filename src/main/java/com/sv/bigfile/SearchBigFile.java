@@ -155,7 +155,7 @@ public class SearchBigFile extends AppFrame {
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
     private final String TXT_S_MAP_KEY = "Action.SearchMenuItem";
     private final int EXCERPT_LIMIT = 80;
-    private final int MAX_READ_CHAR_LIMIT = 25000;
+    private final int MAX_READ_CHAR_LIMIT = 5000;
     private final int MAX_RESULTS_TAB = 7;
     private final int TAB_TITLE_LIMIT = 20;
     private static int maxReadCharTimes = 0;
@@ -581,7 +581,7 @@ public class SearchBigFile extends AppFrame {
         t.schedule(new HelpColorChangerTask(this), SEC_1, HELP_COLOR_CHANGE_TIME);
         timers.add(t);
         t = new Timer();
-        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 10);
+        t.schedule(new MemoryTrackTask(this), SEC_1, SEC_1 * 4);
         timers.add(t);
 
         List<WindowChecks> windowChecks = new ArrayList<>();
@@ -765,7 +765,6 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
-    //TODO: close other tabs
     private String checkSep(String s) {
         if (!s.startsWith(SEPARATOR)) {
             s = SEPARATOR + s;
@@ -2075,7 +2074,8 @@ public class SearchBigFile extends AppFrame {
                 if (isReadOpr()) {
                     Element body = getBodyElement();
                     int offs = Math.max(body.getStartOffset(), 0);
-                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
+//                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
+                    kit.insertHTML(htmlDoc, 0, data, 0, 0, null);
                 } else {
                     kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
                 }
@@ -2532,7 +2532,7 @@ public class SearchBigFile extends AppFrame {
 
     public boolean isErrorState() {
         return timeTillNow > errorTimeLimit || occrTillNow > errorOccrLimit;
-                //|| isMemoryOutOfLimit();
+        //|| isMemoryOutOfLimit();
     }
 
     public void incRCtrNAppendIdxData() {
@@ -2657,11 +2657,10 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int LIMIT = Integer.parseInt(cbLastN.getSelectedItem().toString());
+            final int LIMIT = Integer.parseInt(Objects.requireNonNull(cbLastN.getSelectedItem()).toString());
             int readLines = 0, occr = 0;
             boolean hasError = false;
             String searchPattern = processPattern(), fn = getFilePath();
-            StringBuilder sb = new StringBuilder();
             File file = new File(fn);
 
             updateTitle("Reading last " + LIMIT + " lines");
@@ -2672,83 +2671,55 @@ public class SearchBigFile extends AppFrame {
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
                 long fileLength = file.length() - 1;
                 debug("Read: file length to seek: " + fileLength);
-                // Set the pointer at the last of the file
-                randomAccessFile.seek(fileLength);
 
                 long time = System.currentTimeMillis();
-                for (long pointer = fileLength; pointer >= 0; pointer--) {
-                    //TODO: take in byte[]
+                int len = fileLength > MAX_READ_CHAR_LIMIT ? MAX_READ_CHAR_LIMIT : (int) fileLength;
+                byte[] bytes = new byte[len];
+
+                for (long pointer = fileLength; pointer >= 0; ) {
                     randomAccessFile.seek(pointer);
-                    char c;
-                    // read from the last, one char at the time
-                    c = (char) randomAccessFile.read();
-                    // break when end of the line
-                    boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
-                    if (maxReadCharLimitReached) {
-                        maxReadCharTimes++;
+                    randomAccessFile.read(bytes);
+                    pointer -= len;
+
+                    String dt = new String(bytes);
+                    String[] lines = dt.split(LN_BRK);
+                    int lnBrkTill = readLines + lines.length;
+                    if (lines.length != 0 && !dt.endsWith(LN_BRK)) {
+                        lnBrkTill--;
                     }
-                    boolean isNewLineChar = c == '\n';
-                    if (isNewLineChar || maxReadCharLimitReached) {
 
-                        if (!isNewLineChar) {
-                            sb.append(c);
-                        }
-
-                        if (Utils.hasValue(sb.toString())) {
-                            sb.reverse();
-                        }
-
-                        occr += calculateOccr(sb.toString(), searchPattern);
-                        processForRead(readLines, sb.toString(), occr, isNewLineChar);
-
-                        sb = new StringBuilder();
-                        if (isNewLineChar) {
-                            readLines++;
-                        }
-                        // Last line will be printed after loop
-                        if (readLines == LIMIT - 1) {
-                            break;
-                        }
+                    for (int i = lines.length - 1; i >= 0; i--) {
+                        String l = lines[i];
+                        occr += calculateOccr(l, searchPattern);
+                        processForRead(readLines, l, occr, readLines <= lnBrkTill);
+                        readLines++;
                         if (isCancelled()) {
                             logger.warn("---xxx--- Read cancelled ---xxx---");
                             break;
                         }
-                        if (maxReadCharLimitReached) {
-                            freeMemory();
+                        if (readLines > LIMIT) {
+                            break;
                         }
-                    } else {
-                        sb.append(c);
                     }
-                    fileLength = fileLength - pointer;
-                }
-                if (maxReadCharTimes > 0) {
-                    logger.info("read: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
-                            + Utils.addBraces(maxReadCharTimes) + " times, processing...");
+                    if (readLines > LIMIT) {
+                        break;
+                    }
                 }
 
                 info("File read complete in " + Utils.getTimeDiffSecMilliStr(time));
-                if (Utils.hasValue(sb.toString())) {
-                    sb.reverse();
-                }
-                // last remaining data
-                processForRead(false, readLines, sb.toString(), occr, true, true);
-                readLines++;
             } catch (FileNotFoundException e) {
                 catchForRead(e);
                 hasError = true;
                 sbf.fileNotFoundAction();
-            } catch (IOException e) {
-                catchForRead(e);
-                hasError = true;
             } catch (Exception e) {
-                logger.error(e);
                 catchForRead(e);
                 hasError = true;
             } finally {
                 enableControls();
             }
 
-            occr += calculateOccr(sb.toString(), searchPattern);
+            //TODO: check this
+            //occr += calculateOccr(sb.toString(), searchPattern);
             occrTillNow = occr;
             if (!hasError) {
                 timeTaken = Utils.getTimeDiffSecMilliStr(startTime);
@@ -2779,13 +2750,13 @@ public class SearchBigFile extends AppFrame {
             processForRead(true, line, str, occr, appendLineNum, false);
         }
 
-        private void processForRead(boolean needBR, int line, String str, int occr, boolean appendLineNum, boolean bypass) {
+        private void processForRead(boolean needBR, int lineNum, String str, int occr, boolean appendLineNum, boolean bypass) {
             String strToAppend = "";
             if (appendLineNum) {
                 if (needBR) {
-                    strToAppend = addLineNumAndEscAtStart(line + 1, str);
+                    strToAppend = addLineNumAndEscAtStart(lineNum + 1, str);
                 } else {
-                    strToAppend = addOnlyLineNumAndEsc(line + 1, str);
+                    strToAppend = addOnlyLineNumAndEsc(lineNum + 1, str);
                 }
             } else {
                 strToAppend = escString(str);
@@ -2802,7 +2773,7 @@ public class SearchBigFile extends AppFrame {
             }
 
             occrTillNow = occr;
-            linesTillNow = line;
+            linesTillNow = lineNum;
             if (!showWarning && occr > WARN_LIMIT_OCCR) {
                 showWarning = true;
             }
