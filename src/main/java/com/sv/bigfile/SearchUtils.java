@@ -65,7 +65,7 @@ public class SearchUtils {
 
     private String removeHtml(String text) {
         // need to check this
-        String ls = System.lineSeparator();
+        String ls = Constants.LN_BRK;
 
         text = text.replaceAll(" {4}", "");
         text = Utils.unescape(text);
@@ -78,7 +78,7 @@ public class SearchUtils {
 
         // handling line numbers
         String toRemove = "</span>";
-        String[] allLines = text.split(ls);
+        String[] allLines = text.split(Constants.LN_BRK_REGEX, -1);
         StringBuilder sb = new StringBuilder();
         for (String l : allLines) {
             if (l.contains(toRemove)) {

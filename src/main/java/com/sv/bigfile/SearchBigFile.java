@@ -754,7 +754,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public void trackMemory() {
-        debug(getMemoryDetails());
+        //debug(getMemoryDetails());
         if (isWindowActive()) {
             long total = Runtime.getRuntime().totalMemory();
             long free = Runtime.getRuntime().freeMemory();
@@ -2074,8 +2074,8 @@ public class SearchBigFile extends AppFrame {
                 if (isReadOpr()) {
                     Element body = getBodyElement();
                     int offs = Math.max(body.getStartOffset(), 0);
-//                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
-                    kit.insertHTML(htmlDoc, 0, data, 0, 0, null);
+                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
+//                    kit.insertHTML(htmlDoc, 0, data, 0, 0, null);
                 } else {
                     kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
                 }
@@ -2669,30 +2669,69 @@ public class SearchBigFile extends AppFrame {
             stack.removeAllElements();
 
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                long fileLength = file.length() - 1;
+                long fileLength = file.length();
                 debug("Read: file length to seek: " + fileLength);
 
                 long time = System.currentTimeMillis();
                 int len = fileLength > MAX_READ_CHAR_LIMIT ? MAX_READ_CHAR_LIMIT : (int) fileLength;
                 byte[] bytes = new byte[len];
+                long pointer = fileLength;
 
-                for (long pointer = fileLength; pointer >= 0; ) {
+//                System.out.println("len = " + len);
+//                System.out.println("fileLength = " + fileLength);
+//                System.out.println("fileLength = " + Utils.getSizeString(fileLength));
+                while (pointer > 0) {
+
+//                    System.out.println("1..pointer = " + pointer);
+                    if (pointer > MAX_READ_CHAR_LIMIT) {
+                        pointer -= len;
+                    } else {
+                        pointer = 0;
+                    }
+
+//                    System.out.println("2..pointer = " + pointer);
+//                    System.out.println("bytes = " + bytes.length);
                     randomAccessFile.seek(pointer);
                     randomAccessFile.read(bytes);
-                    pointer -= len;
-
                     String dt = new String(bytes);
-                    String[] lines = dt.split(LN_BRK);
+                    if (pointer == 0) {
+                        pointer = -1;
+                    }
+
+//                    System.out.println("pointer = " + pointer);
+                    // below check needed after reducing len
+                    if (pointer < MAX_READ_CHAR_LIMIT && pointer != -1) {
+                        bytes = new byte[(int) pointer];
+                    }
+
+                    String lnBrk = dt.contains(LN_BRK) ? LN_BRK : LN_BRK_REGEX;
+                    String[] lines = dt.split(lnBrk, -1);
                     int lnBrkTill = readLines + lines.length;
-                    if (lines.length != 0 && !dt.endsWith(LN_BRK)) {
+                    boolean singleLine = lines.length == 1 && !dt.endsWith(lnBrk);
+                    if (!dt.endsWith(lnBrk)) {
                         lnBrkTill--;
                     }
+//                    System.out.println("singleLine = " + singleLine);
+//                    System.out.println("readLines = " + readLines);
+//                    System.out.println("lnBrkTill = " + lnBrkTill);
+//                    System.out.println("lines.length = " + lines.length);
 
                     for (int i = lines.length - 1; i >= 0; i--) {
                         String l = lines[i];
+                        //System.out.println("i = " + i);
                         occr += calculateOccr(l, searchPattern);
-                        processForRead(readLines, l, occr, readLines <= lnBrkTill);
-                        readLines++;
+                        boolean needBr = (pointer < 0 && lines.length == 1) || pointer > 0 || i > 0;
+                        boolean needLN = (pointer < 0 && lines.length == 1) || (!singleLine && readLines <= lnBrkTill);
+                        if (occr < errorOccrLimit) {
+                            processForRead(needBr, readLines, l, occr, needLN, false);
+                        } else {
+                            logger.warn("Stopping forcefully, occurrences limit crossed " + Utils.addBraces(occr));
+                            cancelSearch();
+                            break;
+                        }
+                        if (!singleLine) {
+                            readLines++;
+                        }
                         if (isCancelled()) {
                             logger.warn("---xxx--- Read cancelled ---xxx---");
                             break;
@@ -2701,11 +2740,14 @@ public class SearchBigFile extends AppFrame {
                             break;
                         }
                     }
-                    if (readLines > LIMIT) {
+                    if (readLines > LIMIT || isCancelled()) {
                         break;
                     }
                 }
+                ;
 
+                // for bypass condition if chunks are small
+                processForRead(false, readLines, "", occr, false, true);
                 info("File read complete in " + Utils.getTimeDiffSecMilliStr(time));
             } catch (FileNotFoundException e) {
                 catchForRead(e);
@@ -2732,6 +2774,7 @@ public class SearchBigFile extends AppFrame {
                 String statusStr = isCancelled() ? "Read cancelled - " : "Read complete - ";
                 updateTitleAndMsg(statusStr + result, getMsgTypeForOpr());
             }
+
             status = Status.DONE;
 
             // No need to wait as data can be async added at top
@@ -2750,14 +2793,11 @@ public class SearchBigFile extends AppFrame {
             processForRead(true, line, str, occr, appendLineNum, false);
         }
 
-        private void processForRead(boolean needBR, int lineNum, String str, int occr, boolean appendLineNum, boolean bypass) {
+        private void processForRead(boolean needBRAtStart, int lineNum, String str, int occr, boolean appendLineNum, boolean bypass) {
             String strToAppend = "";
             if (appendLineNum) {
-                if (needBR) {
-                    strToAppend = addLineNumAndEscAtStart(lineNum + 1, str);
-                } else {
-                    strToAppend = addOnlyLineNumAndEsc(lineNum + 1, str);
-                }
+                strToAppend = needBRAtStart ? addLineNumAndEscAtStart(lineNum + 1, str) :
+                        addOnlyLineNumAndEsc(lineNum + 1, str);
             } else {
                 strToAppend = escString(str);
             }
@@ -2800,10 +2840,8 @@ public class SearchBigFile extends AppFrame {
                 if (occr > 0) {
                     stats.setOccurrences(stats.getOccurrences() + occr);
                     sb.append(escString(stats.getLine()));
-                    if (addLineEnding) {
-                        qMsgsToAppend.add(addLineNumAndEscAtStart(stats.getLineNum(), ""));
-                    }
-                    qMsgsToAppend.add(sb.toString());
+                    String s = addLineEnding ? addLineNumAndEscAtStart(stats.getLineNum(), "") : "";
+                    qMsgsToAppend.add(s + sb.toString());
                 }
             }
             if (addLineEnding) {
@@ -2932,7 +2970,8 @@ public class SearchBigFile extends AppFrame {
                     bb.flip();
                     String s = StandardCharsets.UTF_8.decode(bb).toString();
                     bb.clear();
-                    String[] lines = s.split(LN_BRK);
+                    String lnBrk = s.contains(LN_BRK) ? LN_BRK : LN_BRK_REGEX;
+                    String[] lines = s.split(lnBrk);
 
                     for (int i = 0, linesLength = lines.length; i < linesLength; i++) {
                         String ln = lines[i];
@@ -2999,9 +3038,6 @@ public class SearchBigFile extends AppFrame {
             } catch (FileNotFoundException e) {
                 searchFailed(e);
                 sbf.fileNotFoundAction();
-                logger.error(e);
-            } catch (IOException e) {
-                searchFailed(e);
                 logger.error(e);
             } catch (Exception e) {
                 searchFailed(e);
