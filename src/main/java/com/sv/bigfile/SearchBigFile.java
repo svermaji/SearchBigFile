@@ -634,6 +634,11 @@ public class SearchBigFile extends AppFrame {
         setTabCloseButtonColor();
         info("Last tabs reloaded. Results tab data size " + Utils.addBraces(resultTabsData.size()));
         lblMsg.setText(getInitialMsg());
+        new Timer().schedule(new AppFontChangerTask(this), SEC_1 * 3);
+    }
+
+    public void changeAppFont() {
+        SwingUtils.applyAppFont(getContentPane(), appFontSize, this, logger);
     }
 
     private void updateForActiveTab() {
@@ -893,7 +898,11 @@ public class SearchBigFile extends AppFrame {
 
     // This will be called by reflection from SwingUI jar
     public void appFontChanged(Integer fs) {
+        appFontSize = fs;
         logger.info("Application font changed to " + Utils.addBraces(fs));
+
+        TitledBorder[] borders = {filePanelBorder, searchPanelBorder, controlPanelBorder};
+        Arrays.stream(borders).forEach(t -> t.setTitleFont(SwingUtils.getNewFontSize(t.getTitleFont(), fs)));
     }
 
     // This will be called by reflection from SwingUI jar
