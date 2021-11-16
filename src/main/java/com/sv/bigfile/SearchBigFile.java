@@ -73,7 +73,8 @@ public class SearchBigFile extends AppFrame {
         RecentFiles, FilePath, SearchString, RecentSearches, LastN, FontSize, FontIndex,
         ColorIndex, ChangeFontAuto, ChangeHighlightAuto, ApplyColorToApp, AutoLock,
         ClipboardSupport, MatchCase, WholeWord, FixedWidth, MultiTab, ReopenLastTabs,
-        ErrorTimeLimit, ErrorOccrLimit, DebugEnabled, LogSimpleClassName, ErrorMemoryLimitInMB
+        ErrorTimeLimit, ErrorOccrLimit, DebugEnabled, LogSimpleClassName, ErrorMemoryLimitInMB,
+        AppFontSize
     }
 
     public enum Status {
@@ -103,7 +104,7 @@ public class SearchBigFile extends AppFrame {
     private AppTabbedPane tabbedPane;
     private Map<String, ResultTabData> resultTabsData;
     private ResultTabData activeResultTabData = null;
-    private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts;
+    private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts, menuAppFonts;
     private AppToolBar jtbFile, jtbSearch, jtbControls, msgButtons;
     private JPanel msgPanel;
     private JLabel lblMsg, lblFilePath, lblSearch;
@@ -147,6 +148,10 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
     private static String timeTaken;
     private static long lineNums;
+    private static final int MIN_APPFONTSIZE = 8;
+    private static final int MAX_APPFONTSIZE = 28;
+    private static final int DEFUALT_APPFONTSIZE = 12;
+    private static int appFontSize = 0;
     private static int fontIdx = 0;
     private static int colorIdx = 0;
     private static int errorMemoryLimitInMB = 0;
@@ -206,6 +211,7 @@ public class SearchBigFile extends AppFrame {
 
         super.setLogger(logger);
 
+        appFontSize = Utils.validateInt(getIntCfg(Configs.AppFontSize), DEFUALT_APPFONTSIZE, MIN_APPFONTSIZE, MAX_APPFONTSIZE);
         errorTimeLimit = getIntCfg(Configs.ErrorTimeLimit);
         errorOccrLimit = getIntCfg(Configs.ErrorOccrLimit);
         errorMemoryLimitInMB = getIntCfg(Configs.ErrorMemoryLimitInMB);
@@ -886,6 +892,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     // This will be called by reflection from SwingUI jar
+    public void appFontChanged(Integer fs) {
+        logger.info("Application font changed to " + Utils.addBraces(fs));
+    }
+
+    // This will be called by reflection from SwingUI jar
     public void colorChange(Integer x) {
         if (isWindowActive()) {
             colorIdx = x;
@@ -1012,7 +1023,10 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
                 Utils.addBraces(getFontFromEnum()), this, logger);
+        menuAppFonts = SwingUtils.getAppFontMenu(getContentPane(), this, appFontSize, logger);
         menuSettings.add(menuFonts);
+        menuSettings.addSeparator();
+        menuSettings.add(menuAppFonts);
         menuSettings.addSeparator();
         menuSettings.add(jcbmiHighlights);
         menuSettings.add(SwingUtils.getColorsMenu("Highlights", 'g', "Highlight colors",
@@ -2140,6 +2154,10 @@ public class SearchBigFile extends AppFrame {
         return tpResults.getFont().getSize() + "";
     }
 
+    public String getAppFontSize() {
+        return appFontSize + "";
+    }
+
     public String getFontIndex() {
         return fontIdx + "";
     }
@@ -2744,7 +2762,6 @@ public class SearchBigFile extends AppFrame {
                         break;
                     }
                 }
-                ;
 
                 // for bypass condition if chunks are small
                 processForRead(false, readLines, "", occr, false, true);
