@@ -2734,12 +2734,21 @@ public class SearchBigFile extends AppFrame {
 //                    System.out.println("lnBrkTill = " + lnBrkTill);
 //                    System.out.println("lines.length = " + lines.length);
 
-                    for (int i = lines.length - 1; i >= 0; i--) {
+                    int linesCnt = lines.length;
+                    for (int i = linesCnt - 1; i >= 0; i--) {
                         String l = lines[i];
                         //System.out.println("i = " + i);
                         occr += calculateOccr(l, searchPattern);
-                        boolean needBr = (pointer < 0 && lines.length == 1) || pointer > 0 || i > 0;
-                        boolean needLN = (pointer < 0 && lines.length == 1) || (!singleLine && readLines <= lnBrkTill);
+                        debug("pointer " + Utils.addBraces(pointer) +
+                                ", line num " + Utils.addBraces(i) +
+                                ", singleLine " + Utils.addBraces(singleLine) +
+                                ", readLines " + Utils.addBraces(readLines) +
+                                ", linesCnt " + Utils.addBraces(linesCnt) +
+                                ", line length " + Utils.addBraces(l.length()) +
+                                " and lnBrkTill " + Utils.addBraces(lnBrkTill)
+                        );
+                        boolean needBr = (pointer < 0 && linesCnt == 1) || pointer > 0 || i > 0;
+                        boolean needLN = (pointer < 0 && linesCnt == 1) || (!singleLine && readLines < lnBrkTill);
                         if (occr < errorOccrLimit) {
                             processForRead(needBr, readLines, l, occr, needLN, false);
                         } else {
@@ -2754,11 +2763,11 @@ public class SearchBigFile extends AppFrame {
                             logger.warn("---xxx--- Read cancelled ---xxx---");
                             break;
                         }
-                        if (readLines > LIMIT) {
+                        if (readLines >= LIMIT) {
                             break;
                         }
                     }
-                    if (readLines > LIMIT || isCancelled()) {
+                    if (readLines >= LIMIT || isCancelled()) {
                         break;
                     }
                 }
@@ -2817,6 +2826,9 @@ public class SearchBigFile extends AppFrame {
                         addOnlyLineNumAndEsc(lineNum + 1, str);
             } else {
                 strToAppend = escString(str);
+            }
+            if (lineNum == 99 || lineNum == 100 || lineNum == 101 || lineNum == 106) {
+                debug(Utils.addBraces(strToAppend));
             }
             synchronized (SearchBigFile.class) {
                 // emptying stack to Q
@@ -2967,8 +2979,7 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
-            final int KB1 = 1024;
-            final int BUFFER_SIZE = 200 * KB1;
+            final int BUFFER_SIZE = 200 * KB;
             String searchPattern = sbf.processPattern();
             String path = sbf.getFilePath();
 /*
