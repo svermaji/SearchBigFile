@@ -634,11 +634,11 @@ public class SearchBigFile extends AppFrame {
         setTabCloseButtonColor();
         info("Last tabs reloaded. Results tab data size " + Utils.addBraces(resultTabsData.size()));
         lblMsg.setText(getInitialMsg());
-        new Timer().schedule(new AppFontChangerTask(this), SEC_1 * 3);
+        new Timer().schedule(new AppFontChangerTask(this), SEC_1);
     }
 
     public void changeAppFont() {
-        SwingUtils.applyAppFont(getContentPane(), appFontSize, this, logger);
+        SwingUtils.applyAppFont(this, appFontSize, this, logger);
     }
 
     private void updateForActiveTab() {
@@ -1032,7 +1032,7 @@ public class SearchBigFile extends AppFrame {
         menuSettings.add(jcbmiFonts);
         menuFonts = SwingUtils.getFontsMenu("Fonts", 'o', "Fonts",
                 Utils.addBraces(getFontFromEnum()), this, logger);
-        menuAppFonts = SwingUtils.getAppFontMenu(getContentPane(), this, appFontSize, logger);
+        menuAppFonts = SwingUtils.getAppFontMenu(this, this, appFontSize, logger);
         menuSettings.add(menuFonts);
         menuSettings.addSeparator();
         menuSettings.add(menuAppFonts);
