@@ -2099,8 +2099,8 @@ public class SearchBigFile extends AppFrame {
                 if (isReadOpr()) {
                     Element body = getBodyElement();
                     int offs = Math.max(body.getStartOffset(), 0);
-//                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
-                    kit.insertHTML(htmlDoc, 0, data, 0, 0, null);
+                    kit.insertHTML(htmlDoc, offs, data, 0, 0, null);
+//                    kit.insertHTML(htmlDoc, 0, data, 0, 0, null);
                 } else {
                     kit.insertHTML(htmlDoc, htmlDoc.getLength(), data, 0, 0, null);
                 }
@@ -2699,39 +2699,30 @@ public class SearchBigFile extends AppFrame {
             stack.removeAllElements();
 
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-                long fileLength = file.length() - 1;
-                // Set the pointer at the last of the file
-
-                int len = fileLength > MAX_READ_CHAR_LIMIT ? MAX_READ_CHAR_LIMIT : (int) fileLength;
+                long fileLength = file.length();
                 long time = System.currentTimeMillis();
                 for (long pointer = fileLength; pointer >= 0; ) {
+                    int len = pointer > MAX_READ_CHAR_LIMIT ? MAX_READ_CHAR_LIMIT : (int) pointer;
+                    pointer -= len;
                     randomAccessFile.seek(pointer);
                     byte[] bytes = new byte[len];
                     randomAccessFile.read(bytes);
-                    System.out.println("data = " + new String(bytes));
-                    if (pointer > MAX_READ_CHAR_LIMIT) {
-                        pointer -= len;
-                    } else {
-                        if (pointer == 0) {
-                            // to break loop
-                            pointer = -1;
-                        } else {
-                            pointer = 0;
-                        }
+                    if (pointer <= 0) {
+                        // to break loop
+                        pointer = -1;
                     }
-                    System.out.println("pointer = " + pointer);
                     int bl = bytes.length;
-                    for (int i = bl - 1; i >= 0; i--) {
+                    for (int i = bl - 1; i > -1; i--) {
                         char c = (char) bytes[i];
                         // break when end of the line
                         boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
                         if (maxReadCharLimitReached) {
                             maxReadCharTimes++;
                         }
-                        boolean isNewLineChar = c == '\n';
-                        if (isNewLineChar || maxReadCharLimitReached) {
+                        boolean newLineChar = c == '\n';
+                        if (newLineChar || maxReadCharLimitReached) {
 
-                            if (!isNewLineChar) {
+                            if (!newLineChar) {
                                 sb.append(c);
                             }
 
@@ -2740,10 +2731,10 @@ public class SearchBigFile extends AppFrame {
                             }
 
                             occr += calculateOccr(sb.toString(), searchPattern);
-                            processForRead(readLines, sb.toString(), occr, isNewLineChar);
+                            processForRead(readLines, sb.toString(), occr, newLineChar);
 
                             sb = new StringBuilder();
-                            if (isNewLineChar) {
+                            if (newLineChar) {
                                 readLines++;
                             }
 
@@ -2768,12 +2759,12 @@ public class SearchBigFile extends AppFrame {
                 }
 
                 info("File read complete in " + Utils.getTimeDiffSecMilliStr(time));
-                /*if (Utils.hasValue(sb.toString())) {
+                if (Utils.hasValue(sb.toString())) {
                     sb.reverse();
-                }*/
+                }
                 // last remaining data
-//                processForRead(false, readLines, sb.toString(), occr, true, true);
-                //readLines++;
+                processForRead(false, readLines, sb.toString(), occr, true, true);
+                readLines++;
             } catch (FileNotFoundException e) {
                 catchForRead(e);
                 hasError = true;
