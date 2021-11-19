@@ -14,9 +14,14 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
 * **Email:** shailendravermag@gmail.com
 * **Blogs:** https://sv-technical.blogspot.com/
 
-## Test Results!!
+## Test Results - with ByteBuffer implementation!!
+ - File size `[3GB]`, type `[Text]`, lines processed `[59999997]` and pattern find `[0]` times, time taken `[37sec]`
+ - File size `[1GB]`, type `[Text]`, lines processed `[19499809]` and pattern find `[0]` times, time taken `[16sec]`
+ - Supports file of more size but time increases
+
+## Test Results - with BufferedReader implementation!!
  - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`
- - Attaching result with the name as `With BufferedReader`
+ - Supports file till 1GB only
 
 ## Description
 * Pom.xml versions:
@@ -25,6 +30,8 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
     * Added theme support and key bindings
   * 3.0 - Planned to have multi file search support
 * Now multi tab is supported. 
+* Font size can be applied to application when used on high resolution machine. 
+* Tooltip will have custom color and font. 
 * Program stores the last searched file and search string. 
 * Support search as you type
 * Clipboard support via menu

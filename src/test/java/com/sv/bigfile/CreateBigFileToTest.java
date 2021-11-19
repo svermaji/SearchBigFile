@@ -4,6 +4,7 @@ import com.sv.core.Utils;
 
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 
 public class CreateBigFileToTest {
 
@@ -21,23 +22,25 @@ public class CreateBigFileToTest {
         String line2 = "This is test line used for creating big file # ";
         String line3 = "I am enjoying this # ";
 
-        String fn = "test-big-file.txt";
-        String fn3 = "test-big-file3.txt";
-        String fn2 = "test-single-line-big-file.txt";
+        String fn = "test-file-1GB.txt";
+        String fn3 = "test-file-3GB.txt";
+        String fn2 = "test-file-single-line.txt";
         StringBuilder sb = new StringBuilder("File created on " + Utils.getFormattedDate());
-        StandardOpenOption soo = Files.exists(Utils.createPath(fn)) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
-        Utils.writeFile(fn, sb.toString(), null, soo);
-        soo = Files.exists(Utils.createPath(fn2)) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
-        Utils.writeFile(fn2, sb.toString(), null, soo);
-        soo = Files.exists(Utils.createPath(fn3)) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
-        Utils.writeFile(fn3, sb.toString(), null, soo);
+        String[] arr = {fn, fn2, fn3};
+        StringBuilder finalSb = sb;
+        Arrays.stream(arr).forEach(f -> {
+            StandardOpenOption soo = Files.exists(Utils.createPath(f)) ?
+                    StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE;
+            Utils.writeFile(f, finalSb.toString(), null, soo);
+        });
+
         sb = new StringBuilder();
         int MB_14_LINES = 100000;
-        int GB_1_5_LINES = MB_14_LINES * 100;
+        int GB_1_LINES = MB_14_LINES * 65;
         int GB_3_LINES = MB_14_LINES * 200;
         int APPEND_AFTER = 100000;
         long time = System.currentTimeMillis();
-        for (int i = 0; i < GB_1_5_LINES; i++) {
+        for (int i = 0; i < GB_1_LINES; i++) {
             sb.append(ln).append(line1).append(i);
             sb.append(ln).append(line2).append(i);
             sb.append(ln).append(line3).append(i);

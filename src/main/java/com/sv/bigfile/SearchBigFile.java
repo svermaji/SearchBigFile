@@ -2757,6 +2757,7 @@ public class SearchBigFile extends AppFrame {
                                 sb.reverse();
                             }
 
+                            //TODO: check if mixed approach can be used based on size
                             occr += calculateOccr(sb.toString(), searchPattern);
                             processForRead(readLines, sb.toString(), occr, newLineChar);
 
