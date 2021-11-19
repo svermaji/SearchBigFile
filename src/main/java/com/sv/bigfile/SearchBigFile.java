@@ -150,8 +150,9 @@ public class SearchBigFile extends AppFrame {
     private static long lineNums;
     private static final int MIN_APPFONTSIZE = 8;
     private static final int MAX_APPFONTSIZE = 28;
-    private static final int DEFUALT_APPFONTSIZE = 12;
+    private static final int DEFAULT_APPFONTSIZE = 12;
     private static int appFontSize = 0;
+    private static int resultFontSize = 0;
     private static int fontIdx = 0;
     private static int colorIdx = 0;
     private static int errorMemoryLimitInMB = 0;
@@ -211,11 +212,14 @@ public class SearchBigFile extends AppFrame {
 
         super.setLogger(logger);
 
-        appFontSize = Utils.validateInt(getIntCfg(Configs.AppFontSize), DEFUALT_APPFONTSIZE, MIN_APPFONTSIZE, MAX_APPFONTSIZE);
+        appFontSize = Utils.validateInt(getIntCfg(Configs.AppFontSize), DEFAULT_APPFONTSIZE, MIN_APPFONTSIZE, MAX_APPFONTSIZE);
+        resultFontSize = Utils.validateInt(getIntCfg(Configs.FontSize), DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE);
         errorTimeLimit = getIntCfg(Configs.ErrorTimeLimit);
         errorOccrLimit = getIntCfg(Configs.ErrorOccrLimit);
         errorMemoryLimitInMB = getIntCfg(Configs.ErrorMemoryLimitInMB);
-        info("errorTimeLimit [" + errorTimeLimit + "], " +
+        info("appFontSize [" + appFontSize + "], " +
+                "resultFontSize [" + resultFontSize + "], " +
+                "errorTimeLimit [" + errorTimeLimit + "], " +
                 "errorOccrLimit [" + errorOccrLimit + "], " +
                 "errorMemoryLimitInMB [" + errorMemoryLimitInMB + "]");
 
@@ -471,7 +475,7 @@ public class SearchBigFile extends AppFrame {
         msgPanel = new JPanel(new BorderLayout());
         lblMsg = new AppLabel();
         lblMsg.setHorizontalAlignment(SwingConstants.CENTER);
-        lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, 12));
+        lblMsg.setFont(getNewFont(lblMsg.getFont(), Font.PLAIN, appFontSize));
         uin = UIName.BTN_SHOWALL;
         btnShowAll = new AppButton(uin.name, uin.mnemonic, uin.tip);
         btnShowAll.addActionListener(e -> showAllOccr());
@@ -563,7 +567,6 @@ public class SearchBigFile extends AppFrame {
                 btnLastN, btnShowAll, btnMemory, btnHelp, jcbMatchCase, jcbWholeWord
         };
 
-        setFontSize(FONT_OPR.NONE);
         setControlsToEnable();
         setupHelp();
         setupContactMe();
@@ -639,8 +642,6 @@ public class SearchBigFile extends AppFrame {
 
     public void changeAppFont() {
         SwingUtils.applyAppFont(this, appFontSize, this, logger);
-        tpResults.setFont(getNewFont(tpResults.getFont(),
-                Utils.convertToInt(btnResetFont.getText(), DEFAULT_FONT_SIZE)));
     }
 
     private void updateForActiveTab() {
@@ -701,6 +702,7 @@ public class SearchBigFile extends AppFrame {
             lastSelectedRow = activeResultTabData.getLastSelectedRow();
             lineOffsets = activeResultTabData.getLineOffsets();
         }
+        resetResultsFont();
     }
 
     private void addOrSetActiveTab() {
@@ -763,6 +765,7 @@ public class SearchBigFile extends AppFrame {
                 selectTab(activeResultTabData.getJspPane());
             }
         }
+        SwingUtils.applyAppFont(tabbedPane, appFontSize, this, logger);
         info("activeResultTabData set as " + activeResultTabData);
     }
 
@@ -905,6 +908,15 @@ public class SearchBigFile extends AppFrame {
 
         TitledBorder[] borders = {filePanelBorder, searchPanelBorder, controlPanelBorder};
         Arrays.stream(borders).forEach(t -> t.setTitleFont(SwingUtils.getNewFontSize(t.getTitleFont(), fs)));
+        resetResultsFont();
+        // calling to change tooltip font
+        changeAppColor();
+    }
+
+    private void resetResultsFont() {
+        debug("After changing app font, resetting results font to " + Utils.addBraces(resultFontSize));
+        tpResults.setFont(getNewFont(tpResults.getFont(), resultFontSize));
+        btnResetFont.setText(getFontSize());
     }
 
     // This will be called by reflection from SwingUI jar
@@ -920,6 +932,8 @@ public class SearchBigFile extends AppFrame {
         if (isWindowActive()) {
             fontIdx = x;
             setMsgFont(f);
+            // calling to change tooltip font
+            changeAppColor();
         }
     }
 
@@ -1379,7 +1393,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void applyTooltipColor(Component c) {
-        SwingUtils.applyTooltipColor(c, selectionTextColor, selectionColor);
+        SwingUtils.applyTooltipColorNFont(c, selectionTextColor, selectionColor, lblMsg.getFont());
     }
 
     private void applyTabCloseCompColor(TabCloseComponent tcc) {
@@ -1651,18 +1665,18 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void increaseFontSize() {
-        setFontSize(FONT_OPR.INCREASE);
+        setEditorFontSize(FONT_OPR.INCREASE);
     }
 
     private void decreaseFontSize() {
-        setFontSize(FONT_OPR.DECREASE);
+        setEditorFontSize(FONT_OPR.DECREASE);
     }
 
     private void resetFontSize() {
-        setFontSize(FONT_OPR.RESET);
+        setEditorFontSize(FONT_OPR.RESET);
     }
 
-    private void setFontSize(FONT_OPR opr) {
+    private void setEditorFontSize(FONT_OPR opr) {
         //hideHelp();
         Font font = tpResults.getFont();
         boolean changed = false;
@@ -2595,7 +2609,7 @@ public class SearchBigFile extends AppFrame {
     public void changeMsgFont() {
         if (Boolean.parseBoolean(getChangeFontAuto())) {
             Font f = lblMsg.getFont();
-            f = new Font(getNextFont(), f.getStyle(), f.getSize());
+            f = new Font(getNextFont(), f.getStyle(), appFontSize);
             setMsgFont(f);
         }
 
