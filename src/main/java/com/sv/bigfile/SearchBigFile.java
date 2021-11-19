@@ -1422,6 +1422,7 @@ public class SearchBigFile extends AppFrame {
                 m.add(mi);
             }
         }
+        SwingUtils.changeFont(m, appFontSize);
     }
 
     private void addKeyMapToMenuItem(AbstractAction action, AppMenuItem mi, char keycode, String mapKey) {
