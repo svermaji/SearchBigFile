@@ -156,6 +156,7 @@ public class SearchBigFile extends AppFrame {
     private static int fontIdx = 0;
     private static int colorIdx = 0;
     private static int errorMemoryLimitInMB = 0;
+    private static int warnMemoryLimitInMB = 0;
 
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
@@ -217,10 +218,12 @@ public class SearchBigFile extends AppFrame {
         errorTimeLimit = getIntCfg(Configs.ErrorTimeLimit);
         errorOccrLimit = getIntCfg(Configs.ErrorOccrLimit);
         errorMemoryLimitInMB = getIntCfg(Configs.ErrorMemoryLimitInMB);
+        warnMemoryLimitInMB = errorMemoryLimitInMB / 2;
         info("appFontSize [" + appFontSize + "], " +
                 "resultFontSize [" + resultFontSize + "], " +
                 "errorTimeLimit [" + errorTimeLimit + "], " +
                 "errorOccrLimit [" + errorOccrLimit + "], " +
+                "warnMemoryLimitInMB [" + warnMemoryLimitInMB + "], " +
                 "errorMemoryLimitInMB [" + errorMemoryLimitInMB + "]");
 
         resultTabsData = new HashMap<>();
@@ -765,7 +768,9 @@ public class SearchBigFile extends AppFrame {
                 selectTab(activeResultTabData.getJspPane());
             }
         }
-        SwingUtils.applyAppFont(tabbedPane, appFontSize, this, logger);
+        if (jspResults != null) {
+            SwingUtils.applyAppFont(tabbedPane, appFontSize, this, logger);
+        }
         info("activeResultTabData set as " + activeResultTabData);
     }
 
@@ -914,9 +919,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private void resetResultsFont() {
-        debug("After changing app font, resetting results font to " + Utils.addBraces(resultFontSize));
-        tpResults.setFont(getNewFont(tpResults.getFont(), resultFontSize));
-        btnResetFont.setText(getFontSize());
+        if (tpResults != null) {
+            debug("After changing app font, resetting results font to " + Utils.addBraces(resultFontSize));
+            tpResults.setFont(getNewFont(tpResults.getFont(), resultFontSize));
+            btnResetFont.setText(getFontSize());
+        }
     }
 
     // This will be called by reflection from SwingUI jar
@@ -2574,9 +2581,13 @@ public class SearchBigFile extends AppFrame {
         return timeTillNow > WARN_LIMIT_SEC || occrTillNow > WARN_LIMIT_OCCR;
     }
 
+    public boolean isWarnMemoryState() {
+        return getTotalMemory() > warnMemoryLimitInMB;
+    }
+
     public boolean isErrorState() {
-        return timeTillNow > errorTimeLimit || occrTillNow > errorOccrLimit;
-        //|| isMemoryOutOfLimit();
+        return timeTillNow > errorTimeLimit || occrTillNow > errorOccrLimit
+                || isMemoryOutOfLimit();
     }
 
     public void incRCtrNAppendIdxData() {
@@ -2727,10 +2738,11 @@ public class SearchBigFile extends AppFrame {
                         pointer = -1;
                     }
                     int bl = bytes.length;
+                    boolean maxReadCharLimitReached;
                     for (int i = bl - 1; i > -1; i--) {
                         char c = (char) bytes[i];
                         // break when end of the line
-                        boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
+                        maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
                         if (maxReadCharLimitReached) {
                             maxReadCharTimes++;
                         }
@@ -2853,7 +2865,7 @@ public class SearchBigFile extends AppFrame {
     // To avoid async order of lines this cannot be worker
     class SearchData {
 
-        private final int LINES_TO_INFORM = 5_00_000;
+        private final int LINES_TO_INFORM = 1000_000;
         private final SearchStats stats;
 
         SearchData(SearchStats stats) {
@@ -2901,6 +2913,7 @@ public class SearchBigFile extends AppFrame {
         @Override
         public Boolean call() {
             long timeElapse = 0;
+            boolean warnMemoryState = false;
             do {
                 // Due to multi threading, separate if is imposed
                 if (isReading()) {
@@ -2911,6 +2924,11 @@ public class SearchBigFile extends AppFrame {
                         msg = sbf.getProblemMsg();
                         sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
+                    }
+                    if (!warnMemoryState && isWarnMemoryState()) {
+                        warnMemoryState = true;
+                        sbf.debug("Memory " + getTotalMemoryStr() + " raised from warning state, trying to free memory.");
+                        freeMemory();
                     }
                     if (isErrorState()) {
                         sbf.logger.warn("Stopping forcefully.");
