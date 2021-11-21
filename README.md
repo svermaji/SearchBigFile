@@ -18,6 +18,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
  - File size `[3GB]`, type `[Text]`, lines processed `[59999997]` and pattern find `[0]` times, time taken `[37sec]`
  - File size `[1GB]`, type `[Text]`, lines processed `[19499809]` and pattern find `[0]` times, time taken `[16sec]`
  - Supports file of more size but time increases
+ - For file less than 1GB BufferedReader will be used
 
 ## Test Results - with BufferedReader implementation!!
  - File size `[1GB]`, type `[Text]`, lines processed `[13147027]` and pattern find `[1094]` times, time taken `[8sec]`
@@ -29,6 +30,7 @@ Utility in Java to search big file (tested with 400MB and 1GB+ log/text file)
   * 2.0 - Implemented wrapping, style attributes and support long text in one line
     * Added theme support and key bindings
   * 3.0 - Planned to have multi file search support
+* Update for mixed algo depending on file size. 
 * Now multi tab is supported. 
 * Font size can be applied to application when used on high resolution machine. 
 * Tooltip will have custom color and font. 

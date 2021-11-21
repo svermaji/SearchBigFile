@@ -3134,7 +3134,7 @@ public class SearchBigFile extends AppFrame {
                     }
 
                     if (isNewLineChar || maxReadCharLimitReached) {
-                        stats.setAddLineEnding(appendLine);
+                        stats.setAddLineEnding(isNewLineChar);
                         line = sb.toString();
                         sb = new StringBuilder();
                         stats.setLine(line);
