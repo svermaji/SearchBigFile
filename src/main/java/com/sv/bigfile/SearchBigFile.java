@@ -155,6 +155,8 @@ public class SearchBigFile extends AppFrame {
     private static int colorIdx = 0;
     private static int errorMemoryLimitInMB = 0;
     private static int warnMemoryLimitInMB = 0;
+    private static long errorMemoryLimit = 0;
+    private static long warnMemoryLimit = 0;
 
     private final String SEPARATOR = "~";
     private final String TXT_F_MAP_KEY = "Action.FileMenuItem";
@@ -217,6 +219,8 @@ public class SearchBigFile extends AppFrame {
         errorOccrLimit = getIntCfg(Configs.ErrorOccrLimit);
         errorMemoryLimitInMB = getIntCfg(Configs.ErrorMemoryLimitInMB);
         warnMemoryLimitInMB = errorMemoryLimitInMB / 2;
+        errorMemoryLimit = (long) errorMemoryLimitInMB * KB * KB;
+        warnMemoryLimit = errorMemoryLimit / 2;
         info("appFontSize [" + appFontSize + "], " +
                 "resultFontSize [" + resultFontSize + "], " +
                 "errorTimeLimit [" + errorTimeLimit + "], " +
@@ -1517,7 +1521,7 @@ public class SearchBigFile extends AppFrame {
                 // Setting here to avoid break and count mismatch during offset processing
                 occrTillNow = lineOffsets.size();
                 if (occrTillNow > 0) {
-                    if (occrTillNow > ERROR_LIMIT_OCCR) {
+                    if (occrTillNow > errorOccrLimit) {
                         showMsg(getProblemMsg(), MsgType.ERROR);
                     } else if (occrTillNow > WARN_LIMIT_OCCR) {
                         showMsg(getProblemMsg(), MsgType.WARN);
@@ -1543,7 +1547,7 @@ public class SearchBigFile extends AppFrame {
             // Setting here to avoid break and count mismatch during offset processing
             occrTillNow = lineOffsets.size();
             if (occrTillNow > 0) {
-                if (occrTillNow > ERROR_LIMIT_OCCR) {
+                if (occrTillNow > errorOccrLimit) {
                     showMsg(getProblemMsg(), MsgType.ERROR);
                 } else if (occrTillNow > WARN_LIMIT_OCCR) {
                     showMsg(getProblemMsg(), MsgType.WARN);
@@ -1633,11 +1637,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getInitialMsg() {
-        return "Bar turns 'Orange' for warnings and 'Red' for error/force-stop. " +
+        return "Bar turns 'Orange' for warnings and 'Red' for error. " +
                 "Time/occurrences limit for warning [" + WARN_LIMIT_SEC
                 + "sec/" + WARN_LIMIT_OCCR
                 + "] and for error [" + errorTimeLimit
-                + "sec/" + errorOccrLimit + "] or memory goes above [" + errorMemoryLimitInMB + "MB]";
+                + "sec/" + errorOccrLimit + "] or memory > [" + errorMemoryLimitInMB + "MB]";
 
     }
 
@@ -1874,7 +1878,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private long getErrorLimitMemory() {
-        return errorMemoryLimitInMB * KB * KB;
+        return errorMemoryLimit;
     }
 
     private String getMemoryDetails() {
@@ -2307,23 +2311,23 @@ public class SearchBigFile extends AppFrame {
         sb.append("Memory ").append(getTotalMemoryStr());
         StringBuilder sbErr = new StringBuilder();
         if (timeTillNow > errorTimeLimit) {
-            sbErr.append("Error: Time [").append(timeTillNow)
-                    .append("] > force stop limit [").append(errorTimeLimit).append("]. Cancelling search...");
+            sbErr.append("Time [").append(timeTillNow)
+                    .append("] > force stop limit [").append(errorTimeLimit).append("]");
         }
         if (occrTillNow > errorOccrLimit) {
-            sbErr.append("Error: Occurrences [").append(occrTillNow)
+            sbErr.append("Occurrences [").append(occrTillNow)
                     .append("] > force stop limit [").append(errorOccrLimit)
-                    .append("], try to narrow your search. Cancelling search...");
+                    .append("]");
         }
         if (isMemoryOutOfLimit()) {
-            sbErr.append("Error: Out of memory limits. Total memory ").append(getTotalMemoryStr())
-                    .append(" > force stop limit ").append(getErrorMemoryLimitStr())
-                    .append(". Cancelling search...");
+            sbErr.append("Out of memory limits. Total memory ").append(getTotalMemoryStr())
+                    .append(" > ").append(getErrorMemoryLimitStr());
         }
 
         if (Utils.hasValue(sbErr.toString())) {
-            sb = sbErr;
-            debug("Error message: " + sb);
+            sb = new StringBuilder("Error: ");
+            sb.append(sbErr).append(". Cancelling search...");
+            debug(sb.toString());
         }
 
         return sb.toString();
@@ -2576,11 +2580,12 @@ public class SearchBigFile extends AppFrame {
     }
 
     public boolean isWarningState() {
-        return timeTillNow > WARN_LIMIT_SEC || occrTillNow > WARN_LIMIT_OCCR;
+        return timeTillNow > WARN_LIMIT_SEC || occrTillNow > WARN_LIMIT_OCCR
+                || isWarnMemoryState();
     }
 
     public boolean isWarnMemoryState() {
-        return getTotalMemory() > warnMemoryLimitInMB;
+        return getTotalMemory() > warnMemoryLimit;
     }
 
     public boolean isErrorState() {
@@ -2926,7 +2931,8 @@ public class SearchBigFile extends AppFrame {
                     }
                     if (!warnMemoryState && isWarnMemoryState()) {
                         warnMemoryState = true;
-                        sbf.debug("Memory " + getTotalMemoryStr() + " raised from warning state, trying to free memory.");
+                        sbf.debug("Warning memory state triggered " + getTotalMemoryStr() + "/" + warnMemoryLimitInMB +
+                                " trying to free memory.");
                         freeMemory();
                     }
                     if (isErrorState()) {
@@ -2998,8 +3004,10 @@ public class SearchBigFile extends AppFrame {
         @Override
         public Boolean call() {
             if (Utils.getFileSize(sbf.getFilePath()) < GB_1) {
+                info("Processing InputStream");
                 return searchUsingIS();
             }
+            info("Processing SeekableByteChannel");
             return searchUsingSBC();
         }
 
@@ -3007,11 +3015,7 @@ public class SearchBigFile extends AppFrame {
             final int BUFFER_SIZE = 200 * KB;
             String searchPattern = sbf.processPattern();
             String path = sbf.getFilePath();
-/*
-            try (InputStream stream = new FileInputStream(path);
-                 BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
-            ) {
-*/
+
             try (SeekableByteChannel ch = Files.newByteChannel(Utils.createPath(path), EnumSet.of(StandardOpenOption.READ))) {
                 ByteBuffer bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
 
@@ -3032,7 +3036,7 @@ public class SearchBigFile extends AppFrame {
                         stats.setLine(ln);
                         stats.setMatch(sbf.hasOccr(ln, searchPattern));
 
-                        if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
+                        if (!isCancelled() && occrTillNow <= errorOccrLimit) {
                             searchData.process();
                             if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                                 startThread(msgCallable);
@@ -3120,7 +3124,6 @@ public class SearchBigFile extends AppFrame {
                 char c;
                 int i;
                 StringBuilder sb = new StringBuilder();
-                boolean appendLine = false;
                 while ((i = br.read()) != -1) {
 
                     c = (char) i;
@@ -3140,7 +3143,7 @@ public class SearchBigFile extends AppFrame {
                         stats.setLine(line);
                         stats.setMatch(sbf.hasOccr(line, searchPattern));
 
-                        if (!isCancelled() && occrTillNow <= ERROR_LIMIT_OCCR) {
+                        if (!isCancelled() && occrTillNow <= errorOccrLimit) {
                             searchData.process();
                             if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
                                 startThread(msgCallable);
@@ -3154,10 +3157,20 @@ public class SearchBigFile extends AppFrame {
                             break;
                         }
                     }
-                    /*if (!appendLine && !stats.isSofFile()) {
-                        appendLine = isNewLineChar;
-                    }*/
                 }
+
+                // left over data
+                stats.setAddLineEnding(false);
+                line = sb.toString();
+                stats.setLine(line);
+                stats.setMatch(sbf.hasOccr(line, searchPattern));
+                System.out.println(isCancelled() + "----" + occrTillNow);
+                if (!isCancelled() && occrTillNow <= errorOccrLimit) {
+                    System.out.println(sb.toString());
+                    searchData.process();
+                    startThread(msgCallable);
+                }
+
                 if (maxReadCharTimes > 0) {
                     logger.info("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
                             + Utils.addBraces(maxReadCharTimes) + " times, processing...");
@@ -3199,11 +3212,8 @@ public class SearchBigFile extends AppFrame {
             } catch (FileNotFoundException e) {
                 searchFailed(e);
                 sbf.fileNotFoundAction();
-            } catch (IOException e) {
-                searchFailed(e);
             } catch (Exception e) {
                 searchFailed(e);
-                logger.error("ssss ---- xxxx");
             } finally {
                 sbf.enableControls();
             }
