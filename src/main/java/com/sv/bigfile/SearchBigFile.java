@@ -725,36 +725,34 @@ public class SearchBigFile extends AppFrame {
                 + ", activeTitle " + Utils.addBraces(activeTitle)
                 + " and activeIdx " + Utils.addBraces(activeIdx));
         activeResultTabData = null;
-        if (jcbmiMultiTab.isSelected()) {
-            if (isValidate()) {
-                for (ResultTabData r : resultTabsData.values()) {
-                    if (r.getTitle().equalsIgnoreCase(title)) {
-                        tabExists = true;
-                        activeResultTabData = r;
-                        selectTab(activeResultTabData.getJspPane());
-                        break;
-                    }
-                }
-                if (!tabExists) {
-                    if (resultTabsData.size() >= MAX_RESULTS_TAB) {
-                        if (Utils.hasValue(activeTitle)) {
-                            tabbedPane.remove(activeIdx);
-                            tabRemoved(activeTitle, activeIdx);
-                        }
-                    }
-                    int tabsCnt = tabbedPane.getTabCount();
-                    rtb = new ResultTabData(tabsCnt, title, this);
-                    resultTabsData.put(title, rtb);
-                    // not adding tooltip on tab as color not applied over it
-                    tabbedPane.addTab(title, null, rtb.getJspPane());
-                    TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
-                    trh.getTabLabel().setToolTipText(getFilePath());
-                    rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
-                    applyTabCloseCompColor(rtb.getTabCloseComponent());
-                    activeResultTabData = rtb;
-                    addBindingsToNewEditors();
+        if (jcbmiMultiTab.isSelected() && isValidate()) {
+            for (ResultTabData r : resultTabsData.values()) {
+                if (r.getTitle().equalsIgnoreCase(title)) {
+                    tabExists = true;
+                    activeResultTabData = r;
                     selectTab(activeResultTabData.getJspPane());
+                    break;
                 }
+            }
+            if (!tabExists) {
+                if (resultTabsData.size() >= MAX_RESULTS_TAB) {
+                    if (Utils.hasValue(activeTitle)) {
+                        tabbedPane.remove(activeIdx);
+                        tabRemoved(activeTitle, activeIdx);
+                    }
+                }
+                int tabsCnt = tabbedPane.getTabCount();
+                rtb = new ResultTabData(tabsCnt, title, this);
+                resultTabsData.put(title, rtb);
+                // not adding tooltip on tab as color not applied over it
+                tabbedPane.addTab(title, null, rtb.getJspPane());
+                TabRemoveHandler trh = new TabRemoveHandler(tabsCnt, title, tabbedPane, this);
+                trh.getTabLabel().setToolTipText(getFilePath());
+                rtb.setTabCloseComponent(SwingUtils.makeTabClosable(tabsCnt, trh, tabbedPane));
+                applyTabCloseCompColor(rtb.getTabCloseComponent());
+                activeResultTabData = rtb;
+                addBindingsToNewEditors();
+                selectTab(activeResultTabData.getJspPane());
             }
         } else {
             if (resultTabsData.size() == 0) {
@@ -1137,10 +1135,10 @@ public class SearchBigFile extends AppFrame {
         tblAllOccr.getColumnModel().getColumn(0)
                 .setCellRenderer(new CellRendererCenterAlign());
 
-        String msg = "Search or read";
+        String msg = "Search or read to see rows here...";
         lblNoRow = new JLabel(msg);
         lblNoRow.setToolTipText(msg);
-        lblNoRow.setSize(lblNoRow.getPreferredSize());
+        lblNoRow.setSize((int) lblNoRow.getPreferredSize().getWidth() + 10, (int) lblNoRow.getPreferredSize().getHeight());
         tblAllOccr.add(lblNoRow);
         tblAllOccr.setFillsViewportHeight(true);
 
@@ -1757,14 +1755,14 @@ public class SearchBigFile extends AppFrame {
         ((JFrame) params[1]).setVisible(false);
     }
 
-    private void showRecentList(String[] src, String colName, JTextField dest) {
-        AppFrame frame = new AppFrame("ESC to Hide");
+    private void showRecentList(String[] src, String colName, AppTextField dest) {
+        AppFrame afRecentList = new AppFrame("ESC to Hide");
 
-        JTextField txtFilter = new JTextField();
-        txtFilter.setColumns(30);
+        AppTextField txtFilter = new AppTextField("");
+        // 30 for font 12
+        txtFilter.setColumns((int) (appFontSize * 2.5));
 
         DefaultTableModel model = SwingUtils.getTableModel(new String[]{colName + " - Dbl-click or select & ENTER"});
-
         AppTable table = new AppTable(model);
         createRowsForRecentVals(src, model);
 
@@ -1775,36 +1773,41 @@ public class SearchBigFile extends AppFrame {
 
         //TODO: Analyze why single method not working
         //table.setUpSorterAndFilter(model, this, dest, new CopyCommandAction(table, frame, dest), new Object[]{dest, frame});
-        setUpSorterAndFilter(this, table, model, dest, txtFilter, frame, new Object[]{dest, frame});
+        setUpSorterAndFilter(this, table, model, dest, txtFilter, afRecentList, new Object[]{dest, afRecentList});
 
         table.setScrollProps();
+        table.setRowHeight(appFontSize + 4);
         table.setBorder(EMPTY_BORDER);
 
-        JPanel filterPanel = new JPanel();
+        AppPanel filterPanel = new AppPanel();
         filterPanel.add(new AppLabel("Filter", txtFilter, 'R'));
         filterPanel.add(txtFilter);
 
-        JPanel panel = new JPanel(new BorderLayout());
+        AppPanel panel = new AppPanel(new BorderLayout());
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         panel.setBorder(EMPTY_BORDER);
 
-        Container pc = frame.getContentPane();
+        Container pc = afRecentList.getContentPane();
         pc.setLayout(new BorderLayout());
         pc.add(panel);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setAlwaysOnTop(true);
-        frame.setToCenter();
+        afRecentList.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        afRecentList.setAlwaysOnTop(true);
+        afRecentList.setToCenter();
+
+        SwingUtils.changeFont(afRecentList, appFontSize);
+        applyTooltipColor(table);
+        afRecentList.pack();
 
         // as this is dynamic not taking to setAppColor method
         Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
         table.getTableHeader().setBackground(cl);
-        SwingUtils.addEscKeyAction(frame);
+        SwingUtils.addEscKeyAction(afRecentList);
     }
 
     private void setUpSorterAndFilter(SearchBigFile sbf, AppTable table, DefaultTableModel model,
-                                      JTextField dest, JTextField txtFilter,
-                                      JFrame frame, Object[] params) {
+                                      AppTextField dest, AppTextField txtFilter,
+                                      AppFrame frame, Object[] params) {
         table.addSorter(model);
         table.addFilter(txtFilter);
         table.addDblClickOnRow(sbf, params);
@@ -1814,7 +1817,9 @@ public class SearchBigFile extends AppFrame {
 
     private void createRowsForRecentVals(String[] src, DefaultTableModel model) {
         for (String s : src) {
-            model.addRow(new String[]{s});
+            if (Utils.hasValue(s)) {
+                model.addRow(new String[]{s});
+            }
         }
     }
 
@@ -2001,21 +2006,24 @@ public class SearchBigFile extends AppFrame {
         boolean result = true;
         if (!Utils.hasValue(getFilePath())) {
             updateTitleAndMsg("Validation error - REQUIRED: file to search");
+            logger.error("Validation error - REQUIRED: file to search");
             result = false;
         }
 
         if (result && operation != FILE_OPR.READ && !Utils.hasValue(getSearchString())) {
             updateTitleAndMsg("Validation error - REQUIRED: text to search");
+            logger.error("Validation error - REQUIRED: text to search");
             result = false;
         }
         int len = getSearchString().length();
         if (result && len != 0 && len < SEARCH_STR_LEN_LIMIT) {
             updateTitleAndMsg("Validation error - LENGTH: text to search should be " + SEARCH_STR_LEN_LIMIT + " or more characters");
+            logger.error("Validation error - LENGTH: text to search should be " + SEARCH_STR_LEN_LIMIT + " or more characters");
             result = false;
         }
 
         if (!result) {
-            logger.info("Validation failed !!");
+            logger.error("Validation failed !!");
         }
 
         return result;
@@ -2928,12 +2936,12 @@ public class SearchBigFile extends AppFrame {
                         msg = sbf.getProblemMsg();
                         sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
-                    }
-                    if (!warnMemoryState && isWarnMemoryState()) {
-                        warnMemoryState = true;
-                        sbf.debug("Warning memory state triggered " + getTotalMemoryStr() + "/" + warnMemoryLimitInMB +
-                                " trying to free memory.");
-                        freeMemory();
+                        if (!warnMemoryState && isWarnMemoryState()) {
+                            warnMemoryState = true;
+                            sbf.debug("Warning memory state triggered " + getTotalMemoryStr() + "/" + warnMemoryLimitInMB +
+                                    " trying to free memory.");
+                            freeMemory();
+                        }
                     }
                     if (isErrorState()) {
                         sbf.logger.warn("Stopping forcefully.");
@@ -3198,8 +3206,8 @@ public class SearchBigFile extends AppFrame {
                     sbf.showMsg(s, MsgType.WARN);
                 }
 
-                if (isCancelled()) {
-                    sbf.updateTitle("Search cancelled - " + result);
+                if (isErrorState()) {
+                    sbf.updateTitleAndMsg("Search cancelled - " + result, getMsgTypeForOpr());
                 } else {
                     String msg = "--- Search complete ---";
                     qMsgsToAppend.add(addLineEnd(msg));
