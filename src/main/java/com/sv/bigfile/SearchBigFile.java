@@ -3164,9 +3164,7 @@ public class SearchBigFile extends AppFrame {
                 line = sb.toString();
                 stats.setLine(line);
                 stats.setMatch(sbf.hasOccr(line, searchPattern));
-                System.out.println(isCancelled() + "----" + occrTillNow);
                 if (!isCancelled() && occrTillNow <= errorOccrLimit) {
-                    System.out.println(sb.toString());
                     searchData.process();
                     startThread(msgCallable);
                 }
