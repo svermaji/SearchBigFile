@@ -149,7 +149,6 @@ public class SearchBigFile extends AppFrame {
     private static final int MIN_APPFONTSIZE = 8;
     private static final int MAX_APPFONTSIZE = 28;
     private static final int DEFAULT_APPFONTSIZE = 12;
-    private static int appFontSize = 0;
     private static int resultFontSize = 0;
     private static int fontIdx = 0;
     private static int colorIdx = 0;
@@ -411,7 +410,7 @@ public class SearchBigFile extends AppFrame {
         btnResetFont.addActionListener(e -> resetFontSize());
         uin = UIName.BTN_LOCK;
         btnLock = new AppButton(uin.name, uin.mnemonic, uin.tip);
-        btnLock.addActionListener(evt -> showLockScreen(highlightColor));
+        btnLock.addActionListener(evt -> showLockScreen());
         uin = UIName.BTN_GOTOP;
         btnGoTop = new AppButton(uin.name, uin.keys, uin.tip);
         btnGoTop.addActionListener(e -> goToFirst());
@@ -1068,10 +1067,10 @@ public class SearchBigFile extends AppFrame {
         menuSettings.addSeparator();
         AppMenuItem jmiChangePwd = new AppMenuItem("Change Password", 'c');
         jmiChangePwd.setToolTipText("Change password for lock screen");
-        jmiChangePwd.addActionListener(e -> showChangePwdScreen(highlightColor));
+        jmiChangePwd.addActionListener(e -> showChangePwdScreen());
         AppMenuItem jmiLock = new AppMenuItem("Lock screen", 'o');
         jmiLock.setToolTipText("Lock screen now. Password required to unlock");
-        jmiLock.addActionListener(e -> showLockScreen(highlightColor));
+        jmiLock.addActionListener(e -> showLockScreen());
         menuSettings.add(jcbmiMultiTab);
         menuSettings.add(jcbmiReopenLastTabs);
         menuSettings.addSeparator();
@@ -1388,6 +1387,9 @@ public class SearchBigFile extends AppFrame {
         // tabbedPane.updateUI();
         //SwingUtilities.updateComponentTreeUI(tabbedPane);
         //tabbedPane.repaint();
+
+        // will set colors for pwd screens
+        setAppColors(highlightTextColor, highlightColor, selectionTextColor, selectionColor);
     }
 
     private void setTabCloseButtonColor() {
@@ -1635,11 +1637,11 @@ public class SearchBigFile extends AppFrame {
     }
 
     private String getInitialMsg() {
-        return "Bar turns 'Orange' for warnings and 'Red' for error. " +
-                "Time/occurrences limit for warning [" + WARN_LIMIT_SEC
+        return "Bar turns 'Orange'/'Red' for warnings/error. " +
+                "Time/occurrences limits: Warning " + WARN_LIMIT_SEC
                 + "sec/" + WARN_LIMIT_OCCR
-                + "] and for error [" + errorTimeLimit
-                + "sec/" + errorOccrLimit + "] or memory > [" + errorMemoryLimitInMB + "MB]";
+                + ", Error " + errorTimeLimit
+                + "sec/" + errorOccrLimit + ". Memory limit " + errorMemoryLimitInMB + "MB";
 
     }
 
@@ -2657,6 +2659,7 @@ public class SearchBigFile extends AppFrame {
         menuFonts.setText("Fonts " + Utils.addBraces(getFontFromEnum()));
         lblMsg.setFont(f);
         setMsgBarTip();
+        setTooltipFont(f);
     }
 
     private void setMsgBarTip(String msg) {
