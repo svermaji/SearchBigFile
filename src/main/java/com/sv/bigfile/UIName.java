@@ -1,6 +1,7 @@
 package com.sv.bigfile;
 
 import com.sv.core.Utils;
+import com.sv.swingui.UIConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ public enum UIName {
     BTN_LISTRF("Ý", 'L', "Search recently used file list."),
     BTN_PLUSFONT("+", '=', "Increase font size for results, max [" + AppConstants.MAX_FONT_SIZE + "]."),
     BTN_MINUSFONT("—", '-', "Decrease font size for results, min [" + AppConstants.MIN_FONT_SIZE + "]."),
-    BTN_RESETFONT("", '0', "Text shows present font size of Results.  Click to reset to [" + AppConstants.DEFAULT_FONT_SIZE + "]."),
+    BTN_RESETFONT("", '0', "Text shows present font size of Results.  Click to reset to [" + UIConstants.DEFAULT_FONT_SIZE + "]."),
     BTN_GOTOP("↑", '1', "Ctrl+Home", "Go to first line."),
     BTN_GOBOTTOM("↓", '2', "Ctrl+End", "Go to last line."),
     BTN_PREOCCR("<", ',', "Shift+F3", "Previous occurrence."),

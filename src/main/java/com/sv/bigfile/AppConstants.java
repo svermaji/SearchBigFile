@@ -12,7 +12,6 @@ public final class AppConstants {
     public static final long HELP_COLOR_CHANGE_SEC = 10;
     public static final long HELP_COLOR_CHANGE_TIME = TimeUnit.SECONDS.toMillis(HELP_COLOR_CHANGE_SEC);
     public static final int PREFERRED_FONT_SIZE = 12;
-    public static final int DEFAULT_FONT_SIZE = 12;
     public static final int MIN_FONT_SIZE = 8;
     public static final int MAX_FONT_SIZE = 28;
     public static final int RECENT_LIMIT = 20;

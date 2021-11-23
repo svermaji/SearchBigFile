@@ -101,7 +101,7 @@ public class SearchBigFile extends AppFrame {
     private AppTabbedPane tabbedPane;
     private Map<String, ResultTabData> resultTabsData;
     private ResultTabData activeResultTabData = null;
-    private JMenu menuRFiles, menuRSearches, menuSettings, menuFonts, menuAppFonts;
+    private AppMenu menuRFiles, menuRSearches, menuSettings, menuFonts, menuAppFonts;
     private AppToolBar jtbFile, jtbSearch, jtbControls, msgButtons;
     private JPanel msgPanel;
     private JLabel lblMsg, lblFilePath, lblSearch;
