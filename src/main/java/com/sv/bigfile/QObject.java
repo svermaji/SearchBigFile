@@ -32,6 +32,10 @@ public class QObject {
         return SearchBigFile.Status.DONE == threadStatus;
     }
 
+    public boolean isThreadProcessed() {
+        return SearchBigFile.Status.PROCESSED == threadStatus;
+    }
+
     public int getThreadNum() {
         return threadNum;
     }

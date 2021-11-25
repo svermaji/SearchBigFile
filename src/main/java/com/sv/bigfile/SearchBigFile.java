@@ -76,7 +76,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     public enum Status {
-        NOT_STARTED, READING, DONE, CANCELLED
+        NOT_STARTED, READING, DONE, PROCESSED, CANCELLED
     }
 
     public enum FONT_OPR {
@@ -233,7 +233,7 @@ public class SearchBigFile extends AppFrame {
 
         resultTabsData = new HashMap<>();
         appColors = SwingUtils.getFilteredCnF(ignoreBlackAndWhite);
-        qObjects = new HashMap<>();
+        qObjects = new LinkedHashMap<>();
         qMsgsToAppend = new LinkedBlockingQueue<>();
         idxMsgsToAppend = new ConcurrentHashMap<>();
         lineOffsets = new HashMap<>();
@@ -1990,11 +1990,12 @@ public class SearchBigFile extends AppFrame {
                 debug("Number of threads will be " + Utils.addBraces(numOfThreads));
                 qObjects.clear();
                 for (int i = 0; i < numOfThreads; i++) {
-                    long end = (i + 1) * FILE_BLOCK;
+                    long st = i * FILE_BLOCK;
+                    long end = st + FILE_BLOCK;
                     if (i == numOfThreads - 1) {
                         end = fileSize;
                     }
-                    QObject qObject = new QObject(i + 1, i * FILE_BLOCK, end);
+                    QObject qObject = new QObject(i + 1, st, end);
                     qObjects.put(i + 1, qObject);
                     readFilePool.submit(new SearchSplitFileCallable(this, qObject));
                 }
@@ -2009,6 +2010,7 @@ public class SearchBigFile extends AppFrame {
                 enableControls();
             }
             threadPool.submit(new TimerCallable(this));
+            threadPool.submit(new TrackThreadsCallable(this));
         } else {
             enableControls();
         }
@@ -2959,6 +2961,30 @@ public class SearchBigFile extends AppFrame {
         }
     }
 
+    class TrackThreadsCallable implements Callable<Boolean> {
+        private final SearchBigFile sbf;
+
+        public TrackThreadsCallable(SearchBigFile sbf) {
+            this.sbf = sbf;
+        }
+
+        @Override
+        public Boolean call() {
+            do {
+                // need to avoid 1st elem
+                qObjects.forEach((k, v) -> {
+                    if (v.isThreadCompleted()) {
+                        qMsgsToAppend = v.getQMsgsToAppend();
+                        startThread(msgCallable);
+
+                    }
+                });
+                Utils.sleep(500);
+            } while (true);
+            return true;
+        }
+    }
+
     class TimerCallable implements Callable<Boolean> {
 
         private final SearchBigFile sbf;
@@ -3325,7 +3351,7 @@ public class SearchBigFile extends AppFrame {
                         break;
                     }
                     if (tn == 1) {
-                        System.out.println(startPos + "...." + channel.position() + "--" + tn + " inside read bb " + k++);
+                        System.out.println(startPos + "/" + endPos + channel.position() + "--" + tn + " inside read bb " + k++);
                     }
                     bb.flip();
                     String s = StandardCharsets.UTF_8.decode(bb).toString();
