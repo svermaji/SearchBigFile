@@ -3125,7 +3125,8 @@ public class SearchBigFile extends AppFrame {
         }
 
         public Boolean searchUsingIS() {
-            final int BUFFER_SIZE = 200 * 1024;
+            final int BUFFER_SIZE = 200 * KB;
+//            final int BUFFER_SIZE = MB;
             String searchPattern = sbf.processPattern();
 
             String path = sbf.getFilePath();
@@ -3138,41 +3139,43 @@ public class SearchBigFile extends AppFrame {
                 SearchData searchData = new SearchData(stats);
 
                 String line;
-                char c;
-                int i;
                 StringBuilder sb = new StringBuilder();
-                while ((i = br.read()) != -1) {
+                char[] brChars = new char[BUFFER_SIZE];
+                while (br.read(brChars) != -1) {
+                    for (char c : brChars) {
+                        boolean isNewLineChar = c == '\n';
+                        if (!isNewLineChar) {
+                            sb.append(c);
+                        }
+                        boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
+                        if (maxReadCharLimitReached) {
+                            maxReadCharTimes++;
+                        }
 
-                    c = (char) i;
-                    boolean isNewLineChar = c == '\n';
-                    if (!isNewLineChar) {
-                        sb.append(c);
-                    }
-                    boolean maxReadCharLimitReached = sb.length() >= MAX_READ_CHAR_LIMIT;
-                    if (maxReadCharLimitReached) {
-                        maxReadCharTimes++;
-                    }
+                        if (isNewLineChar || maxReadCharLimitReached) {
+                            stats.setAddLineEnding(isNewLineChar);
+                            line = sb.toString();
+                            sb = new StringBuilder();
+                            stats.setLine(line);
+                            stats.setMatch(sbf.hasOccr(line, searchPattern));
 
-                    if (isNewLineChar || maxReadCharLimitReached) {
-                        stats.setAddLineEnding(isNewLineChar);
-                        line = sb.toString();
-                        sb = new StringBuilder();
-                        stats.setLine(line);
-                        stats.setMatch(sbf.hasOccr(line, searchPattern));
-
-                        if (!isCancelled() && occrTillNow <= errorOccrLimit) {
-                            searchData.process();
-                            if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                            if (!isCancelled() && occrTillNow <= errorOccrLimit) {
+                                searchData.process();
+                                if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                                    startThread(msgCallable);
+                                }
+                            }
+                            if (isCancelled()) {
+                                String msg = "---xxx--- Search cancelled ---xxx---";
+                                debug(msg);
+                                qMsgsToAppend.add(addLineEnd(msg));
                                 startThread(msgCallable);
+                                break;
                             }
                         }
-                        if (isCancelled()) {
-                            String msg = "---xxx--- Search cancelled ---xxx---";
-                            debug(msg);
-                            qMsgsToAppend.add(addLineEnd(msg));
-                            startThread(msgCallable);
-                            break;
-                        }
+                    }
+                    if (isCancelled()) {
+                        break;
                     }
                 }
 
