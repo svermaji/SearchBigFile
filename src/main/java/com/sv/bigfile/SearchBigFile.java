@@ -2311,32 +2311,38 @@ public class SearchBigFile extends AppFrame {
     public String getProblemMsg() {
         StringBuilder sb = new StringBuilder();
         if (timeTillNow > WARN_LIMIT_SEC) {
-            sb.append("Warning: Time [").append(timeTillNow)
-                    .append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
+            sb.append("Time [").append(timeTillNow)
+                    .append("] > [").append(WARN_LIMIT_SEC).append("]. ");
         }
         if (occrTillNow > WARN_LIMIT_OCCR) {
-            sb.append("Warning: Occurrences [").append(occrTillNow)
-                    .append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
+            sb.append("Occurrences [").append(occrTillNow)
+                    .append("] > [").append(WARN_LIMIT_OCCR).append("], try to narrow your search. ");
         }
-        sb.append("Memory ").append(getTotalMemoryStr());
+        if (isWarnMemoryState()) {
+            sb.append("Memory ").append(getTotalMemoryStr());
+        }
         StringBuilder sbErr = new StringBuilder();
         if (timeTillNow > errorTimeLimit) {
             sbErr.append("Time [").append(timeTillNow)
-                    .append("] > force stop limit [").append(errorTimeLimit).append("]");
+                    .append("] > force stop limit [").append(errorTimeLimit).append("]. ");
         }
         if (occrTillNow > errorOccrLimit) {
             sbErr.append("Occurrences [").append(occrTillNow)
                     .append("] > force stop limit [").append(errorOccrLimit)
-                    .append("]");
+                    .append("]. ");
         }
         if (isMemoryOutOfLimit()) {
-            sbErr.append("Out of memory limits. Total memory ").append(getTotalMemoryStr())
+            sbErr.append("Memory ").append(getTotalMemoryStr())
                     .append(" > ").append(getErrorMemoryLimitStr());
         }
 
         if (Utils.hasValue(sbErr.toString())) {
             sb = new StringBuilder("Error: ");
             sb.append(sbErr).append(". Cancelling search...");
+            debug(sb.toString());
+        } else if (Utils.hasValue(sb.toString())) {
+            StringBuilder sbTemp = sb;
+            sb = new StringBuilder("Warning: ").append(sbTemp);
             debug(sb.toString());
         }
 
