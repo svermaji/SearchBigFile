@@ -2994,7 +2994,7 @@ public class SearchBigFile extends AppFrame {
             boolean allQObjNotProcessed;
             disableControls();
             fileLineNum = 1;
-            System.out.println(Utils.getFormattedDate());
+//            System.out.println(Utils.getFormattedDate());
             do {
                 for (QObject v : qObjects.values()) {
                     if (v.isThreadCompleted() || v.isThreadProcessed()) {
@@ -3026,7 +3026,7 @@ public class SearchBigFile extends AppFrame {
                 allQObjNotProcessed = isAllQObjNotProcessed();
                 //System.out.println(qObjects);
             } while (allQObjNotProcessed);
-            System.out.println(Utils.getFormattedDate());
+//            System.out.println(Utils.getFormattedDate());
             enableControls();
             debug("All threads completed successfully. " + qObjects);
             int s = qObjects.values().stream().mapToInt(v -> v.getQMsgsToAppend().size()).sum();
@@ -3037,19 +3037,19 @@ public class SearchBigFile extends AppFrame {
             if (allOc == 0) {
                 tpResults.setText(R_FONT_PREFIX + "No match found" + FONT_SUFFIX);
             }
-            System.out.println("All stats count " + s);
-            System.out.println("All occr " + allOc);
-            System.out.println("All threads completed successfully. " + qObjects);
+//            System.out.println("All stats count " + s);
+//            System.out.println("All occr " + allOc);
+//            System.out.println("All threads completed successfully. " + qObjects);
             status = Status.DONE;
             String result = getSearchResult(getFilePath(), timeTaken, fileLineNum, allOc);
             if (isCancelled()) {
                 sbf.updateTitle("Search cancelled - " + result);
             } else {
 
-                System.out.println("....1....");
+//                System.out.println("....1....");
                 long time = System.currentTimeMillis();
                 startThread(msgCallable);
-                System.out.println(readCounter + "....2...." + insertCounter);
+//                System.out.println(readCounter + "....2...." + insertCounter);
                 while (readCounter != insertCounter) {
                     if (isCancelled()) {
                         debug("Status is cancelled.  Exiting wait condition.");
