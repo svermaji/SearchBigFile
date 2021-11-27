@@ -91,6 +91,7 @@ public class SearchBigFile extends AppFrame {
     private MyLogger logger;
     private DefaultConfigs configs;
 
+    private int numOfThreads = 0;
     private SeekableByteChannel channel;
     private JSplitPane splitAllOccr;
     private DefaultTableModel modelAllOccr;
@@ -147,6 +148,7 @@ public class SearchBigFile extends AppFrame {
     private static long startTime = System.currentTimeMillis();
     private static String timeTaken;
     private static long lineNums;
+    private static long fileLineNum;
     private static final int MIN_APPFONTSIZE = 8;
     private static final int MAX_APPFONTSIZE = 28;
     private static final int DEFAULT_APPFONTSIZE = 12;
@@ -190,10 +192,11 @@ public class SearchBigFile extends AppFrame {
     private static Queue<String> qMsgsToAppend;
     private static AppendMsgCallable msgCallable;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(5);
-    private static ExecutorService readFilePool = Executors.newFixedThreadPool(10);
-    private static long FILE_BLOCK = 200 * MB;
+    private static ExecutorService readFilePool = Executors.newFixedThreadPool(3);
+    private static long FILE_BLOCK = 300 * MB;
     private static List<Timer> timers = new ArrayList<>();
 
+    // todo cpu load com sun OperatingSystemMXBean
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SearchBigFile().initComponents());
     }
@@ -1969,6 +1972,7 @@ public class SearchBigFile extends AppFrame {
         if (isReading() || isErrorState()) {
             status = Status.CANCELLED;
         }
+        enableControls();
     }
 
     private void searchFile() {
@@ -1983,22 +1987,25 @@ public class SearchBigFile extends AppFrame {
                 Path p = Utils.createPath(getFilePath());
                 channel = Files.newByteChannel(p, EnumSet.of(StandardOpenOption.READ));
                 long fileSize = Files.size(p);
-                int numOfThreads = (int) (fileSize / FILE_BLOCK);
+                numOfThreads = (int) (fileSize / FILE_BLOCK);
                 if (fileSize % FILE_BLOCK > 0) {
                     numOfThreads++;
                 }
-                debug("Number of threads will be " + Utils.addBraces(numOfThreads));
+
+                debug("Number of threads to search file will be " + Utils.addBraces(numOfThreads));
                 qObjects.clear();
+                fileLineNum = 1;
                 for (int i = 0; i < numOfThreads; i++) {
                     long st = i * FILE_BLOCK;
-                    long end = st + FILE_BLOCK;
-                    if (i == numOfThreads - 1) {
+                    long end = st + FILE_BLOCK - 1;
+                    if (end > fileSize) {
                         end = fileSize;
                     }
                     QObject qObject = new QObject(i + 1, st, end);
                     qObjects.put(i + 1, qObject);
                     readFilePool.submit(new SearchSplitFileCallable(this, qObject));
                 }
+                debug("File size is [" + fileSize + "] and QObjects are " + qObjects);
             } catch (FileNotFoundException e) {
                 searchFailed(e);
                 fileNotFoundAction();
@@ -2347,32 +2354,39 @@ public class SearchBigFile extends AppFrame {
     public String getProblemMsg() {
         StringBuilder sb = new StringBuilder();
         if (timeTillNow > WARN_LIMIT_SEC) {
-            sb.append("Warning: Time [").append(timeTillNow)
-                    .append("] > warning limit [").append(WARN_LIMIT_SEC).append("]. ");
+            sb.append("Time [").append(timeTillNow)
+                    .append(" > ").append(WARN_LIMIT_SEC).append("]. ");
         }
         if (occrTillNow > WARN_LIMIT_OCCR) {
-            sb.append("Warning: Occurrences [").append(occrTillNow)
-                    .append("] > warning limit [").append(WARN_LIMIT_OCCR).append("], try to narrow your search.");
+            sb.append("Occurrences [").append(occrTillNow)
+                    .append(" > ").append(WARN_LIMIT_OCCR).append("]. ");
         }
-        sb.append("Memory ").append(getTotalMemoryStr());
+        if (isWarnMemoryState()) {
+            sb.append("Memory ").append(getTotalMemoryStr());
+        }
         StringBuilder sbErr = new StringBuilder();
         if (timeTillNow > errorTimeLimit) {
             sbErr.append("Time [").append(timeTillNow)
-                    .append("] > force stop limit [").append(errorTimeLimit).append("]");
+                    .append(" > ").append(errorTimeLimit).append("]");
         }
         if (occrTillNow > errorOccrLimit) {
             sbErr.append("Occurrences [").append(occrTillNow)
-                    .append("] > force stop limit [").append(errorOccrLimit)
+                    .append(" > ").append(errorOccrLimit)
                     .append("]");
         }
         if (isMemoryOutOfLimit()) {
-            sbErr.append("Out of memory limits. Total memory ").append(getTotalMemoryStr())
+            sbErr.append("Memory ").append(getTotalMemoryStr())
                     .append(" > ").append(getErrorMemoryLimitStr());
         }
 
         if (Utils.hasValue(sbErr.toString())) {
             sb = new StringBuilder("Error: ");
             sb.append(sbErr).append(". Cancelling search...");
+            debug(sb.toString());
+        } else if (Utils.hasValue(sb.toString())) {
+            StringBuilder sbTemp = new StringBuilder("Warning: ");
+            sbTemp.append(sb);
+            sb = sbTemp;
             debug(sb.toString());
         }
 
@@ -2495,6 +2509,7 @@ public class SearchBigFile extends AppFrame {
         }*/
         goToEnd(false);
         logger.debug("Timer: thread pool status " + threadPool.toString());
+        logger.debug("File thread pool status " + readFilePool.toString());
         // requesting to free used memory
         freeMemory();
         printMemoryDetails();
@@ -2751,6 +2766,11 @@ public class SearchBigFile extends AppFrame {
         return str + BR;
     }
 
+    private boolean isAllQObjNotProcessed() {
+        return qObjects.values().stream()
+                .filter(QObject::isThreadProcessed).count() != qObjects.size();
+    }
+
     private MsgType getMsgTypeForOpr() {
         if (isErrorState()) {
             return MsgType.ERROR;
@@ -2950,7 +2970,8 @@ public class SearchBigFile extends AppFrame {
             }
 
             if (lineNum % LINES_TO_INFORM == 0) {
-                logger.debug("Lines searched so far: " + Utils.formatNumber(lineNum));
+                String pre = "Thread " + Utils.addBraces(stats.getThreadNum() + SPACE);
+                logger.debug(pre + "Lines searched so far: " + Utils.formatNumber(lineNum));
             }
 
             occrTillNow = stats.getOccurrences();
@@ -2970,17 +2991,83 @@ public class SearchBigFile extends AppFrame {
 
         @Override
         public Boolean call() {
+            boolean allQObjNotProcessed;
+            disableControls();
+            fileLineNum = 1;
+            System.out.println(Utils.getFormattedDate());
             do {
-                // need to avoid 1st elem
-                qObjects.forEach((k, v) -> {
-                    if (v.isThreadCompleted()) {
-                        qMsgsToAppend = v.getQMsgsToAppend();
-                        startThread(msgCallable);
-
+                for (QObject v : qObjects.values()) {
+                    if (v.isThreadCompleted() || v.isThreadProcessed()) {
+                        if (v.isThreadCompleted()) {
+                            for (SearchStats st : v.getQMsgsToAppend()) {
+                                if (st.isAddLineEnding()) {
+                                    st.setLineNum(fileLineNum++);
+                                }
+                                new SearchData(st).process();
+                                //System.out.println(getThreadNumInfo(v.getThreadNum()) + "-->" + qMsgsToAppend.size());
+                                if (qMsgsToAppend.size() > APPEND_MSG_CHUNK) {
+                                    startThread(msgCallable);
+                                }
+                            }
+                            startThread(msgCallable);
+                            v.setThreadStatus(Status.PROCESSED);
+                        }
+                    } else {
+                        break;
                     }
-                });
-                Utils.sleep(500);
-            } while (true);
+                    if (isCancelled()) {
+                        break;
+                    }
+                }
+                if (isCancelled()) {
+                    break;
+                }
+                Utils.sleep(300);
+                allQObjNotProcessed = isAllQObjNotProcessed();
+                //System.out.println(qObjects);
+            } while (allQObjNotProcessed);
+            System.out.println(Utils.getFormattedDate());
+            enableControls();
+            debug("All threads completed successfully. " + qObjects);
+            int s = qObjects.values().stream().mapToInt(v -> v.getQMsgsToAppend().size()).sum();
+            long allOc = 0;
+            for (QObject q : qObjects.values()) {
+                allOc += q.getQMsgsToAppend().stream().mapToLong(SearchStats::getOccurrences).sum();
+            }
+            if (allOc == 0) {
+                tpResults.setText(R_FONT_PREFIX + "No match found" + FONT_SUFFIX);
+            }
+            System.out.println("All stats count " + s);
+            System.out.println("All occr " + allOc);
+            System.out.println("All threads completed successfully. " + qObjects);
+            status = Status.DONE;
+            String result = getSearchResult(getFilePath(), timeTaken, fileLineNum, allOc);
+            if (isCancelled()) {
+                sbf.updateTitle("Search cancelled - " + result);
+            } else {
+
+                System.out.println("....1....");
+                long time = System.currentTimeMillis();
+                startThread(msgCallable);
+                System.out.println(readCounter + "....2...." + insertCounter);
+                while (readCounter != insertCounter) {
+                    if (isCancelled()) {
+                        debug("Status is cancelled.  Exiting wait condition.");
+                        break;
+                    }
+                    logger.debug("Waiting for readCounter to be equal insertCounter");
+                    Utils.sleep(200, sbf.logger);
+                }
+                idxMsgsToAppend.clear();
+                logger.info("Time in waiting all message to append is " + Utils.getTimeDiffSecMilliStr(time));
+
+                String msg = "--- Search complete ---";
+                qMsgsToAppend.add(addLineEnd(msg));
+                startThread(msgCallable);
+                sbf.updateTitleAndMsg("Search complete - " + result, getMsgTypeForOpr());
+            }
+
+            finishAction();
             return true;
         }
     }
@@ -3004,6 +3091,7 @@ public class SearchBigFile extends AppFrame {
                     timeTillNow = timeElapse;
                     String msg = timeElapse + " sec, lines [" + sbf.linesTillNow + "], memory " + getTotalMemoryStr();
                     if (showWarning || isWarningState()) {
+                        //todo: multi thread is slow as compared to single thread - so discarding this approach
                         msg = sbf.getProblemMsg();
                         sbf.debug("Invoking warning indicator.");
                         SwingUtilities.invokeLater(new StartWarnIndicator(sbf));
@@ -3037,6 +3125,10 @@ public class SearchBigFile extends AppFrame {
 
     private boolean isFirstThread(int threadNum) {
         return threadNum == 1;
+    }
+
+    private String getThreadNumInfo(int tn) {
+        return "Thread " + Utils.addBraces(tn + "/" + numOfThreads) + SPACE;
     }
 
     private boolean hasOccr(String line, String searchPattern) {
@@ -3196,7 +3288,7 @@ public class SearchBigFile extends AppFrame {
         }
 
         public Boolean searchUsingIS() {
-            final int BUFFER_SIZE = 200 * 1024;
+            final int BUFFER_SIZE = 200 * KB;
             String searchPattern = sbf.processPattern();
 
             String path = sbf.getFilePath();
@@ -3205,7 +3297,7 @@ public class SearchBigFile extends AppFrame {
                  BufferedReader br = new BufferedReader(new InputStreamReader(stream), BUFFER_SIZE)
             ) {
                 long lineNum = 1, occurrences = 0, time = System.currentTimeMillis();
-                SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
+                SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern, null);
                 SearchData searchData = new SearchData(stats);
 
                 String line;
@@ -3323,39 +3415,30 @@ public class SearchBigFile extends AppFrame {
         public Boolean call() {
             debug("Search started for " + qObject);
             qObject.setThreadStatus(Status.READING);
-            final int BUFFER_SIZE = 200 * KB;
+            //final int BUFFER_SIZE = 200 * KB;
+            final int BUFFER_SIZE = MB;
             String searchPattern = sbf.processPattern();
             String path = sbf.getFilePath();
             int tn = qObject.getThreadNum();
-            boolean isFT = isFirstThread(tn);
+            String tnInfo = getThreadNumInfo(tn);
 
-
-            //try (SeekableByteChannel ch = Files.newByteChannel(Utils.createPath(path), EnumSet.of(StandardOpenOption.READ))) {
             try {
                 long startPos = qObject.getFilePositionStart();
                 long endPos = qObject.getFilePositionEnd();
-                channel.position(startPos);
                 ByteBuffer bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
 
-                long lineNum = 1, occurrences = 0, time = System.currentTimeMillis();
-                SearchStats stats = new SearchStats(lineNum, occurrences, null, searchPattern);
-                SearchData searchData = new SearchData(stats);
+                long time = System.currentTimeMillis();
                 String line;
                 StringBuilder sb = new StringBuilder();
 
-                int k = 1;
-                while (channel.read(bb) >= 0) {
+                while (startPos < endPos) {
+                    synchronized (SearchSplitFileCallable.class) {
+                        channel.position(startPos);
+                        channel.read(bb);
+                    }
                     startPos += BUFFER_SIZE;
-                    if (startPos > endPos) {
-                        System.out.println("inside break");
-                        break;
-                    }
-                    if (tn == 1) {
-                        System.out.println(startPos + "/" + endPos + channel.position() + "--" + tn + " inside read bb " + k++);
-                    }
                     bb.flip();
-                    String s = StandardCharsets.UTF_8.decode(bb).toString();
-                    byte[] arr = s.getBytes(StandardCharsets.UTF_8);
+                    byte[] arr = StandardCharsets.UTF_8.decode(bb).toString().getBytes(StandardCharsets.UTF_8);
                     bb.clear();
 
                     char c;
@@ -3371,112 +3454,33 @@ public class SearchBigFile extends AppFrame {
                         }
 
                         if (newLineChar || maxReadCharLimitReached) {
+                            SearchStats stats = new SearchStats(fileLineNum, 0, null, searchPattern, tn);
                             stats.setAddLineEnding(newLineChar);
                             line = sb.toString();
                             sb = new StringBuilder();
                             stats.setLine(line);
                             stats.setMatch(sbf.hasOccr(line, searchPattern));
+                            qObject.add(stats);
 
-                            if (!isCancelled() && occrTillNow <= errorOccrLimit) {
-                                searchData.process();
-                                if (isFT && qObject.getQMsgsToAppend().size() > APPEND_MSG_CHUNK) {
-                                    startThread(msgCallable);
-                                }
-                            }
                             if (isCancelled()) {
-                                String msg = "---xxx--- Search cancelled ---xxx---";
-                                debug(msg);
-                                qObject.getQMsgsToAppend().add(addLineEnd(msg));
-                                if (isFT) {
-                                    startThread(msgCallable);
-                                }
                                 break;
                             }
                         }
                     }
-                }
-
-                if (isFT) {
-                    // left over data
-                    stats.setAddLineEnding(false);
-                    line = sb.toString();
-                    stats.setLine(line);
-                    stats.setMatch(sbf.hasOccr(line, searchPattern));
-                    if (!isCancelled() && occrTillNow <= errorOccrLimit) {
-                        searchData.process();
-                        startThread(msgCallable);
+                    if (isCancelled()) {
+                        break;
                     }
-
-                    if (maxReadCharTimes > 0) {
-                        logger.info("search: max read char limit " + Utils.addBraces(MAX_READ_CHAR_LIMIT) + " reached "
-                                + Utils.addBraces(maxReadCharTimes) + " times, processing...");
-                    }
-                } else {
-                    qObject.getQMsgsToAppend().add(addLineEnd(sb.toString()));
-                }
-                logger.info("Thread " + Utils.addBraces(tn) + " completed file read in " + Utils.getTimeDiffSecMilliStr(time));
-                logger.debug("All qObjects status " + qObjects);
-
-                if (!isCancelled() && isFT) {
-                    time = System.currentTimeMillis();
-                    startThread(msgCallable);
-                    while (readCounter != insertCounter) {
-                        if (isCancelled()) {
-                            debug("Status is cancelled.  Exiting wait condition.");
-                            break;
-                        }
-                        logger.debug("Waiting for readCounter to be equal insertCounter");
-                        Utils.sleep(200, sbf.logger);
-                    }
-                    idxMsgsToAppend.clear();
-                    logger.info("Time in waiting all message to append is " + Utils.getTimeDiffSecMilliStr(time));
-                }
-                timeTaken = Utils.getTimeDiffSecMilliStr(startTime);
-                lineNums = stats.getLineNum();
-                String result = getSearchResult(path, timeTaken, lineNums, stats.getOccurrences());
-                if (stats.getOccurrences() == 0 && !isErrorState() && !isCancelled()) {
-                    String s = "No match found";
-                    sbf.tpResults.setText(R_FONT_PREFIX + s + FONT_SUFFIX);
-                    sbf.showMsg(s, MsgType.WARN);
                 }
 
-                if (isErrorState()) {
-                    sbf.updateTitleAndMsg("Search cancelled - " + result, getMsgTypeForOpr());
-                } else {
-                    // No need to show below msg
-//                    String msg = "--- Search complete ---";
-//                    qMsgsToAppend.add(addLineEnd(msg));
-//                    startThread(msgCallable);
-                    //TODO: we dont need it
-                    //sbf.updateTitleAndMsg("Search complete - " + result, getMsgTypeForOpr());
-                }
-                // Need to check
-                status = Status.DONE;
+                logger.info(tnInfo + " completed file read in " + Utils.getTimeDiffSecMilliStr(time));
                 qObject.setThreadStatus(Status.DONE);
             } catch (IOException e) {
                 searchFailed(e);
-            } finally {
-                sbf.enableControls();
+                cancelSearch();
             }
-            /*} catch (FileNotFoundException e) {
-                searchFailed(e);
-                sbf.fileNotFoundAction();
-            } catch (Exception e) {
-                searchFailed(e);
-            } finally {
-                sbf.enableControls();
-            }*/
 
             finishAction();
             return true;
-        }
-
-        private void searchFailed(Exception e) {
-            String msg = "ERROR: " + e.getMessage();
-            sbf.logger.error(e.getMessage());
-            sbf.tpResults.setText(R_FONT_PREFIX + msg + FONT_SUFFIX);
-            sbf.updateTitleAndMsg("Unable to search file: " + getFilePath(), MsgType.ERROR);
-            status = Status.DONE;
         }
     }
 }

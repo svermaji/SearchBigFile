@@ -7,7 +7,7 @@ public class QObject {
     private SearchBigFile.Status threadStatus = SearchBigFile.Status.NOT_STARTED;
     private final int threadNum;
     private final long filePositionStart, filePositionEnd;
-    private final Queue<String> qMsgsToAppend;
+    private final Queue<SearchStats> qMsgsToAppend;
 
     public QObject(int threadNum, long filePositionStart, long filePositionEnd) {
         this.threadNum = threadNum;
@@ -16,7 +16,7 @@ public class QObject {
         this.qMsgsToAppend = new LinkedBlockingQueue<>();
     }
 
-    public void add(String data) {
+    public void add(SearchStats data) {
         qMsgsToAppend.add(data);
     }
 
@@ -48,7 +48,7 @@ public class QObject {
         return filePositionEnd;
     }
 
-    public Queue<String> getQMsgsToAppend() {
+    public Queue<SearchStats> getQMsgsToAppend() {
         return qMsgsToAppend;
     }
 
@@ -59,6 +59,7 @@ public class QObject {
                 ", filePositionStart=" + filePositionStart +
                 ", filePositionEnd=" + filePositionEnd +
                 ", threadNum=" + threadNum +
+                ", qMsgsToAppend.size()=" + qMsgsToAppend.size() +
                 '}';
     }
 }

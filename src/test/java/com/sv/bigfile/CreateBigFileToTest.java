@@ -23,10 +23,11 @@ public class CreateBigFileToTest {
         String line3 = "I am enjoying this # ";
 
         String fn = "test-file-1GB.txt";
-        String fn3 = "test-file-3GB.txt";
         String fn2 = "test-file-single-line.txt";
+        String fn3 = "test-file-3GB.txt";
+        String fn4 = "test-file-500MB.txt";
         StringBuilder sb = new StringBuilder("File created on " + Utils.getFormattedDate());
-        String[] arr = {fn, fn2, fn3};
+        String[] arr = {fn, fn2, fn3, fn4};
         StringBuilder finalSb = sb;
         Arrays.stream(arr).forEach(f -> {
             StandardOpenOption soo = Files.exists(Utils.createPath(f)) ?
@@ -37,6 +38,7 @@ public class CreateBigFileToTest {
         sb = new StringBuilder();
         int MB_14_LINES = 100000;
         int GB_1_LINES = MB_14_LINES * 65;
+        int MB_500_LINES = MB_14_LINES * 30;
         int GB_3_LINES = MB_14_LINES * 200;
         int APPEND_AFTER = 100000;
         long time = System.currentTimeMillis();
@@ -80,6 +82,20 @@ public class CreateBigFileToTest {
         Utils.writeFile(fn3, sb.toString(), null, StandardOpenOption.APPEND);
         System.out.println("File [" + fn3 + "] created in " + Utils.getTimeDiffSecStr(time) + " of size "
                 + Utils.getFileSizeString(fn3));
+        time = System.currentTimeMillis();
+        sb = new StringBuilder();
+        for (int i = 0; i < MB_500_LINES; i++) {
+            sb.append(ln).append(line1).append(i);
+            sb.append(ln).append(line2).append(i);
+            sb.append(ln).append(line3).append(i);
+            if (i % APPEND_AFTER == 0) {
+                Utils.writeFile(fn4, sb.toString(), null, StandardOpenOption.APPEND);
+                sb = new StringBuilder();
+            }
+        }
+        Utils.writeFile(fn4, sb.toString(), null, StandardOpenOption.APPEND);
+        System.out.println("File [" + fn4 + "] created in " + Utils.getTimeDiffSecStr(time) + " of size "
+                + Utils.getFileSizeString(fn4));
     }
 
 }

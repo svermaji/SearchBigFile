@@ -7,12 +7,18 @@ public class SearchStats {
     private boolean match;
     private boolean addLineEnding;
     private final String searchPattern;
+    private final Integer threadNum;
 
     public SearchStats(long lineNum, long occurrences, String line, String searchPattern) {
+        this(lineNum, occurrences, line, searchPattern, null);
+    }
+
+    public SearchStats(long lineNum, long occurrences, String line, String searchPattern, Integer threadNum) {
         this.lineNum = lineNum;
         this.occurrences = occurrences;
         this.line = line;
         this.searchPattern = searchPattern;
+        this.threadNum = threadNum;
     }
 
     public void setLine(String line) {
@@ -57,6 +63,10 @@ public class SearchStats {
 
     public void setAddLineEnding(boolean addLineEnding) {
         this.addLineEnding = addLineEnding;
+    }
+
+    public int getThreadNum() {
+        return threadNum;
     }
 
     @Override
