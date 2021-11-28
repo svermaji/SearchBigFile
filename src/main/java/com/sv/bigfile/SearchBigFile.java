@@ -294,9 +294,9 @@ public class SearchBigFile extends AppFrame {
         jtbFile.add(jcbMatchCase);
         jtbFile.add(jcbWholeWord);
 
-        filePanelBorder = (TitledBorder) SwingUtils.createTitledBorder(filePanelHeading, highlightColor);
-        searchPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(searchPanelHeading, highlightColor);
-        controlPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(controlPanelHeading, highlightColor);
+        filePanelBorder = SwingUtils.createTitledBorder(filePanelHeading, highlightColor);
+        searchPanelBorder = SwingUtils.createTitledBorder(searchPanelHeading, highlightColor);
+        controlPanelBorder = SwingUtils.createTitledBorder(controlPanelHeading, highlightColor);
 
         filePanel.add(jtbFile);
         filePanel.setBorder(filePanelBorder);
@@ -446,6 +446,7 @@ public class SearchBigFile extends AppFrame {
 
         controlPanel = new JPanel();
         JButton btnExit = new AppExitButton();
+        btnExit.setText(EMPTY);
         jtbControls.add(mbSettings);
         jtbControls.add(btnPlusFont);
         menuSettings.setSize(menuSettings.getWidth(), 20);
@@ -1328,9 +1329,9 @@ public class SearchBigFile extends AppFrame {
     private void changeAppColor() {
         Color cl = jcbmiApplyToApp.getState() ? highlightColor : ORIG_COLOR;
 
-        filePanelBorder = (TitledBorder) SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor);
-        searchPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor);
-        controlPanelBorder = (TitledBorder) SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor);
+        filePanelBorder = SwingUtils.createTitledBorder(filePanelHeading, highlightTextColor);
+        searchPanelBorder = SwingUtils.createTitledBorder(searchPanelHeading, highlightTextColor);
+        controlPanelBorder = SwingUtils.createTitledBorder(controlPanelHeading, highlightTextColor);
 
         // for tooltip
         JComponent[] tt = {filePanel, searchPanel, controlPanel, msgPanel, msgButtons,
