@@ -87,7 +87,7 @@ public class SearchBigFile extends AppFrame {
     }
 
     private SearchUtils searchUtils;
-    private MyLogger logger;
+    //private MyLogger logger;
     private DefaultConfigs configs;
 
     private JSplitPane splitAllOccr;
@@ -202,7 +202,6 @@ public class SearchBigFile extends AppFrame {
      * This method initializes the form.
      */
     private void initComponents() {
-        logger = MyLogger.createLogger(getClass());
         searchUtils = new SearchUtils(logger);
         configs = new DefaultConfigs(logger, Utils.getConfigsAsArr(Configs.class));
         debugEnabled = getBooleanCfg(Configs.DebugEnabled);
@@ -1114,6 +1113,7 @@ public class SearchBigFile extends AppFrame {
         splitAllOccr.revalidate();
     }
 
+    // call by reflection
     public void dblClickOffset(AppTable table, Object[] params) {
         // -1 as row number starts from 1
         int selRow = table.getSelectedRow();
